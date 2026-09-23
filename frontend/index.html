@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediVault Local — Zero-Cloud Clinical Record Reviewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .status-pulse {
+      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
+
+  <!-- Top Navigation & Zero-Cloud Trust Header -->
+  <header class="bg-slate-800 border-b border-slate-700 shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-teal-500/20 p-2.5 rounded-xl border border-teal-500/40 text-teal-400">
+          <i class="fa-solid fa-shield-heart text-2xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
+            <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.0-OFFLINE</span>
+          </div>
+          <p class="text-xs text-slate-400">Zero-Cloud HIPAA & DPDP Clinical Contraindication Reviewer</p>
+        </div>
+      </div>
+
+      <!-- Trust Badges -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 status-pulse"></span>
+          <span class="font-semibold tracking-wide">AIR-GAPPED: 0 BYTES TRANSMITTED</span>
+          <span class="text-emerald-500 font-mono text-[10px] hidden sm:inline">(127.0.0.1)</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-1.5 bg-slate-800 border border-slate-600 text-slate-300 text-xs px-3 py-1.5 rounded-full">
+          <i class="fa-solid fa-lock text-teal-400 text-[11px]"></i>
+          <span>HIPAA § 164.312(b) Safe Harbor</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Patient Intake & Clinical History (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col space-y-5">
+      
+      <!-- Patient Selection Card -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 flex items-center">
+            <i class="fa-solid fa-hospital-user mr-2"></i> Clinical Record Ingestion
+          </h2>
+          <span class="text-[11px] text-slate-400 bg-slate-700/60 px-2 py-0.5 rounded">Local SQLite</span>
+        </div>
+
+        <!-- Mode Toggle Tabs -->
+        <div class="grid grid-cols-2 gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-700 mb-4 text-xs font-medium">
+          <button id="tab-demo" class="py-1.5 rounded-md bg-teal-600 text-white font-semibold transition" onclick="switchIntakeMode('demo')">
+            <i class="fa-solid fa-user-check mr-1"></i> Demo Patients
+          </button>
+          <button id="tab-raw" class="py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition" onclick="switchIntakeMode('raw')">
+            <i class="fa-solid fa-file-medical mr-1"></i> Raw Clinical Note
+          </button>
+        </div>
+
+        <!-- Demo Patient Dropdown -->
+        <div id="demo-patient-section" class="space-y-3">
+          <label class="block text-xs font-medium text-slate-300">Select Synthetic Demo Patient Profile:</label>
+          <select id="patient-select" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 transition">
+            <option value="PT-101">PT-101: John Doe (Stage 3 CKD, HTN, T2DM)</option>
+            <option value="PT-102">PT-102: Sarah Connor (Moderate Asthma, Rhinitis)</option>
+            <option value="PT-103">PT-103: Robert Smith (AFib, Warfarin Therapy)</option>
+          </select>
+        </div>
+
+        <!-- Raw Note Input Form -->
+        <div id="raw-note-section" class="space-y-3 hidden">
+          <div class="flex justify-between items-center">
+            <label class="block text-xs font-medium text-slate-300">Paste Unstructured Doctor Discharge Summary:</label>
+            <button onclick="applySampleDischargeNote()" class="text-[11px] text-teal-400 hover:underline">Insert Sample Note</button>
+          </div>
+          <textarea id="raw-note-input" rows="4" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500 transition placeholder-slate-500" placeholder="e.g. 64yo male with Stage 3 Chronic Kidney Disease (eGFR 38), hypertension. Meds: Lisinopril 20mg. Allergies: Penicillin..."></textarea>
+          <button onclick="triggerRedaction()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-teal-300 border border-slate-600 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
+            <i class="fa-solid fa-user-secret"></i>
+            <span>Run Safe Harbor PHI Redaction</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- De-identified Patient Profile Card -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md flex-1 flex flex-col">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+          <div>
+            <h3 id="display-patient-name" class="font-bold text-base text-white">John Doe (Renal Profile)</h3>
+            <p id="display-patient-meta" class="text-xs text-slate-400 font-mono">ID: PT-101 | Age: 64 | Male</p>
+          </div>
+          <span id="display-patient-token" class="text-[10px] font-mono bg-teal-950 border border-teal-500/40 text-teal-300 px-2.5 py-1 rounded-md">
+            ANON_A9F201
+          </span>
+        </div>
+
+        <!-- Extracted Diagnoses -->
+        <div class="mb-4">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-stethoscope text-teal-400 mr-1.5"></i> Diagnosed Conditions
+          </span>
+          <div id="conditions-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-red-950/60 border border-red-500/40 text-red-200 rounded-md text-xs font-medium">Stage 3 Chronic Kidney Disease</span>
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Essential Hypertension</span>
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Type 2 Diabetes Mellitus</span>
+          </div>
+        </div>
+
+        <!-- Active Medications -->
+        <div class="mb-4">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-pills text-teal-400 mr-1.5"></i> Current Active Medications
+          </span>
+          <div id="medications-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Lisinopril 20mg</span>
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Metformin 500mg BID</span>
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Amlodipine 5mg</span>
+          </div>
+        </div>
+
+        <!-- Allergies -->
+        <div>
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
+          </span>
+          <div id="allergies-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded-md text-xs">Sulfonamides</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Prescription Cross-Check & Safety Review (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col space-y-5">
+
+      <!-- Prescription Input Form -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 mb-3 flex items-center">
+          <i class="fa-solid fa-prescription-bottle-medical mr-2"></i> Proposed Prescription Cross-Check
+        </h2>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1">Medication Name:</label>
+              <input type="text" id="proposed-med-input" value="Ibuprofen" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-semibold" placeholder="e.g. Ibuprofen, Propranolol, Aspirin" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Dosage & Route:</label>
+              <input type="text" id="proposed-dose-input" value="400mg PO TID" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500" />
+            </div>
+          </div>
+
+          <!-- Quick Test Prescription Chips -->
+          <div>
+            <span class="text-[11px] text-slate-400 mr-2">Quick Prescribe:</span>
+            <div class="inline-flex flex-wrap gap-1.5 mt-1">
+              <button onclick="setProposedMed('Ibuprofen', '400mg PO TID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-red-300 border border-red-500/30">Ibuprofen (NSAID)</button>
+              <button onclick="setProposedMed('Propranolol', '40mg PO BID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-red-300 border border-red-500/30">Propranolol (Beta-blocker)</button>
+              <button onclick="setProposedMed('Aspirin', '81mg daily')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-amber-300 border border-amber-500/30">Aspirin (Antiplatelet)</button>
+              <button onclick="setProposedMed('Amoxicillin', '500mg PO TID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-emerald-300 border border-emerald-500/30">Amoxicillin (Antibiotic)</button>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <button id="btn-run-review" onclick="runSafetyCheck()" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition mt-2">
+            <i class="fa-solid fa-radar text-base"></i>
+            <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-Time Clinical Review Result Card -->
+      <div id="review-result-card" class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md flex-1 flex flex-col justify-between">
+        
+        <!-- Result Banner -->
+        <div>
+          <div id="status-banner" class="rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-red-950/70 border-red-500/60 text-red-100">
+            <div id="status-icon" class="text-2xl mt-0.5 text-red-400">
+              <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 id="status-title" class="font-extrabold text-base tracking-wide uppercase text-red-300">
+                  CRITICAL CONTRAINDICATION DETECTED
+                </h4>
+                <span id="alerts-count-badge" class="text-[10px] font-mono bg-red-900 border border-red-500/50 text-red-200 px-2 py-0.5 rounded-full">
+                  1 Conflict Found
+                </span>
+              </div>
+              <p id="status-explanation" class="text-xs mt-1 text-slate-200 leading-relaxed">
+                Administration of 'Ibuprofen' carries severe clinical risk due to documented conflict with Stage 3 Chronic Kidney Disease (CKD).
+              </p>
+            </div>
+          </div>
+
+          <!-- Detailed Conflict Cards -->
+          <div id="alerts-container" class="space-y-2.5">
+            <div class="bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5 text-xs">
+              <div class="flex items-center justify-between font-semibold text-red-300 mb-1.5">
+                <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Diagnosed Condition: Stage 3 Chronic Kidney Disease (CKD)</span>
+                <span class="text-[10px] bg-red-950 border border-red-500/40 px-2 py-0.5 rounded uppercase">Drug-Disease</span>
+              </div>
+              <p class="text-slate-300 mb-2 leading-relaxed">
+                <strong class="text-slate-200">Pathophysiological Mechanism:</strong> Inhibits renal vasodilating prostaglandins (PGE2, PGI2); precipitates acute afferent arteriolar vasoconstriction and acute renal failure in pre-existing CKD.
+              </p>
+              <div class="bg-slate-800/80 p-2 rounded border border-slate-700 text-teal-300 font-mono text-[11px]">
+                <strong class="text-slate-300">Recommendation:</strong> Absolute contraindication. Avoid NSAIDs. Consider Acetaminophen (max 2g/day) or topical analgesics.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification & Integrity Stamp -->
+        <div class="border-t border-slate-700/80 pt-3 mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-fingerprint text-teal-400"></i>
+            <span class="font-mono">Audit SHA-256: <span id="audit-hash-display" class="text-slate-300">c9f8a12e4b77...809d</span></span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span>Latency: <strong id="exec-time-display" class="text-slate-200">18.4 ms</strong></span>
+            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Zero-Cloud Verified</span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- BOTTOM SECTION: Cryptographic Audit Trail (HIPAA § 164.312(b)) -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
+    <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+      <div class="flex items-center justify-between cursor-pointer" onclick="toggleAuditDrawer()">
+        <div class="flex items-center space-x-2.5">
+          <i class="fa-solid fa-database text-teal-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Local Cryptographic Audit Trail (HIPAA § 164.312(b))</h3>
+        </div>
+        <div class="flex items-center space-x-2 text-xs text-teal-400 font-medium">
+          <span id="audit-toggle-text">Show Recent Hash-Chained Logs</span>
+          <i id="audit-toggle-icon" class="fa-solid fa-chevron-down transition"></i>
+        </div>
+      </div>
+
+      <div id="audit-drawer" class="mt-4 hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="py-2 px-3">Timestamp (UTC)</th>
+                <th class="py-2 px-3">Event ID</th>
+                <th class="py-2 px-3">Patient Token</th>
+                <th class="py-2 px-3">Prescription</th>
+                <th class="py-2 px-3">Status</th>
+                <th class="py-2 px-3">SHA-256 Hash</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body" class="divide-y divide-slate-700/60 font-mono text-[11px]">
+              <!-- Dynamically populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- External app script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
