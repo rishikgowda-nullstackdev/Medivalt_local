@@ -1,6 +1,6 @@
 # MediVault Local — Sovereign AI Clinical Contraindication Reviewer
 > **ASYNC'26 — Track 1: Sovereign AI**  
-> **Team:** Void_coders (Person A, Person B, Person C, Person D)  
+> **Team:** Void_coders (Person A: Rishikgowda SM, Person B: Rakshith DA, Person C: Kushal M, Person D: Sujan MB)  
 > **Release:** v1.0 (Frozen Main)  
 > **Zero-Cloud Compliance:** 100% Offline Local Machine Execution (127.0.0.1 only)  
 > **Regulatory Standard:** HIPAA Safe Harbor § 164.514(b)(2) & Security Rule § 164.312(b) | DPDP Act 2023  
@@ -65,12 +65,12 @@ Hospitals and clinical practitioners face a critical dilemma: **they cannot lega
 
 Built collaboratively across 4 specialized roles adhering to strict folder boundaries:
 
-| Role | Owner | Folder | Core Responsibilities |
+| Role | Team Member | Folder | Core Responsibilities |
 |---|---|---|---|
-| **Repo Lead & Backend API** | **Person A** | `/backend`, `database/` | FastAPI application, orchestrator glue code, thread-safe audit logger, SQLite WAL concurrency, release packaging |
-| **Data Ingestion & Privacy** | **Person B** | `/ingestion` | PDF & TXT text extraction, 18 HIPAA Safe Harbor regex PHI de-identification |
-| **AI Engine & Pharmacology** | **Person C** | `/ai_engine` | SQLite interaction database, deterministic pharmacology rules, local Ollama SLM reasoning integration |
-| **Frontend UI, Docs & QA** | **Person D** | `/frontend`, `/docs` | Physician dashboard, air-gap trust pill, live audit drawer, manual QA & demo scripts |
+| **Repo Lead & Backend API** | **Person A: Rishikgowda SM** | `/backend`, `database/` | FastAPI application, orchestrator glue code, thread-safe audit logger, SQLite WAL concurrency, release packaging |
+| **Data Ingestion & Privacy** | **Person B: Rakshith DA** | `/ingestion` | PDF & TXT text extraction, 18 HIPAA Safe Harbor regex PHI de-identification |
+| **AI Engine & Pharmacology** | **Person C: Kushal M** | `/ai_engine` | SQLite interaction database, deterministic pharmacology rules, local Ollama SLM reasoning integration |
+| **Frontend UI, Docs & QA** | **Person D: Sujan MB** | `/frontend`, `/docs` | Physician dashboard, air-gap trust pill, live audit drawer, manual QA & demo scripts |
 
 ---
 
@@ -154,3 +154,9 @@ To demonstrate sovereign AI compliance to judges:
    - Explains that NSAIDs inhibit renal prostaglandins in CKD Stage 3, risking acute renal shutdown.
    - Air-Gap Trust Pill confirms: `AIR-GAPPED: 0 BYTES TRANSMITTED`.
 6. **Verify Audit Trail:** Open the Cryptographic Audit Drawer and click **"Verify Hash Chain"** to demonstrate mathematical proof of zero tampering.
+
+### Team Presentation Division (Pitch Rehearsal)
+- **Rishikgowda SM (Person A — Repo Lead & Backend):** Architecture, loopback network guard, thread-safe audit logger, and the deterministic-override safety philosophy.
+- **Rakshith DA (Person B — Ingestion & Privacy):** Zero-leakage data privacy, 18 HIPAA Safe Harbor PHI redactions, and in-memory document parsing.
+- **Kushal M (Person C — AI Engine & Pharmacology):** Pharmacology contraindication rules, brand-to-generic normalization, and Ollama SLM reasoning integration.
+- **Sujan MB (Person D — Frontend & QA):** Drives the live interface demo, highlights the Air-Gap trust pill, and demonstrates the audit verification drawer.
