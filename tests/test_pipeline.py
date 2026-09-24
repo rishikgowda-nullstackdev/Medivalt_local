@@ -1,6 +1,7 @@
 """
-MediVault Local - Automated Integration Test Suite
-Verifies offline redaction, extraction, database queries, contraindication flags, and audit hashing.
+MediVault Local - Comprehensive Test Suite
+Verifies offline redaction, extraction, database queries, contraindication flags,
+audit hashing, tamper detection, and network guard assertions.
 """
 
 import os
@@ -11,10 +12,13 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.redactor import ClinicalRedactor
-from backend.main import get_db, record_audit_log, ReviewRequest, review_prescription
+from backend.network_guard import network_guard
+from backend.audit_logger import audit_logger
+from backend.orchestrator import ClinicalOrchestrator
+from backend.main import ReviewRequest, review_prescription
 
 
-class TestMediVaultLocal(unittest.TestCase):
+class TestMediVaultDay2(unittest.TestCase):
 
     def test_01_phi_redaction(self):
         """Verify 18 HIPAA Safe Harbor PHI identifiers are redacted."""
@@ -44,49 +48,91 @@ class TestMediVaultLocal(unittest.TestCase):
         self.assertEqual(entities["clinical_labs"]["eGFR"], "38 mL/min/1.73m2")
         self.assertEqual(entities["clinical_labs"]["Creatinine"], "2.1 mg/dL")
 
-    def test_03_ckd_nsaid_contraindication(self):
-        """Verify that prescribing Ibuprofen to a CKD patient triggers a CRITICAL flag."""
-        req = ReviewRequest(patient_id="PT-101", proposed_medication="Ibuprofen")
-        res = review_prescription(req)
+    def test_03_network_guard_telemetry(self):
+        """Verify Offline Shield loopback binding assertion and zero outbound bytes."""
+        telemetry = network_guard.get_network_status()
+        self.assertEqual(telemetry["status"], "SECURE_AIR_GAPPED")
+        self.assertTrue(telemetry["zero_cloud_enforced"])
+        self.assertTrue(telemetry["air_gap_verified"])
+        self.assertTrue(telemetry["dpdp_hipaa_compliant"])
 
-        self.assertEqual(res.overall_status, "CRITICAL")
-        self.assertGreater(res.total_alerts, 0)
-        self.assertTrue(any("Chronic Kidney Disease" in a.conflicting_factor for a in res.alerts))
-        self.assertTrue(res.zero_cloud_verified)
-        self.assertIsNotNone(res.audit_hash)
+        # Loopback assertion should succeed on localhost
+        network_guard.assert_loopback_only("127.0.0.1")
+        network_guard.assert_loopback_only("localhost")
 
-    def test_04_asthma_beta_blocker_contraindication(self):
-        """Verify that prescribing Propranolol to an Asthma patient triggers a CRITICAL flag."""
-        req = ReviewRequest(patient_id="PT-102", proposed_medication="Propranolol")
-        res = review_prescription(req)
+        # Non-loopback host must throw RuntimeError
+        with self.assertRaises(RuntimeError):
+            network_guard.assert_loopback_only("api.openai.com")
 
-        self.assertEqual(res.overall_status, "CRITICAL")
-        self.assertTrue(any("Asthma" in a.conflicting_factor for a in res.alerts))
+    def test_04_audit_logger_and_tamper_verification(self):
+        """Verify SHA-256 hash chaining and mathematical tamper detection."""
+        entry = audit_logger.log_review(
+            patient_token="ANON_TEST_VERIFY",
+            proposed_medication="Ibuprofen",
+            overall_status="CRITICAL",
+            alerts_count=1,
+            execution_time_ms=12.4
+        )
+        self.assertEqual(len(entry["audit_hash"]), 64)
+        self.assertEqual(len(entry["prev_hash"]), 64)
 
-    def test_05_warfarin_aspirin_interaction(self):
-        """Verify that prescribing Aspirin to a Warfarin patient triggers a CRITICAL bleeding warning."""
-        req = ReviewRequest(patient_id="PT-103", proposed_medication="Aspirin")
-        res = review_prescription(req)
+        # Integrity verification should pass
+        integrity = audit_logger.verify_integrity()
+        self.assertTrue(integrity["valid"])
+        self.assertEqual(integrity["status"], "ALL_BLOCKS_VALID_TAMPER_FREE")
+        self.assertGreaterEqual(integrity["total_blocks"], 1)
 
-        self.assertEqual(res.overall_status, "CRITICAL")
-        self.assertTrue(any("Warfarin" in a.conflicting_factor for a in res.alerts))
+    def test_05_orchestrator_ckd_nsaid(self):
+        """Verify orchestrator flags Ibuprofen for a CKD patient as CRITICAL."""
+        res = ClinicalOrchestrator.process_review(
+            proposed_med="Ibuprofen",
+            patient_id="PT-101"
+        )
+        self.assertEqual(res["overall_status"], "CRITICAL")
+        self.assertGreater(res["total_alerts"], 0)
+        self.assertTrue(any("Chronic Kidney Disease" in a["conflicting_factor"] for a in res["alerts"]))
+        self.assertTrue(res["zero_cloud_verified"])
+        self.assertEqual(len(res["audit_hash"]), 64)
 
-    def test_06_safe_prescription(self):
-        """Verify that a safe, non-contraindicated antibiotic triggers a SAFE response."""
-        req = ReviewRequest(patient_id="PT-101", proposed_medication="Amoxicillin")
-        res = review_prescription(req)
+    def test_06_orchestrator_asthma_propranolol(self):
+        """Verify orchestrator flags Propranolol for an Asthma patient as CRITICAL."""
+        res = ClinicalOrchestrator.process_review(
+            proposed_med="Propranolol",
+            patient_id="PT-102"
+        )
+        self.assertEqual(res["overall_status"], "CRITICAL")
+        self.assertTrue(any("Asthma" in a["conflicting_factor"] for a in res["alerts"]))
 
-        self.assertEqual(res.overall_status, "SAFE")
-        self.assertEqual(res.total_alerts, 0)
+    def test_07_orchestrator_warfarin_aspirin(self):
+        """Verify orchestrator flags Aspirin for a Warfarin patient as CRITICAL."""
+        res = ClinicalOrchestrator.process_review(
+            proposed_med="Aspirin",
+            patient_id="PT-103"
+        )
+        self.assertEqual(res["overall_status"], "CRITICAL")
+        self.assertTrue(any("Warfarin" in a["conflicting_factor"] for a in res["alerts"]))
 
-    def test_07_cryptographic_audit_trail(self):
-        """Verify SHA-256 hash chaining in the local audit log."""
-        hash1 = record_audit_log("ANON_TEST1", "Ibuprofen", "CRITICAL", 1, 15.2)
-        hash2 = record_audit_log("ANON_TEST2", "Amoxicillin", "SAFE", 0, 8.4)
+    def test_08_orchestrator_safe_medication(self):
+        """Verify orchestrator clears a non-contraindicated antibiotic."""
+        res = ClinicalOrchestrator.process_review(
+            proposed_med="Amoxicillin",
+            patient_id="PT-101"
+        )
+        self.assertEqual(res["overall_status"], "SAFE")
+        self.assertEqual(res["total_alerts"], 0)
 
-        self.assertEqual(len(hash1), 64)
-        self.assertEqual(len(hash2), 64)
-        self.assertNotEqual(hash1, hash2)
+    def test_09_raw_clinical_notes_review(self):
+        """Verify end-to-end review when raw unstructured discharge text is passed."""
+        raw_discharge = (
+            "Patient has Stage 3 Chronic Kidney Disease and Hypertension. "
+            "Currently taking Lisinopril 20mg daily. Proposing Naproxen."
+        )
+        res = ClinicalOrchestrator.process_review(
+            proposed_med="Naproxen",
+            raw_notes=raw_discharge
+        )
+        self.assertEqual(res["overall_status"], "CRITICAL")
+        self.assertTrue(any("Chronic Kidney Disease" in a["conflicting_factor"] for a in res["alerts"]))
 
 
 if __name__ == "__main__":

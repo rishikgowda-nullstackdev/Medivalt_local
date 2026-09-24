@@ -1,0 +1,21 @@
+VALLEY CARDIOLOGY ASSOCIATES — OUTPATIENT PROGRESS NOTE
+PATIENT NAME: Arthur Pendelton | DOB: 11/05/1953 | MRN: 3341908
+SSN: 999-88-7777 | PHONE: (555) 987-6543
+CARDIOLOGIST: Dr. Marcus Reynolds, MD, FACC
+
+CLINICAL EVALUATION:
+71-year-old male with persistent non-valvular Atrial Fibrillation (CHA2DS2-VASc score = 4).
+History of Deep Vein Thrombosis (DVT) in 2021 and Gastroesophageal Reflux Disease (GERD).
+Anticoagulation status: Therapeutic on oral Warfarin.
+Today's Point-of-Care Coagulation Panel: INR 2.4 (target therapeutic window 2.0 - 3.0).
+
+ACTIVE PRESCRIPTIONS:
+- Warfarin 5mg PO daily
+- Pantoprazole 40mg PO daily
+
+ALLERGIES:
+- Codeine (causes severe nausea and vomiting)
+
+COMPLAINT:
+Patient reports mild mechanical low back strain after yard work. Inquiring regarding over-the-counter anti-inflammatory analgesics.
+Strict reminder given regarding severe gastrointestinal and systemic hemorrhage risks with antiplatelet/NSAID co-therapy.

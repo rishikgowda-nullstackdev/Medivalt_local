@@ -14,6 +14,10 @@
     .status-pulse {
       animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+    .drop-zone--over {
+      border-color: #14b8a6 !important;
+      background-color: rgba(20, 184, 166, 0.1) !important;
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
@@ -28,7 +32,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 class="text-xl font-bold tracking-tight text-white">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
-            <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.0-OFFLINE</span>
+            <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.1-OFFLINE</span>
           </div>
           <p class="text-xs text-slate-400">Zero-Cloud HIPAA & DPDP Clinical Contraindication Reviewer</p>
         </div>
@@ -55,7 +59,7 @@
     <!-- LEFT COLUMN: Patient Intake & Clinical History (5 cols) -->
     <section class="lg:col-span-5 flex flex-col space-y-5">
       
-      <!-- Patient Selection Card -->
+      <!-- Patient Intake Mode Selector -->
       <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 flex items-center">
@@ -70,11 +74,11 @@
             <i class="fa-solid fa-user-check mr-1"></i> Demo Patients
           </button>
           <button id="tab-raw" class="py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition" onclick="switchIntakeMode('raw')">
-            <i class="fa-solid fa-file-medical mr-1"></i> Raw Clinical Note
+            <i class="fa-solid fa-file-arrow-up mr-1"></i> Upload / Paste Note
           </button>
         </div>
 
-        <!-- Demo Patient Dropdown -->
+        <!-- Mode 1: Demo Patient Dropdown -->
         <div id="demo-patient-section" class="space-y-3">
           <label class="block text-xs font-medium text-slate-300">Select Synthetic Demo Patient Profile:</label>
           <select id="patient-select" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 transition">
@@ -84,13 +88,21 @@
           </select>
         </div>
 
-        <!-- Raw Note Input Form -->
+        <!-- Mode 2: Document Upload & Raw Clinical Note -->
         <div id="raw-note-section" class="space-y-3 hidden">
-          <div class="flex justify-between items-center">
-            <label class="block text-xs font-medium text-slate-300">Paste Unstructured Doctor Discharge Summary:</label>
+          <!-- File Drag-and-Drop Area -->
+          <div id="file-drop-zone" class="border-2 border-dashed border-slate-600 hover:border-teal-500 rounded-lg p-3 text-center cursor-pointer transition bg-slate-900/50">
+            <input type="file" id="file-upload-input" accept=".pdf,.txt" class="hidden" />
+            <i class="fa-solid fa-cloud-arrow-up text-teal-400 text-xl mb-1"></i>
+            <p class="text-xs text-slate-300 font-medium">Drag & drop clinical PDF or TXT</p>
+            <p class="text-[10px] text-slate-500">or click to browse local files</p>
+          </div>
+
+          <div class="flex justify-between items-center pt-1">
+            <label class="block text-xs font-medium text-slate-300">Or Paste Discharge Summary:</label>
             <button onclick="applySampleDischargeNote()" class="text-[11px] text-teal-400 hover:underline">Insert Sample Note</button>
           </div>
-          <textarea id="raw-note-input" rows="4" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500 transition placeholder-slate-500" placeholder="e.g. 64yo male with Stage 3 Chronic Kidney Disease (eGFR 38), hypertension. Meds: Lisinopril 20mg. Allergies: Penicillin..."></textarea>
+          <textarea id="raw-note-input" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500 transition placeholder-slate-500" placeholder="e.g. 64yo male with Stage 3 Chronic Kidney Disease (eGFR 38), hypertension. Meds: Lisinopril 20mg. Allergies: Penicillin..."></textarea>
           <button onclick="triggerRedaction()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-teal-300 border border-slate-600 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
             <i class="fa-solid fa-user-secret"></i>
             <span>Run Safe Harbor PHI Redaction</span>
@@ -215,7 +227,7 @@
             <div class="bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5 text-xs">
               <div class="flex items-center justify-between font-semibold text-red-300 mb-1.5">
                 <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Diagnosed Condition: Stage 3 Chronic Kidney Disease (CKD)</span>
-                <span class="text-[10px] bg-red-950 border border-red-500/40 px-2 py-0.5 rounded uppercase">Drug-Disease</span>
+                <span class="text-[10px] bg-red-950 border border-red-500/40 px-2 py-0.5 rounded uppercase font-mono">Drug-Disease</span>
               </div>
               <p class="text-slate-300 mb-2 leading-relaxed">
                 <strong class="text-slate-200">Pathophysiological Mechanism:</strong> Inhibits renal vasodilating prostaglandins (PGE2, PGI2); precipitates acute afferent arteriolar vasoconstriction and acute renal failure in pre-existing CKD.
@@ -248,16 +260,25 @@
   <!-- BOTTOM SECTION: Cryptographic Audit Trail (HIPAA § 164.312(b)) -->
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
     <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
-      <div class="flex items-center justify-between cursor-pointer" onclick="toggleAuditDrawer()">
+      <div class="flex flex-wrap items-center justify-between gap-3 cursor-pointer" onclick="toggleAuditDrawer()">
         <div class="flex items-center space-x-2.5">
           <i class="fa-solid fa-database text-teal-400"></i>
           <h3 class="text-sm font-bold text-white uppercase tracking-wider">Local Cryptographic Audit Trail (HIPAA § 164.312(b))</h3>
         </div>
-        <div class="flex items-center space-x-2 text-xs text-teal-400 font-medium">
-          <span id="audit-toggle-text">Show Recent Hash-Chained Logs</span>
-          <i id="audit-toggle-icon" class="fa-solid fa-chevron-down transition"></i>
+        <div class="flex items-center space-x-3">
+          <button onclick="event.stopPropagation(); verifyAuditChain();" class="text-xs bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-300 px-3 py-1 rounded-md font-semibold flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Verify Chain Integrity</span>
+          </button>
+          <div class="flex items-center space-x-1 text-xs text-teal-400 font-medium">
+            <span id="audit-toggle-text">Show Logs</span>
+            <i id="audit-toggle-icon" class="fa-solid fa-chevron-down transition"></i>
+          </div>
         </div>
       </div>
+
+      <!-- Verification Banner -->
+      <div id="integrity-banner" class="mt-3 p-2.5 rounded-lg text-xs font-mono hidden"></div>
 
       <div id="audit-drawer" class="mt-4 hidden">
         <div class="overflow-x-auto">

@@ -1,0 +1,23 @@
+METROPOLITAN PULMONOLOGY CLINIC — CONSULTATION NOTE
+PATIENT NAME: Amanda Rollins | DOB: 03/22/1982 | MRN: 7729103
+PHONE: (555) 876-1234 | EMAIL: arollins82@example.com
+CONSULTING PHYSICIAN: Dr. Sarah Chen, MD, FCCP
+
+CHIEF COMPLAINT:
+Severe headache, recurrent tremors, and elevated resting blood pressure.
+
+MEDICAL HISTORY:
+1. Moderate Persistent Bronchial Asthma (two prior ICU admissions for status asthmaticus)
+2. Allergic Rhinitis
+3. Recurrent Migraine Headaches
+
+CURRENT ACTIVE MEDICATIONS:
+- Albuterol HFA Inhaler 90mcg (2 puffs inhaled PRN for acute dyspnea)
+- Fluticasone Propionate 110mcg (1 puff inhaled BID)
+
+ALLERGIES:
+- Aspirin (precipitates severe acute bronchospasm and facial angioedema)
+
+ASSESSMENT & PLAN:
+42-year-old female with reactive airway disease requiring strict avoidance of bronchoconstrictive medications. 
+Considering initiating antihypertensive / migraine prophylactic therapy.

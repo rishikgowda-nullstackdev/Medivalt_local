@@ -5,15 +5,30 @@
 
 let currentIntakeMode = 'demo';
 let currentPatientId = 'PT-101';
+let currentUploadedRecord = null;
 
 // Sample raw note for demonstration
-const SAMPLE_DISCHARGE_NOTE = `Patient: John Doe, DOB: 05/12/1959, MRN: 9948201.
-Emergency Department Clinical Consultation Note:
-64-year-old male with confirmed Stage 3 Chronic Kidney Disease (CKD), baseline serum creatinine 2.1 mg/dL, eGFR 38 mL/min/1.73m2.
-History of Essential Hypertension and Type 2 Diabetes Mellitus.
-Current Medications: Lisinopril 20mg daily, Metformin 500mg BID, Amlodipine 5mg.
-Allergies: Sulfa drugs (maculopapular rash).
-Chief Complaint: Acute bilateral knee osteoarthritis flare-up. Proposing Ibuprofen for pain relief.`;
+const SAMPLE_DISCHARGE_NOTE = `ST. JUDE MEMORIAL HOSPITAL — INPATIENT DISCHARGE SUMMARY
+PATIENT NAME: Robert Vance | DOB: 08/14/1958 | MRN: 4892014
+SSN: 111-22-3333 | PHONE: (555) 432-8765
+ATTENDING: Dr. Jonathan Miller, MD
+
+DISCHARGE DIAGNOSES:
+1. Stage 3 Chronic Kidney Disease (CKD) — baseline serum creatinine 2.1 mg/dL, baseline eGFR 38 mL/min/1.73m2
+2. Essential Hypertension
+3. Type 2 Diabetes Mellitus
+
+CURRENT MEDICATIONS:
+- Lisinopril 20mg PO daily
+- Metformin 500mg PO BID
+- Amlodipine 5mg PO daily
+
+ALLERGIES:
+- Sulfonamides (anaphylactic urticaria)
+- Penicillin (skin rash)
+
+CHIEF COMPLAINT:
+Severe bilateral knee osteoarthritis flare-up. Inquiring regarding NSAID prescription for pain management.`;
 
 // ---------------------------------------------------------------------------
 // Lifecycle & Initialization
@@ -22,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initPatientSelector();
     loadPatientProfile(currentPatientId);
     refreshAuditTrail();
+    setupFileDropZone();
 
     // Listen to patient dropdown change
     const selectEl = document.getElementById("patient-select");
@@ -32,6 +48,92 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// ---------------------------------------------------------------------------
+// Drag & Drop File Upload Handler
+// ---------------------------------------------------------------------------
+function setupFileDropZone() {
+    const dropZone = document.getElementById("file-drop-zone");
+    const fileInput = document.getElementById("file-upload-input");
+
+    if (!dropZone || !fileInput) return;
+
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) {
+            handleFileUpload(e.target.files[0]);
+        }
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add("drop-zone--over");
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("drop-zone--over");
+        });
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+        if (e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files[0]);
+        }
+    });
+}
+
+async function handleFileUpload(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const dropZone = document.getElementById("file-drop-zone");
+    dropZone.innerHTML = `<p class="text-xs text-teal-400 font-mono"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Ingesting & Redacting ${file.name}...</p>`;
+
+    try {
+        const res = await fetch("/api/upload-record", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Upload failed");
+        }
+
+        const data = await res.json();
+        currentUploadedRecord = data;
+
+        // Set raw text into textarea
+        document.getElementById("raw-note-input").value = data.redacted_text;
+
+        // Update Patient Card with extracted entities
+        renderPatientCard(
+            { patient_name: `Ingested: ${file.name}`, patient_id: data.patient_token, age: "Extracted", gender: "Extracted" },
+            data.entities.diagnosed_conditions.map(c => ({ condition_name: c })),
+            data.entities.current_medications.map(m => ({ medication_name: m, dosage: "" })),
+            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" }))
+        );
+
+        dropZone.innerHTML = `
+            <i class="fa-solid fa-file-circle-check text-emerald-400 text-xl mb-1"></i>
+            <p class="text-xs text-emerald-300 font-medium">Ingested: ${file.name}</p>
+            <p class="text-[10px] text-slate-400">PHI Redacted: ${data.phi_detected.length} elements</p>
+        `;
+
+    } catch (e) {
+        console.error("File upload error:", e);
+        dropZone.innerHTML = `
+            <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl mb-1"></i>
+            <p class="text-xs text-red-300 font-medium">Upload Error: ${e.message}</p>
+            <p class="text-[10px] text-slate-400">Click to retry</p>
+        `;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Mode Switching
@@ -61,6 +163,7 @@ function applySampleDischargeNote() {
     const rawInput = document.getElementById("raw-note-input");
     if (rawInput) {
         rawInput.value = SAMPLE_DISCHARGE_NOTE;
+        triggerRedaction();
     }
 }
 
@@ -185,7 +288,6 @@ async function triggerRedaction() {
             data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" }))
         );
 
-        alert(`Safe Harbor PHI Redacted successfully!\nDetected Elements: ${data.phi_detected.join(", ") || "None"}\nAssigned Token: ${data.patient_token}`);
     } catch (e) {
         console.error("Redaction error:", e);
     }
@@ -341,6 +443,35 @@ async function refreshAuditTrail() {
     }
 }
 
+async function verifyAuditChain() {
+    const banner = document.getElementById("integrity-banner");
+    banner.classList.remove("hidden");
+    banner.className = "mt-3 p-2.5 rounded-lg text-xs font-mono bg-slate-900 border border-teal-500/40 text-teal-300 flex items-center space-x-2";
+    banner.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Mathematically verifying SHA-256 hash chaining across all blocks...</span>`;
+
+    try {
+        const res = await fetch("/api/audit-verify");
+        const data = await res.json();
+
+        if (data.valid) {
+            banner.className = "mt-3 p-2.5 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 flex items-center justify-between";
+            banner.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-check-double text-emerald-400"></i>
+                    <span><strong>CRYPTOGRAPHIC PROOF:</strong> All ${data.total_blocks} audit blocks verified intact (Zero Tampering Detected).</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-bold uppercase">HIPAA § 164.312(b) Certified</span>
+            `;
+        } else {
+            banner.className = "mt-3 p-2.5 rounded-lg text-xs font-mono bg-red-950/80 border border-red-500/50 text-red-300";
+            banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i><strong>TAMPER DETECTED:</strong> ${data.error}`;
+        }
+    } catch (e) {
+        banner.className = "mt-3 p-2.5 rounded-lg text-xs font-mono bg-red-950/80 border border-red-500/50 text-red-300";
+        banner.innerHTML = `Verification call failed: ${e.message}`;
+    }
+}
+
 function toggleAuditDrawer() {
     const drawer = document.getElementById("audit-drawer");
     const icon = document.getElementById("audit-toggle-icon");
@@ -354,6 +485,6 @@ function toggleAuditDrawer() {
     } else {
         drawer.classList.add("hidden");
         icon.className = "fa-solid fa-chevron-down transition";
-        text.textContent = "Show Recent Hash-Chained Logs";
+        text.textContent = "Show Logs";
     }
 }
