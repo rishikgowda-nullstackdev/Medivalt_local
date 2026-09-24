@@ -50,6 +50,16 @@ class OllamaBridge:
         }
 
     @classmethod
+    def is_online(cls) -> bool:
+        """Fast 0.25s check if local Ollama port is responsive."""
+        try:
+            with httpx.Client(timeout=0.25) as client:
+                res = client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                return res.status_code == 200
+        except Exception:
+            return False
+
+    @classmethod
     def generate_clinical_explanation(
         cls,
         proposed_drug: str,
@@ -60,6 +70,9 @@ class OllamaBridge:
         Invokes local SLM to generate a natural, physician-facing clinical explanation.
         Returns None if Ollama is unreachable or times out.
         """
+        # Fast failover if Ollama daemon is offline (prevents 4-second connect hang)
+        if not cls.is_online():
+            return None
         prompt = (
             f"You are a clinical pharmacology specialist advising an emergency physician.\n"
             f"In exactly 2 concise, authoritative sentences, explain why prescribing '{proposed_drug}' "

@@ -1,0 +1,81 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1098 >>
+stream
+BT
+/F1 10 Tf
+50 750 Td
+14 TL
+(METROPOLITAN PULMONOLOGY CLINIC  CONSULTATION NOTE) Tj
+T*
+(PATIENT NAME: Amanda Rollins | DOB: 03/22/1982 | MRN: 7729103) Tj
+T*
+(PHONE: \(555\) 876-1234 | EMAIL: arollins82@example.com) Tj
+T*
+(CONSULTING PHYSICIAN: Dr. Sarah Chen, MD, FCCP) Tj
+T*
+() Tj
+T*
+(CHIEF COMPLAINT:) Tj
+T*
+(Severe headache, recurrent tremors, and elevated resting blood pressure.) Tj
+T*
+() Tj
+T*
+(MEDICAL HISTORY:) Tj
+T*
+(1. Moderate Persistent Bronchial Asthma \(two prior ICU admissions for status asthmat) Tj
+T*
+(2. Allergic Rhinitis) Tj
+T*
+(3. Recurrent Migraine Headaches) Tj
+T*
+() Tj
+T*
+(CURRENT ACTIVE MEDICATIONS:) Tj
+T*
+(- Albuterol HFA Inhaler 90mcg \(2 puffs inhaled PRN for acute dyspnea\)) Tj
+T*
+(- Fluticasone Propionate 110mcg \(1 puff inhaled BID\)) Tj
+T*
+() Tj
+T*
+(ALLERGIES:) Tj
+T*
+(- Aspirin \(precipitates severe acute bronchospasm and facial angioedema\)) Tj
+T*
+() Tj
+T*
+(ASSESSMENT & PLAN:) Tj
+T*
+(42-year-old female with reactive airway disease requiring strict avoidance of broncho) Tj
+T*
+(Considering initiating antihypertensive / migraine prophylactic therapy.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001391 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1461
+%%EOF
