@@ -6,6 +6,7 @@
 let currentIntakeMode = 'demo';
 let currentPatientId = 'PT-101';
 let currentUploadedRecord = null;
+let currentReviewEventId = null;
 
 // Sample raw note for demonstration
 const SAMPLE_DISCHARGE_NOTE = `ST. JUDE MEMORIAL HOSPITAL — INPATIENT DISCHARGE SUMMARY
@@ -114,12 +115,13 @@ async function handleFileUpload(file) {
         // Set raw text into textarea
         document.getElementById("raw-note-input").value = data.redacted_text;
 
-        // Update Patient Card with extracted entities
+        // Update Patient Card with extracted entities & biomarkers
         renderPatientCard(
             { patient_name: `Ingested: ${file.name}`, patient_id: data.patient_token, age: "Extracted", gender: "Extracted" },
             data.entities.diagnosed_conditions.map(c => ({ condition_name: c })),
             data.entities.current_medications.map(m => ({ medication_name: m, dosage: "" })),
-            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" }))
+            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" })),
+            data.entities.biomarkers || data.entities.clinical_labs
         );
 
         dropZone.innerHTML = `
@@ -228,17 +230,18 @@ async function loadPatientProfile(patientId) {
         const res = await fetch(`/api/patients/${patientId}`);
         if (!res.ok) return;
         const data = await res.json();
-        renderPatientCard(data.patient, data.conditions, data.medications, data.allergies);
+        renderPatientCard(data.patient, data.conditions, data.medications, data.allergies, data.biomarkers || data.labs);
     } catch (e) {
         console.error("Failed to load patient profile:", e);
     }
 }
 
-function renderPatientCard(patient, conditions, medications, allergies) {
+function renderPatientCard(patient, conditions, medications, allergies, biomarkers) {
     document.getElementById("display-patient-name").textContent = patient.patient_name;
     document.getElementById("display-patient-meta").textContent = 
         `ID: ${patient.patient_id} | Age: ${patient.age || 'N/A'} | ${patient.gender || 'N/A'}`;
-    document.getElementById("display-patient-token").textContent = `ANON_${patient.patient_id}`;
+    const token = patient.patient_id.startsWith("ANON_") ? patient.patient_id : `ANON_${patient.patient_id}`;
+    document.getElementById("display-patient-token").textContent = token;
 
     // Conditions
     const condContainer = document.getElementById("conditions-list");
@@ -286,6 +289,35 @@ function renderPatientCard(patient, conditions, medications, allergies) {
     } else {
         allergyContainer.innerHTML = "<span class='text-xs text-slate-500'>NKDA (No Known Drug Allergies)</span>";
     }
+
+    // Quantitative Lab Biomarkers
+    const bioContainer = document.getElementById("biomarkers-list");
+    if (bioContainer) {
+        bioContainer.innerHTML = "";
+        if (biomarkers && Object.keys(biomarkers).length > 0) {
+            Object.entries(biomarkers).forEach(([bioName, bioData]) => {
+                const span = document.createElement("span");
+                const label = bioName.toUpperCase();
+                let dispVal = typeof bioData === "object" && bioData.display ? bioData.display : (typeof bioData === "object" && bioData.value ? `${bioData.value} ${bioData.unit || ''}` : String(bioData));
+                let status = typeof bioData === "object" && bioData.status ? bioData.status : "NORMAL";
+
+                let badgeColor = "bg-slate-700/60 text-slate-300 border-slate-600";
+                if (status.includes("CRITICAL")) {
+                    badgeColor = "bg-red-950/80 border-red-500/60 text-red-200 font-semibold";
+                } else if (status.includes("WARNING") || status.includes("ELEVATED") || status === "HIGH" || status.includes("STAGE")) {
+                    badgeColor = "bg-amber-950/80 border-amber-500/60 text-amber-200 font-semibold";
+                } else if (status === "NORMAL") {
+                    badgeColor = "bg-emerald-950/40 border-emerald-500/30 text-emerald-300";
+                }
+
+                span.className = `px-2.5 py-1 ${badgeColor} border rounded-md text-xs font-mono flex items-center space-x-1`;
+                span.innerHTML = `<span class="opacity-75">${label}:</span><strong>${dispVal}</strong>`;
+                bioContainer.appendChild(span);
+            });
+        } else {
+            bioContainer.innerHTML = "<span class='text-xs text-slate-500'>No quantitative labs recorded</span>";
+        }
+    }
 }
 
 async function triggerRedaction() {
@@ -303,12 +335,13 @@ async function triggerRedaction() {
         });
         const data = await res.json();
         
-        // Update patient card with extracted entities
+        // Update patient card with extracted entities and biomarkers
         renderPatientCard(
             { patient_name: "De-identified Note Patient", patient_id: data.patient_token, age: "Extracted", gender: "Extracted" },
             data.entities.diagnosed_conditions.map(c => ({ condition_name: c })),
             data.entities.current_medications.map(m => ({ medication_name: m, dosage: "" })),
-            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" }))
+            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" })),
+            data.entities.biomarkers || data.entities.clinical_labs
         );
 
     } catch (e) {
@@ -365,20 +398,62 @@ async function runSafetyCheck() {
 }
 
 function renderReviewResults(data) {
+    currentReviewEventId = data.event_id;
     const banner = document.getElementById("status-banner");
     const icon = document.getElementById("status-icon");
     const title = document.getElementById("status-title");
     const countBadge = document.getElementById("alerts-count-badge");
     const explanation = document.getElementById("status-explanation");
     const alertsContainer = document.getElementById("alerts-container");
+    const polyContainer = document.getElementById("polypharmacy-container");
+    const altContainer = document.getElementById("alternatives-container");
     const auditHash = document.getElementById("audit-hash-display");
     const execTime = document.getElementById("exec-time-display");
 
-    auditHash.textContent = `${data.audit_hash.substring(0, 14)}...${data.audit_hash.substring(data.audit_hash.length - 8)}`;
-    execTime.textContent = `${data.execution_time_ms} ms`;
+    if (auditHash && data.audit_hash) {
+        auditHash.textContent = `${data.audit_hash.substring(0, 14)}...${data.audit_hash.substring(data.audit_hash.length - 8)}`;
+    }
+    if (execTime && data.execution_time_ms !== undefined) {
+        execTime.textContent = `${data.execution_time_ms} ms`;
+    }
 
     alertsContainer.innerHTML = "";
 
+    // 1. Render Cumulative Polypharmacy Alerts
+    if (polyContainer) {
+        polyContainer.innerHTML = "";
+        if (data.polypharmacy_alerts && data.polypharmacy_alerts.length > 0) {
+            polyContainer.classList.remove("hidden");
+            data.polypharmacy_alerts.forEach(pa => {
+                const cluster = (pa.interacting_drugs || []).map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(" + ");
+                const card = document.createElement("div");
+                card.className = "bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border-2 border-red-500/80 rounded-xl p-3.5 shadow-lg text-xs";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between font-extrabold text-red-300 text-xs mb-1.5">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-radiation text-red-400 text-sm animate-pulse"></i>
+                            <span class="uppercase tracking-wide">${pa.rule_name || 'CUMULATIVE POLYPHARMACY TOXICITY'}</span>
+                        </span>
+                        <span class="text-[10px] bg-red-900 text-red-200 border border-red-400/60 px-2 py-0.5 rounded font-mono uppercase">Multi-Drug Alert</span>
+                    </div>
+                    <div class="text-slate-200 font-semibold mb-1 text-[11px]">
+                        Interacting Regimen Cluster: <span class="text-amber-300 font-mono">${cluster}</span>
+                    </div>
+                    <p class="text-slate-300 mb-2 leading-relaxed text-[11px]">
+                        <strong class="text-slate-200">Pathophysiology:</strong> ${pa.clinical_mechanism}
+                    </p>
+                    <div class="bg-red-900/40 p-2 rounded border border-red-700/60 text-red-200 font-mono text-[11px]">
+                        <strong>Emergency De-escalation:</strong> ${pa.recommendation}
+                    </div>
+                `;
+                polyContainer.appendChild(card);
+            });
+        } else {
+            polyContainer.classList.add("hidden");
+        }
+    }
+
+    // 2. Status Banner
     if (data.overall_status === "CRITICAL") {
         banner.className = "rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-red-950/70 border-red-500/60 text-red-100";
         icon.className = "text-2xl mt-0.5 text-red-400";
@@ -407,14 +482,18 @@ function renderReviewResults(data) {
 
     explanation.textContent = data.explanation;
 
-    // Render alerts
-    if (data.alerts && data.alerts.length > 0) {
-        data.alerts.forEach(a => {
-            const badgeColor = a.interaction_type === 'ALLERGY' 
-                ? 'bg-purple-950 border-purple-500/50 text-purple-300' 
-                : (a.interaction_type === 'DRUG_DRUG' 
-                    ? 'bg-amber-950 border-amber-500/50 text-amber-300' 
-                    : 'bg-red-950 border-red-500/40 text-red-300');
+    // 3. Render Standard & Lab Threshold Alerts
+    const standardAlerts = (data.alerts || []).filter(a => a.interaction_type !== "POLYPHARMACY");
+    if (standardAlerts.length > 0) {
+        standardAlerts.forEach(a => {
+            let badgeColor = 'bg-red-950 border-red-500/40 text-red-300';
+            if (a.interaction_type === 'ALLERGY') {
+                badgeColor = 'bg-purple-950 border-purple-500/50 text-purple-300';
+            } else if (a.interaction_type === 'DRUG_DRUG') {
+                badgeColor = 'bg-amber-950 border-amber-500/50 text-amber-300';
+            } else if (a.interaction_type === 'LAB_THRESHOLD') {
+                badgeColor = 'bg-cyan-950 border-cyan-500/50 text-cyan-300';
+            }
 
             const card = document.createElement("div");
             card.className = "bg-slate-900/90 border border-slate-700/80 rounded-lg p-3.5 text-xs shadow-inner";
@@ -432,12 +511,74 @@ function renderReviewResults(data) {
             `;
             alertsContainer.appendChild(card);
         });
-    } else {
+    } else if (!data.polypharmacy_alerts || data.polypharmacy_alerts.length === 0) {
         const safeCard = document.createElement("div");
         safeCard.className = "bg-slate-900/70 border border-emerald-500/20 rounded-lg p-3 text-xs text-slate-300 text-center";
-        safeCard.innerHTML = `<i class="fa-solid fa-shield-check text-emerald-400 mr-1.5"></i> Verified against 30+ high-severity contraindication rules. No adverse drug interactions identified.`;
+        safeCard.innerHTML = `<i class="fa-solid fa-shield-check text-emerald-400 mr-1.5"></i> Verified against 30+ high-severity contraindication rules, quantitative lab thresholds, and polypharmacy matrices. No adverse drug interactions identified.`;
         alertsContainer.appendChild(safeCard);
     }
+
+    // 4. Clinical Safe Alternatives Formulary (with 1-Click Swap)
+    if (altContainer) {
+        altContainer.innerHTML = "";
+        if (data.recommended_alternatives && data.recommended_alternatives.length > 0) {
+            altContainer.classList.remove("hidden");
+            const header = document.createElement("div");
+            header.className = "flex items-center justify-between text-xs font-bold text-teal-300 mb-2 px-1";
+            header.innerHTML = `
+                <span class="flex items-center space-x-1.5">
+                    <i class="fa-solid fa-pills text-teal-400"></i>
+                    <span>Formulary Safe Alternatives (Non-Contraindicated)</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">1-Click Swap & Re-Verify</span>
+            `;
+            altContainer.appendChild(header);
+
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-2";
+
+            data.recommended_alternatives.forEach(alt => {
+                const altCard = document.createElement("div");
+                altCard.className = "p-3 bg-slate-900/90 border border-teal-500/30 hover:border-teal-400/70 rounded-lg text-xs flex flex-col justify-between transition group";
+                altCard.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <strong class="text-teal-200 text-xs">${alt.alternative_drug}</strong>
+                            <span class="text-[9px] bg-teal-950 text-teal-300 border border-teal-500/30 px-1.5 py-0.5 rounded font-mono">${alt.target_indication}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-300 font-mono mb-1.5">${alt.dosage_guide}</div>
+                        <p class="text-[11px] text-slate-400 leading-snug mb-2">${alt.rationale}</p>
+                    </div>
+                    <button onclick="swapAndVerify('${alt.alternative_drug}', '${alt.dosage_guide}')" class="w-full py-1.5 bg-teal-950 hover:bg-teal-700 text-teal-300 hover:text-white border border-teal-500/50 rounded text-[11px] font-semibold flex items-center justify-center space-x-1.5 transition">
+                        <i class="fa-solid fa-repeat"></i>
+                        <span>Swap to ${alt.alternative_drug} & Verify</span>
+                    </button>
+                `;
+                grid.appendChild(altCard);
+            });
+            altContainer.appendChild(grid);
+        } else {
+            altContainer.classList.add("hidden");
+        }
+    }
+}
+
+function swapAndVerify(drug, dose) {
+    const medInput = document.getElementById("proposed-med-input");
+    const doseInput = document.getElementById("proposed-dose-input");
+    if (medInput) medInput.value = drug;
+    if (doseInput && dose) {
+        doseInput.value = dose.split(" ")[0] || dose;
+    }
+    runSafetyCheck();
+}
+
+function exportClinicalCertificate() {
+    if (!currentReviewEventId) {
+        alert("Please run a clinical safety review first to generate an audit event.");
+        return;
+    }
+    window.open(`/api/report/clearance?event_id=${encodeURIComponent(currentReviewEventId)}`, '_blank');
 }
 
 // ---------------------------------------------------------------------------

@@ -159,12 +159,22 @@
         </div>
 
         <!-- Allergies -->
-        <div>
+        <div class="mb-4">
           <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
             <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
           </span>
           <div id="allergies-list" class="flex flex-wrap gap-1.5">
             <span class="px-2.5 py-1 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded-md text-xs">Sulfonamides</span>
+          </div>
+        </div>
+
+        <!-- Quantitative Lab Biomarkers -->
+        <div>
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-vial-virus text-teal-400 mr-1.5"></i> Quantitative Lab Biomarkers
+          </span>
+          <div id="biomarkers-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-400 rounded-md text-xs font-mono">No labs loaded</span>
           </div>
         </div>
       </div>
@@ -234,6 +244,9 @@
             </div>
           </div>
 
+          <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
+          <div id="polypharmacy-container" class="space-y-2 mb-3 hidden"></div>
+
           <!-- Detailed Conflict Cards -->
           <div id="alerts-container" class="space-y-2.5">
             <div class="bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5 text-xs">
@@ -249,6 +262,9 @@
               </div>
             </div>
           </div>
+
+          <!-- Clinical Safe Alternatives Section with 1-Click Swap -->
+          <div id="alternatives-container" class="space-y-2 mt-3.5 hidden"></div>
         </div>
 
         <!-- Verification & Integrity Stamp -->
@@ -257,9 +273,13 @@
             <i class="fa-solid fa-fingerprint text-teal-400"></i>
             <span class="font-mono">Audit SHA-256: <span id="audit-hash-display" class="text-slate-300">c9f8a12e4b77...809d</span></span>
           </div>
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
             <span>Latency: <strong id="exec-time-display" class="text-slate-200">18.4 ms</strong></span>
-            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Zero-Cloud Verified</span>
+            <span class="text-emerald-400 font-semibold mr-1"><i class="fa-solid fa-check-circle"></i> Zero-Cloud</span>
+            <button id="btn-print-cert" onclick="exportClinicalCertificate()" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[11px] font-semibold flex items-center space-x-1.5 transition shadow">
+              <i class="fa-solid fa-file-shield text-xs"></i>
+              <span>Print Certificate</span>
+            </button>
           </div>
         </div>
 
