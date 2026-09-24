@@ -78,7 +78,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 def init_db():
     """Initializes SQLite database from schema.sql if not present."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         schema_sql = f.read()
     conn.executescript(schema_sql)
@@ -89,7 +91,8 @@ init_db()
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    conn.execute("PRAGMA busy_timeout = 5000;")
     conn.row_factory = sqlite3.Row
     return conn
 

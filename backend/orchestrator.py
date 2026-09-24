@@ -46,7 +46,8 @@ class ClinicalOrchestrator:
 
     @staticmethod
     def get_db():
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+        conn.execute("PRAGMA busy_timeout = 5000;")
         conn.row_factory = sqlite3.Row
         return conn
 

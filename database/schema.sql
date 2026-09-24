@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS patient_conditions (
     condition_name TEXT NOT NULL,
     icd10_code TEXT,
     diagnosed_date TEXT,
-    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE(patient_id, condition_name)
 );
 
 -- 3. Patient Current Medications
@@ -30,7 +31,8 @@ CREATE TABLE IF NOT EXISTS patient_medications (
     dosage TEXT,
     frequency TEXT,
     status TEXT DEFAULT 'ACTIVE',
-    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE(patient_id, medication_name)
 );
 
 -- 4. Patient Known Allergies
@@ -39,7 +41,8 @@ CREATE TABLE IF NOT EXISTS patient_allergies (
     patient_id TEXT NOT NULL,
     allergen TEXT NOT NULL,
     reaction TEXT,
-    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE(patient_id, allergen)
 );
 
 -- 5. Drug <-> Disease Contraindications Table
@@ -49,7 +52,8 @@ CREATE TABLE IF NOT EXISTS contraindications_disease (
     condition_name TEXT NOT NULL COLLATE NOCASE,
     severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING', 'SAFE')),
     mechanism TEXT NOT NULL,
-    recommendation TEXT NOT NULL
+    recommendation TEXT NOT NULL,
+    UNIQUE(drug_name, condition_name)
 );
 
 -- 6. Drug <-> Drug Interactions Table
@@ -59,7 +63,8 @@ CREATE TABLE IF NOT EXISTS contraindications_drug (
     drug_b TEXT NOT NULL COLLATE NOCASE,
     severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING', 'SAFE')),
     mechanism TEXT NOT NULL,
-    recommendation TEXT NOT NULL
+    recommendation TEXT NOT NULL,
+    UNIQUE(drug_a, drug_b)
 );
 
 -- 7. Cryptographic Local Audit Trail (HIPAA Security Rule § 164.312(b))
@@ -88,7 +93,7 @@ INSERT OR REPLACE INTO patients (patient_id, patient_name, age, gender) VALUES
 ('PT-103', 'Robert Smith (Anticoagulation Profile)', 71, 'Male');
 
 -- Seed Conditions
-INSERT INTO patient_conditions (patient_id, condition_name, icd10_code, diagnosed_date) VALUES
+INSERT OR IGNORE INTO patient_conditions (patient_id, condition_name, icd10_code, diagnosed_date) VALUES
 ('PT-101', 'Stage 3 Chronic Kidney Disease (CKD)', 'N18.3', '2023-04-12'),
 ('PT-101', 'Essential Hypertension', 'I10', '2019-08-20'),
 ('PT-101', 'Type 2 Diabetes Mellitus', 'E11.9', '2021-01-15'),
@@ -99,7 +104,7 @@ INSERT INTO patient_conditions (patient_id, condition_name, icd10_code, diagnose
 ('PT-103', 'Gastroesophageal Reflux Disease', 'K21.9', '2020-11-04');
 
 -- Seed Current Medications
-INSERT INTO patient_medications (patient_id, medication_name, dosage, frequency) VALUES
+INSERT OR IGNORE INTO patient_medications (patient_id, medication_name, dosage, frequency) VALUES
 ('PT-101', 'Lisinopril', '20mg', 'Once daily'),
 ('PT-101', 'Metformin', '500mg', 'Twice daily'),
 ('PT-101', 'Amlodipine', '5mg', 'Once daily'),
@@ -109,13 +114,13 @@ INSERT INTO patient_medications (patient_id, medication_name, dosage, frequency)
 ('PT-103', 'Pantoprazole', '40mg', 'Once daily before breakfast');
 
 -- Seed Allergies
-INSERT INTO patient_allergies (patient_id, allergen, reaction) VALUES
+INSERT OR IGNORE INTO patient_allergies (patient_id, allergen, reaction) VALUES
 ('PT-101', 'Sulfonamides', 'Maculopapular rash'),
 ('PT-102', 'Aspirin', 'Severe bronchospasm / urticaria'),
 ('PT-103', 'Codeine', 'Severe nausea and dizziness');
 
 -- Seed High-Risk Drug-Disease Contraindications
-INSERT INTO contraindications_disease (drug_name, condition_name, severity, mechanism, recommendation) VALUES
+INSERT OR IGNORE INTO contraindications_disease (drug_name, condition_name, severity, mechanism, recommendation) VALUES
 ('ibuprofen', 'chronic kidney disease', 'CRITICAL', 'Inhibits renal vasodilating prostaglandins (PGE2, PGI2); precipitates acute afferent arteriolar vasoconstriction and acute renal failure in pre-existing CKD.', 'Absolute contraindication. Avoid NSAIDs. Consider Acetaminophen (max 2g/day) or topical analgesics.'),
 ('naproxen', 'chronic kidney disease', 'CRITICAL', 'NSAID-induced inhibition of renal perfusion sharply accelerates renal function decline and causes fluid retention.', 'Contraindicated. Discontinue NSAID.'),
 ('diclofenac', 'chronic kidney disease', 'CRITICAL', 'High risk of acute tubular necrosis and acute decompensation in renal impairment.', 'Contraindicated in moderate-to-severe CKD.'),
@@ -129,7 +134,7 @@ INSERT INTO contraindications_disease (drug_name, condition_name, severity, mech
 ('empagliflozin', 'diabetic ketoacidosis', 'CRITICAL', 'SGLT2 inhibitors can precipitate euglycemic diabetic ketoacidosis.', 'Discontinue immediately if ketoacidosis is suspected.');
 
 -- Seed High-Risk Drug-Drug Interactions
-INSERT INTO contraindications_drug (drug_a, drug_b, severity, mechanism, recommendation) VALUES
+INSERT OR IGNORE INTO contraindications_drug (drug_a, drug_b, severity, mechanism, recommendation) VALUES
 ('warfarin', 'aspirin', 'CRITICAL', 'Concurrent antiplatelet and oral anticoagulant therapy synergistically impairs hemostasis, dramatically multiplying major bleeding risk.', 'Avoid combination unless strictly indicated by cardiology under close INR surveillance.'),
 ('warfarin', 'ibuprofen', 'CRITICAL', 'NSAIDs displace warfarin from plasma proteins and erode gastric mucosa, drastically elevating GI hemorrhage risk.', 'Avoid co-prescription. Use Acetaminophen for pain relief.'),
 ('clopidogrel', 'omeprazole', 'WARNING', 'Omeprazole competitively inhibits CYP2C19, significantly reducing bioactivation and antiplatelet efficacy of clopidogrel.', 'Switch to Pantoprazole, which exhibits minimal CYP2C19 interaction.'),

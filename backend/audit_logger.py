@@ -15,14 +15,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 AUDIT_LOG_FILE = os.path.join(BASE_DIR, "database", "audit_trail.jsonl")
 
+import threading
+
 class AuditLogger:
     """
     Manages local, tamper-evident audit logs with cryptographic hash chaining.
+    Thread-safe and concurrency-hardened.
     """
 
     def __init__(self, log_path: str = AUDIT_LOG_FILE, db_path: str = DB_PATH):
         self.log_path = os.path.abspath(log_path)
         self.db_path = os.path.abspath(db_path)
+        self._lock = threading.Lock()
         self._ensure_log_initialized()
 
     def _ensure_log_initialized(self) -> None:
@@ -74,55 +78,58 @@ class AuditLogger:
     ) -> Dict[str, Any]:
         """
         Appends an immutable SHA-256 hash-chained event to the audit trail.
+        Thread-safe under high-concurrency loads.
         """
-        timestamp = datetime.now(timezone.utc).isoformat()
-        prev_hash = self.get_last_hash()
-        event_id = f"EVT_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+        with self._lock:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            prev_hash = self.get_last_hash()
+            event_id = f"EVT_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
 
-        # Chained hash calculation
-        payload = (
-            f"{prev_hash}|{timestamp}|{event_id}|{patient_token}|"
-            f"{proposed_medication}|{overall_status}|{alerts_count}|{execution_time_ms}"
-        )
-        current_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+            # Chained hash calculation
+            payload = (
+                f"{prev_hash}|{timestamp}|{event_id}|{patient_token}|"
+                f"{proposed_medication}|{overall_status}|{alerts_count}|{execution_time_ms}"
+            )
+            current_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
-        entry = {
-            "timestamp": timestamp,
-            "event_id": event_id,
-            "patient_hash": patient_token,
-            "proposed_medication": proposed_medication,
-            "overall_status": overall_status,
-            "alerts_count": alerts_count,
-            "zero_cloud_enforced": True,
-            "execution_time_ms": execution_time_ms,
-            "prev_hash": prev_hash,
-            "audit_hash": current_hash
-        }
+            entry = {
+                "timestamp": timestamp,
+                "event_id": event_id,
+                "patient_hash": patient_token,
+                "proposed_medication": proposed_medication,
+                "overall_status": overall_status,
+                "alerts_count": alerts_count,
+                "zero_cloud_enforced": True,
+                "execution_time_ms": execution_time_ms,
+                "prev_hash": prev_hash,
+                "audit_hash": current_hash
+            }
 
-        # 1. Append to JSONL file
-        with open(self.log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
+            # 1. Append to JSONL file
+            with open(self.log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry) + "\n")
 
-        # 2. Insert into SQLite DB if available
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO audit_logs (
-                    event_id, timestamp, patient_hash, proposed_medication,
-                    overall_status, alerts_count, zero_cloud_verified,
-                    execution_time_ms, prev_hash, audit_hash
-                ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
-            """, (
-                event_id, timestamp, patient_token, proposed_medication,
-                overall_status, alerts_count, execution_time_ms, prev_hash, current_hash
-            ))
-            conn.commit()
-            conn.close()
-        except Exception:
-            pass  # JSONL remains primary audit of record
+            # 2. Insert into SQLite DB if available
+            try:
+                conn = sqlite3.connect(self.db_path, timeout=5.0)
+                cursor = conn.cursor()
+                cursor.execute("PRAGMA busy_timeout = 5000;")
+                cursor.execute("""
+                    INSERT INTO audit_logs (
+                        event_id, timestamp, patient_hash, proposed_medication,
+                        overall_status, alerts_count, zero_cloud_verified,
+                        execution_time_ms, prev_hash, audit_hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                """, (
+                    event_id, timestamp, patient_token, proposed_medication,
+                    overall_status, alerts_count, execution_time_ms, prev_hash, current_hash
+                ))
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass  # JSONL remains primary audit of record
 
-        return entry
+            return entry
 
     def verify_integrity(self) -> Dict[str, Any]:
         """
