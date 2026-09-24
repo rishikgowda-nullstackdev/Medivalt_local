@@ -387,18 +387,24 @@ function renderReviewResults(data) {
     // Render alerts
     if (data.alerts && data.alerts.length > 0) {
         data.alerts.forEach(a => {
+            const badgeColor = a.interaction_type === 'ALLERGY' 
+                ? 'bg-purple-950 border-purple-500/50 text-purple-300' 
+                : (a.interaction_type === 'DRUG_DRUG' 
+                    ? 'bg-amber-950 border-amber-500/50 text-amber-300' 
+                    : 'bg-red-950 border-red-500/40 text-red-300');
+
             const card = document.createElement("div");
-            card.className = "bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5 text-xs shadow-inner";
+            card.className = "bg-slate-900/90 border border-slate-700/80 rounded-lg p-3.5 text-xs shadow-inner";
             card.innerHTML = `
-                <div class="flex items-center justify-between font-semibold text-red-300 mb-1.5">
-                    <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> ${a.conflicting_factor}</span>
-                    <span class="text-[10px] bg-red-950 border border-red-500/40 px-2 py-0.5 rounded uppercase font-mono">${a.interaction_type}</span>
+                <div class="flex items-center justify-between font-semibold text-slate-100 mb-1.5">
+                    <span><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> ${a.conflicting_factor}</span>
+                    <span class="text-[10px] ${badgeColor} border px-2 py-0.5 rounded uppercase font-mono">${a.interaction_type}</span>
                 </div>
                 <p class="text-slate-300 mb-2 leading-relaxed">
-                    <strong class="text-slate-200">Pathophysiological Mechanism:</strong> ${a.clinical_mechanism}
+                    <strong class="text-slate-200">Mechanism:</strong> ${a.clinical_mechanism}
                 </p>
                 <div class="bg-slate-800/80 p-2 rounded border border-slate-700 text-teal-300 font-mono text-[11px]">
-                    <strong class="text-slate-300">Physician Recommendation:</strong> ${a.recommendation}
+                    <strong class="text-slate-300">Recommendation:</strong> ${a.recommendation}
                 </div>
             `;
             alertsContainer.appendChild(card);

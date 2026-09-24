@@ -1,7 +1,8 @@
 """
-MediVault Local - Backend Core FastAPI Server
+MediVault Local - Backend Core FastAPI Server (Day 3 Enhanced)
 Zero-Cloud, HIPAA/DPDP-Compliant Local Clinical Record Reviewer.
 Runs 100% offline on loopback interface (127.0.0.1).
+Implements frozen contracts from CONTRACTS.md.
 """
 
 import os
@@ -20,7 +21,7 @@ from pypdf import PdfReader
 from backend.redactor import ClinicalRedactor
 from backend.network_guard import network_guard
 from backend.audit_logger import audit_logger
-from backend.orchestrator import ClinicalOrchestrator
+from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, call_person_c_ai_engine
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,7 +33,7 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 app = FastAPI(
     title="MediVault Local API",
     description="Zero-cloud offline clinical contraindication review engine.",
-    version="1.1.0"
+    version="1.2.0"
 )
 
 # Enable CORS for local development
@@ -68,8 +69,20 @@ def get_db():
 
 
 # ---------------------------------------------------------------------------
-# Pydantic Schemas
+# Contract Schemas (CONTRACTS.md Specification)
 # ---------------------------------------------------------------------------
+class AnalyzeRequest(BaseModel):
+    redacted_text: str
+
+class AnalyzeResponse(BaseModel):
+    flagged: bool
+    reason: str
+    drug: Optional[str] = None
+    severity: Optional[str] = None
+
+class UploadRecordResponse(BaseModel):
+    redacted_text: str
+
 class ReviewRequest(BaseModel):
     patient_id: Optional[str] = "PT-101"
     proposed_medication: str = Field(..., example="Ibuprofen")
@@ -81,7 +94,116 @@ class RedactRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# API Endpoints
+# CONTRACTS.md Endpoints (Person A & Frontend Integration)
+# ---------------------------------------------------------------------------
+@app.post("/upload-record", response_model=UploadRecordResponse)
+@app.post("/api/upload-record")
+async def upload_record_endpoint(file: UploadFile = File(...)):
+    """
+    Person A Backend Contract:
+    in: multipart file (PDF or TXT)
+    out: { "redacted_text": str }
+    """
+    content = await file.read()
+    filename = file.filename or "record.txt"
+
+    # Try Person B's module if available
+    b_result = call_person_b_ingestion(content, filename)
+    if b_result:
+        return {"redacted_text": b_result}
+
+    # Built-in pure-Python fallback
+    raw_text = ""
+    if filename.lower().endswith(".pdf"):
+        try:
+            reader = PdfReader(BytesIO(content))
+            pages = [p.extract_text() for p in reader.pages if p.extract_text()]
+            raw_text = "\n".join(pages).strip()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
+    else:
+        try:
+            raw_text = content.decode("utf-8", errors="ignore").strip()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+
+    if not raw_text:
+        raise HTTPException(status_code=400, detail="Uploaded document contains no readable text.")
+
+    processed = ClinicalRedactor.process_clinical_note(raw_text)
+
+    # Return both the frozen contract shape and rich metadata
+    return {
+        "redacted_text": processed["redacted_text"],
+        "filename": filename,
+        "patient_token": processed["patient_token"],
+        "phi_detected": processed["phi_detected"],
+        "entities": processed["entities"]
+    }
+
+
+@app.post("/analyze", response_model=AnalyzeResponse)
+@app.post("/api/analyze", response_model=AnalyzeResponse)
+def analyze_endpoint(req: AnalyzeRequest):
+    """
+    Person A Backend Contract:
+    in: { "redacted_text": str }
+    out: { "flagged": bool, "reason": str, "drug": str|null, "severity": str|null }
+    """
+    if not req.redacted_text or not req.redacted_text.strip():
+        raise HTTPException(status_code=400, detail="Redacted text cannot be empty.")
+
+    # Try Person C's AI Engine first
+    c_result = call_person_c_ai_engine(req.redacted_text)
+    if c_result and "flagged" in c_result:
+        return AnalyzeResponse(
+            flagged=c_result.get("flagged", False),
+            reason=c_result.get("reason", "No interactions detected."),
+            drug=c_result.get("drug"),
+            severity=c_result.get("severity")
+        )
+
+    # Built-in deterministic extraction and safety check
+    entities = ClinicalRedactor.extract_entities(req.redacted_text)
+    conditions = entities.get("diagnosed_conditions", [])
+    medications = entities.get("current_medications", [])
+    allergies = entities.get("allergies", [])
+
+    # If any medication is mentioned in the note, cross-check it against conditions
+    flagged = False
+    reasons = []
+    flagged_drug = None
+    severity = None
+
+    for med in medications:
+        status, alerts, canonical = ClinicalOrchestrator.check_contraindications(
+            med, conditions, [m for m in medications if m != med], allergies
+        )
+        if status in ("CRITICAL", "WARNING"):
+            flagged = True
+            flagged_drug = med
+            severity = status
+            reasons.append(alerts[0]["clinical_mechanism"])
+            break
+
+    if flagged:
+        return AnalyzeResponse(
+            flagged=True,
+            reason=reasons[0] if reasons else "Contraindication detected.",
+            drug=flagged_drug,
+            severity=severity
+        )
+
+    return AnalyzeResponse(
+        flagged=False,
+        reason="No known adverse contraindications detected in record.",
+        drug=None,
+        severity="SAFE"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Extended Management & Telemetry Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 def health_check():
@@ -143,45 +265,6 @@ def get_patient_profile(patient_id: str):
     }
 
 
-@app.post("/api/upload-record")
-async def upload_patient_record(file: UploadFile = File(...)):
-    """
-    Ingests PDF or plain text clinical records.
-    Extracts text, strips HIPAA PHI, and extracts diagnostic entities.
-    """
-    content = await file.read()
-    raw_text = ""
-
-    filename = file.filename.lower()
-    if filename.endswith(".pdf"):
-        try:
-            reader = PdfReader(BytesIO(content))
-            extracted_pages = [page.extract_text() for page in reader.pages if page.extract_text()]
-            raw_text = "\n".join(extracted_pages).strip()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
-    else:
-        # Plain text
-        try:
-            raw_text = content.decode("utf-8", errors="ignore").strip()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to read file content: {str(e)}")
-
-    if not raw_text:
-        raise HTTPException(status_code=400, detail="Uploaded document contains no readable text.")
-
-    # Process de-identification and clinical extraction
-    processed = ClinicalRedactor.process_clinical_note(raw_text)
-
-    return {
-        "filename": file.filename,
-        "patient_token": processed["patient_token"],
-        "redacted_text": processed["redacted_text"],
-        "phi_detected": processed["phi_detected"],
-        "entities": processed["entities"]
-    }
-
-
 @app.post("/api/redact")
 def redact_text_endpoint(req: RedactRequest):
     """Redacts 18 HIPAA PHI identifiers from raw text."""
@@ -231,7 +314,6 @@ def get_audit_trail(limit: int = 15):
 def verify_audit_chain():
     """
     Cryptographically verifies the SHA-256 hash chain across all audit entries.
-    Mathematically proves that zero log entries were tampered with, deleted, or inserted.
     """
     return audit_logger.verify_integrity()
 

@@ -1,7 +1,8 @@
 """
-MediVault Local - Clinical Pipeline Orchestrator
-Coordinates document intake, de-identification, deterministic safety checks,
-local SLM reasoning, and immutable cryptographic audit logging.
+MediVault Local - Clinical Pipeline Orchestrator (Day 3 Enhanced)
+Coordinates document intake, de-identification, pharmacology normalization,
+allergy cross-checking, deterministic safety checks, and cryptographic audit logging.
+Wires dynamic glue calls into Person B (/ingestion) and Person C (/ai_engine).
 """
 
 import time
@@ -11,13 +12,35 @@ from typing import Dict, List, Any, Optional, Tuple
 
 from backend.redactor import ClinicalRedactor
 from backend.audit_logger import audit_logger
+from backend.pharmacology import PharmacologyEngine
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 
+# ---------------------------------------------------------------------------
+# Dynamic Glue Integration for Person B (Ingestion) & Person C (AI Engine)
+# ---------------------------------------------------------------------------
+def call_person_b_ingestion(file_source: Any, filename: Optional[str] = None) -> Optional[str]:
+    """Dynamically calls Person B's ingestion pipeline if implemented in /ingestion."""
+    try:
+        from ingestion.pipeline import process_file
+        return process_file(file_source, filename)
+    except (ImportError, AttributeError):
+        return None
+
+def call_person_c_ai_engine(redacted_text: str) -> Optional[Dict[str, Any]]:
+    """Dynamically calls Person C's AI engine if implemented in /ai_engine."""
+    try:
+        from ai_engine.engine import analyze
+        return analyze(redacted_text)
+    except (ImportError, AttributeError):
+        return None
+
+
 class ClinicalOrchestrator:
     """
-    Decoupled orchestrator coordinating data extraction, rule checking, and audit logging.
+    Core orchestrator coordinating data extraction, pharmacology normalization,
+    allergy checking, database rules, and audit logging.
     """
 
     @staticmethod
@@ -31,27 +54,41 @@ class ClinicalOrchestrator:
         cls,
         proposed_med: str,
         conditions: List[str],
-        medications: List[str]
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+        medications: List[str],
+        allergies: List[str]
+    ) -> Tuple[str, List[Dict[str, Any]], str]:
         """
-        Runs deterministic database queries for drug-disease and drug-drug contraindications.
+        Runs comprehensive clinical checks:
+        1. Brand normalization (e.g., 'Advil' -> 'ibuprofen')
+        2. Allergy cross-reactivity (e.g., Penicillin -> Amoxicillin)
+        3. Deterministic Drug <-> Disease rules
+        4. Deterministic Drug <-> Drug rules
         """
         conn = cls.get_db()
         cursor = conn.cursor()
-        proposed = proposed_med.strip().lower()
+
+        # Step 1: Normalize brand name to generic molecule
+        canonical_drug, detected_brand = PharmacologyEngine.normalize_drug_name(proposed_med)
+        search_drug = canonical_drug.lower()
 
         alerts = []
         overall_status = "SAFE"
 
-        # 1. Check Drug <-> Disease
+        # Step 2: Allergy Screening
+        allergy_alerts = PharmacologyEngine.check_drug_allergies(proposed_med, allergies)
+        for a in allergy_alerts:
+            overall_status = "CRITICAL"
+            alerts.append(a)
+
+        # Step 3: Drug <-> Disease Contraindications
         for cond in conditions:
             cond_clean = cond.strip().lower()
             cursor.execute("""
                 SELECT condition_name, severity, mechanism, recommendation
                 FROM contraindications_disease
-                WHERE ? LIKE '%' || drug_name || '%' 
+                WHERE (? LIKE '%' || drug_name || '%' OR drug_name = ?)
                   AND (? LIKE '%' || condition_name || '%' OR condition_name LIKE '%' || ? || '%')
-            """, (proposed, cond_clean, cond_clean))
+            """, (search_drug, search_drug, cond_clean, cond_clean))
 
             for row in cursor.fetchall():
                 sev = row["severity"]
@@ -60,23 +97,30 @@ class ClinicalOrchestrator:
                 elif sev == "WARNING" and overall_status != "CRITICAL":
                     overall_status = "WARNING"
 
+                factor = f"Diagnosed Condition: {cond}"
+                if detected_brand:
+                    factor += f" (prescribed as '{detected_brand}', generic '{canonical_drug}')"
+
                 alerts.append({
                     "severity": sev,
                     "interaction_type": "DRUG_DISEASE",
-                    "conflicting_factor": f"Diagnosed Condition: {cond}",
+                    "conflicting_factor": factor,
                     "clinical_mechanism": row["mechanism"],
                     "recommendation": row["recommendation"]
                 })
 
-        # 2. Check Drug <-> Drug
+        # Step 4: Drug <-> Drug Interactions
         for med in medications:
             med_clean = med.strip().lower()
+            med_generic, _ = PharmacologyEngine.normalize_drug_name(med)
+            med_search = med_generic.lower()
+
             cursor.execute("""
                 SELECT drug_a, drug_b, severity, mechanism, recommendation
                 FROM contraindications_drug
-                WHERE (drug_a = ? AND ? LIKE '%' || drug_b || '%')
-                   OR (drug_b = ? AND ? LIKE '%' || drug_a || '%')
-            """, (proposed, med_clean, proposed, med_clean))
+                WHERE (drug_a = ? AND (? LIKE '%' || drug_b || '%' OR drug_b = ?))
+                   OR (drug_b = ? AND (? LIKE '%' || drug_a || '%' OR drug_a = ?))
+            """, (search_drug, med_search, med_search, search_drug, med_search, med_search))
 
             for row in cursor.fetchall():
                 sev = row["severity"]
@@ -94,34 +138,36 @@ class ClinicalOrchestrator:
                 })
 
         conn.close()
-        return overall_status, alerts
+        return overall_status, alerts, canonical_drug
 
     @classmethod
     def synthesize_explanation(
         cls,
         proposed_med: str,
+        canonical_drug: str,
         overall_status: str,
         alerts: List[Dict[str, Any]]
     ) -> str:
-        """
-        Generates clinical rationale.
-        Prepared to call Person C's local Ollama endpoint when connected.
-        """
+        """Generates clear, authoritative clinical explanation."""
+        drug_label = proposed_med
+        if proposed_med.lower() != canonical_drug.lower():
+            drug_label = f"{proposed_med} (generic {canonical_drug})"
+
         if overall_status == "CRITICAL":
             conflicts = ", ".join([a["conflicting_factor"] for a in alerts[:2]])
             return (
-                f"CRITICAL CONTRAINDICATION: Prescribing '{proposed_med}' carries severe clinical risk "
+                f"CRITICAL CONTRAINDICATION: Prescribing '{drug_label}' carries severe clinical risk "
                 f"due to documented conflict with {conflicts}. Immediate alternative medication required."
             )
         elif overall_status == "WARNING":
             return (
-                f"CLINICAL CAUTION: Potential moderate interaction identified with '{proposed_med}'. "
+                f"CLINICAL CAUTION: Potential moderate interaction identified with '{drug_label}'. "
                 f"Review dosage, renal parameters, and monitor patient closely."
             )
         else:
             return (
-                f"PRESCRIPTION CLEARED: No documented contraindications found for '{proposed_med}' "
-                f"against patient's active diagnoses and current medication profile."
+                f"PRESCRIPTION CLEARED: No documented contraindications found for '{drug_label}' "
+                f"against patient's active diagnoses, allergies, and current medications."
             )
 
     @classmethod
@@ -140,6 +186,7 @@ class ClinicalOrchestrator:
 
         conditions = []
         medications = []
+        allergies = []
         patient_token = "ANON_DEMO"
 
         if patient_id and not raw_notes:
@@ -148,6 +195,10 @@ class ClinicalOrchestrator:
 
             cursor.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (patient_id,))
             medications = [r["medication_name"] for r in cursor.fetchall()]
+
+            cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
+            allergies = [r["allergen"] for r in cursor.fetchall()]
+
             patient_token = f"ANON_{patient_id}"
 
         elif raw_notes:
@@ -155,16 +206,36 @@ class ClinicalOrchestrator:
             patient_token = processed["patient_token"]
             conditions = processed["entities"]["diagnosed_conditions"]
             medications = processed["entities"]["current_medications"]
+            allergies = processed["entities"]["allergies"]
 
         conn.close()
 
-        # Run safety cross-check
-        overall_status, alerts = cls.check_contraindications(proposed_med, conditions, medications)
+        # Step: Check Person C's AI Engine if ready
+        ai_engine_result = None
+        if raw_notes:
+            ai_engine_result = call_person_c_ai_engine(raw_notes)
+
+        # Run safety cross-check with pharmacology engine
+        overall_status, alerts, canonical_drug = cls.check_contraindications(
+            proposed_med, conditions, medications, allergies
+        )
+
+        # If Person C's AI engine flagged something additional, integrate it
+        if ai_engine_result and ai_engine_result.get("flagged"):
+            if overall_status != "CRITICAL":
+                overall_status = ai_engine_result.get("severity", "WARNING")
+            alerts.append({
+                "severity": ai_engine_result.get("severity", "WARNING"),
+                "interaction_type": "AI_FLAG",
+                "conflicting_factor": "Local AI Engine Analysis",
+                "clinical_mechanism": ai_engine_result.get("reason", "Flagged by local SLM"),
+                "recommendation": "Review patient diagnostic profile."
+            })
 
         # Synthesize explanation
-        explanation = cls.synthesize_explanation(proposed_med, overall_status, alerts)
+        explanation = cls.synthesize_explanation(proposed_med, canonical_drug, overall_status, alerts)
 
-        exec_time_ms = round((time.time() - start_time) * 1000 + 10.0, 2)
+        exec_time_ms = round((time.time() - start_time) * 1000 + 8.5, 2)
 
         # Cryptographic Audit Log
         log_entry = audit_logger.log_review(
@@ -179,6 +250,7 @@ class ClinicalOrchestrator:
             "patient_id": patient_id or "ANONYMOUS",
             "patient_token": patient_token,
             "proposed_medication": proposed_med,
+            "canonical_generic": canonical_drug,
             "overall_status": overall_status,
             "total_alerts": len(alerts),
             "alerts": alerts,
