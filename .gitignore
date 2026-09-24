@@ -13,6 +13,8 @@ ENV/
 *.db-journal
 database/*.db
 database/audit_trail.jsonl
+database/email_outbox.jsonl
+database/.jwt_secret
 *.log
 
 # IDE & OS

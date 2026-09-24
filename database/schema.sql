@@ -67,12 +67,43 @@ CREATE TABLE IF NOT EXISTS contraindications_drug (
     UNIQUE(drug_a, drug_b)
 );
 
--- 7. Cryptographic Local Audit Trail (HIPAA Security Rule § 164.312(b))
+-- 7. Healthcare Facilities / Hospitals Table
+CREATE TABLE IF NOT EXISTS hospitals (
+    hospital_id TEXT PRIMARY KEY,
+    hospital_name TEXT NOT NULL UNIQUE,
+    facility_code TEXT UNIQUE NOT NULL,
+    domain_whitelist TEXT NOT NULL,
+    department TEXT NOT NULL,
+    city_state TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Clinical Practitioners Table (with Email Verification & Medical License)
+CREATE TABLE IF NOT EXISTS practitioners (
+    practitioner_id TEXT PRIMARY KEY,
+    hospital_id TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    medical_license TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'PHYSICIAN' CHECK(role IN ('PHYSICIAN', 'PHARMACIST', 'AUDITOR', 'ADMIN')),
+    email_verified INTEGER DEFAULT 0 CHECK(email_verified IN (0, 1)),
+    verification_token TEXT,
+    token_expires_at TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id) ON DELETE RESTRICT
+);
+
+-- 9. Cryptographic Local Audit Trail (HIPAA Security Rule § 164.312(b) & § 164.312(a)(2)(i))
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id TEXT UNIQUE NOT NULL,
     timestamp TEXT NOT NULL,
     patient_hash TEXT NOT NULL,
+    practitioner_id TEXT DEFAULT 'PRAC-103',
+    practitioner_name TEXT DEFAULT 'Dr. Gregory House, MD',
+    hospital_name TEXT DEFAULT 'Princeton Plainsboro Teaching Hospital',
     proposed_medication TEXT NOT NULL,
     overall_status TEXT NOT NULL,
     alerts_count INTEGER DEFAULT 0,
@@ -143,3 +174,21 @@ INSERT OR IGNORE INTO contraindications_drug (drug_a, drug_b, severity, mechanis
 ('simvastatin', 'clarithromycin', 'CRITICAL', 'Clarithromycin is a potent CYP3A4 inhibitor, multiplying simvastatin plasma concentration up to 10-fold with severe risk of rhabdomyolysis.', 'Temporarily suspend simvastatin during macrolide therapy or use Azithromycin.'),
 ('atorvastatin', 'gemfibrozil', 'WARNING', 'Interference with glucuronidation and OATP1B1 uptake elevates statin systemic exposure and myopathy risk.', 'Avoid co-administration or prescribe lowest possible statin dose with CK monitoring.'),
 ('spironolactone', 'lisinopril', 'WARNING', 'Combined potassium-sparing diuretic and ACE inhibitor impairs potassium excretion, creating high risk of lethal hyperkalemia.', 'Monitor serum potassium and renal panel within 7 days of initiating co-therapy.');
+
+-- =========================================================================
+-- SEED DATA: Pre-configured Hospitals & Verified Clinical Staff
+-- =========================================================================
+
+-- Seed Hospitals
+INSERT OR IGNORE INTO hospitals (hospital_id, hospital_name, facility_code, domain_whitelist, department, city_state) VALUES
+('HOSP-01', 'Metro General Hospital', 'MGH-901', 'metrogeneral.org', 'Nephrology & Renal Care', 'Boston, MA'),
+('HOSP-02', 'St. Jude Medical Center', 'SJM-402', 'stjude.org', 'Pulmonary & Critical Care', 'Memphis, TN'),
+('HOSP-03', 'Princeton Plainsboro Teaching Hospital', 'PPTH-108', 'princeton.edu', 'Diagnostic & Internal Medicine', 'Princeton, NJ');
+
+-- Seed Verified Demo Physicians (Default Password: HospitalPass123!)
+-- Hash generated via PBKDF2-HMAC-SHA256 (100,000 rounds)
+INSERT OR IGNORE INTO practitioners (practitioner_id, hospital_id, full_name, email, password_hash, salt, medical_license, role, email_verified) VALUES
+('PRAC-101', 'HOSP-01', 'Dr. Sarah Jenkins, MD', 'dr.jenkins@metrogeneral.org', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1982736450', 'PHYSICIAN', 1),
+('PRAC-102', 'HOSP-02', 'Dr. John Watson, MD', 'dr.watson@stjude.org', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1122334455', 'PHYSICIAN', 1),
+('PRAC-103', 'HOSP-03', 'Dr. Gregory House, MD', 'dr.house@princeton.edu', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1999887766', 'PHYSICIAN', 1);
+

@@ -53,6 +53,14 @@
           <i class="fa-solid fa-lock text-teal-400 text-[11px]"></i>
           <span>HIPAA § 164.312(b) Safe Harbor</span>
         </div>
+
+        <!-- Doctor Profile Pill & Institution Switcher -->
+        <button id="auth-modal-btn" onclick="openAuthModal()" class="flex items-center space-x-2 bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-200 text-xs px-3.5 py-1.5 rounded-full transition shadow-sm cursor-pointer">
+          <i class="fa-solid fa-user-doctor text-teal-400"></i>
+          <span id="current-doctor-pill" class="font-medium">Dr. Gregory House, MD</span>
+          <span id="current-hospital-badge" class="bg-teal-900/90 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-700 font-mono hidden md:inline">Princeton Plainsboro</span>
+          <span class="text-teal-400 text-[10px]"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
       </div>
     </div>
   </header>
@@ -290,6 +298,7 @@
             <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <tr>
                 <th class="py-2 px-3">Timestamp (UTC)</th>
+                <th class="py-2 px-3">Reviewer & Hospital</th>
                 <th class="py-2 px-3">Event ID</th>
                 <th class="py-2 px-3">Patient Token</th>
                 <th class="py-2 px-3">Prescription</th>
@@ -320,6 +329,148 @@
       </div>
     </div>
   </section>
+
+  <!-- Physician Access & Institutional Verification Modal -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700/80 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-teal-500/20 p-2 rounded-lg text-teal-400 border border-teal-500/30">
+            <i class="fa-solid fa-hospital-user text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Physician & Hospital Access</span>
+              <span class="text-[10px] bg-slate-700 text-teal-300 px-2 py-0.5 rounded font-mono font-normal">HIPAA § 164.312(a)</span>
+            </h3>
+            <p class="text-xs text-slate-400">Institutional Identity Verification & Cryptographic Attribution</p>
+          </div>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-lg transition p-1 cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div id="modal-tabs-header" class="flex border-b border-slate-700 text-xs font-medium text-slate-400 bg-slate-900/50">
+        <button id="tab-btn-demo" onclick="switchAuthTab('demo')" class="flex-1 py-3 px-4 text-center border-b-2 border-teal-400 text-teal-300 font-semibold cursor-pointer">
+          <i class="fa-solid fa-bolt mr-1.5"></i>Demo Staff
+        </button>
+        <button id="tab-btn-login" onclick="switchAuthTab('login')" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent hover:text-slate-200 cursor-pointer">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Sign In
+        </button>
+        <button id="tab-btn-register" onclick="switchAuthTab('register')" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent hover:text-slate-200 cursor-pointer">
+          <i class="fa-solid fa-user-plus mr-1.5"></i>Register
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="p-6">
+        
+        <!-- Feedback Banner -->
+        <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg text-xs font-mono"></div>
+
+        <!-- TAB 1: Fast Switch (Demo Doctors) -->
+        <div id="auth-tab-demo" class="space-y-3">
+          <p class="text-xs text-slate-300 mb-2">1-Click switch active reviewer to evaluate institutional accountability:</p>
+          <div id="demo-doctors-list" class="space-y-2.5">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- TAB 2: Sign In -->
+        <div id="auth-tab-login" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Institutional Email</label>
+            <input type="email" id="login-email" placeholder="dr.house@princeton.edu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+            <input type="password" id="login-password" placeholder="HospitalPass123!" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <button onclick="handleLogin()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-lock"></i>
+            <span>Sign In to Hospital Portal</span>
+          </button>
+          <p class="text-[11px] text-slate-500 text-center font-mono">Default Demo Password: <span class="text-teal-400">HospitalPass123!</span></p>
+        </div>
+
+        <!-- TAB 3: Register Institutional Physician -->
+        <div id="auth-tab-register" class="space-y-3.5 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Full Legal Name</label>
+            <input type="text" id="reg-name" placeholder="Dr. Sarah Connor, MD" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Healthcare Institution</label>
+            <select id="reg-hospital-select" onchange="onHospitalSelectChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500">
+              <!-- Populated via JS -->
+            </select>
+            <p id="reg-domain-hint" class="text-[11px] text-teal-400 mt-1 font-mono">Required email domain: @metrogeneral.org</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Institutional Email</label>
+            <input type="email" id="reg-email" placeholder="s.connor@metrogeneral.org" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Medical License / NPI</label>
+              <input type="text" id="reg-license" placeholder="NPI-1092837465" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Password (min 8 chars)</label>
+              <input type="password" id="reg-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+            </div>
+          </div>
+          <button onclick="handleRegister()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer mt-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Register & Request Verification OTP</span>
+          </button>
+        </div>
+
+        <!-- SCREEN: 6-Digit Email OTP Verification -->
+        <div id="auth-screen-otp" class="space-y-4 hidden">
+          <div class="text-center">
+            <div class="inline-flex p-3 rounded-full bg-teal-500/20 text-teal-400 mb-2">
+              <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white">Institutional Identity Verification</h4>
+            <p class="text-xs text-slate-400 mt-1">Enter 6-digit code for <span id="otp-target-email" class="text-teal-300 font-mono font-bold">doctor@hospital.org</span></p>
+          </div>
+
+          <!-- Simulated Zero-Cloud Hospital Outbox Notification Banner -->
+          <div id="otp-simulated-box" class="bg-slate-900/90 border border-teal-500/40 rounded-xl p-3 text-xs font-mono text-teal-300 space-y-1 shadow-inner">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-1">
+              <span><i class="fa-solid fa-server mr-1"></i> Hospital Intranet Mail Dispatch</span>
+              <span class="text-emerald-400 text-[10px]">Zero-Cloud Air-Gapped</span>
+            </div>
+            <div class="pt-1 flex items-center justify-between">
+              <span class="text-slate-400">One-Time Code:</span>
+              <strong id="simulated-otp-code" class="text-amber-300 text-base tracking-widest bg-slate-950 px-2 py-0.5 rounded border border-amber-500/30">------</strong>
+            </div>
+            <p class="text-[10px] text-slate-500 italic pt-1">Simulated sovereign hospital LAN mail delivery for zero-cloud testing.</p>
+          </div>
+
+          <div>
+            <input type="text" id="otp-input" maxlength="6" placeholder="000000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 text-center text-2xl tracking-[0.3em] font-mono font-bold text-teal-400 focus:outline-none focus:border-teal-400" />
+          </div>
+
+          <button onclick="handleVerifyOtp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-shield-check"></i>
+            <span>Verify & Activate Institutional Account</span>
+          </button>
+
+          <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <button onclick="handleResendOtp()" class="text-teal-400 hover:underline cursor-pointer">Resend Code</button>
+            <button onclick="switchAuthTab('login')" class="text-slate-400 hover:underline cursor-pointer">Back to Sign In</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <!-- External app script -->
   <script src="/static/app.js"></script>

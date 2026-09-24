@@ -39,6 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshAuditTrail();
     setupFileDropZone();
     checkAiStatus();
+    loadAuthProfile();
+    loadHospitalsAndDemoDoctors();
 
     // Listen to patient dropdown change
     const selectEl = document.getElementById("patient-select");
@@ -455,10 +457,17 @@ async function refreshAuditTrail() {
             tr.className = "hover:bg-slate-750 transition";
             const statusClass = log.overall_status === 'CRITICAL' ? 'text-red-400 font-bold' :
                                (log.overall_status === 'WARNING' ? 'text-amber-400' : 'text-emerald-400');
+            const doctorName = log.practitioner_name || "Dr. Gregory House, MD";
+            const hospitalName = log.hospital_name || "Princeton Plainsboro";
+
             tr.innerHTML = `
                 <td class="py-2 px-3 text-slate-400">${log.timestamp.substring(11, 19)}</td>
-                <td class="py-2 px-3 text-teal-300">${log.event_id}</td>
-                <td class="py-2 px-3 text-slate-300">${log.patient_hash}</td>
+                <td class="py-2 px-3">
+                    <div class="font-medium text-teal-300">${doctorName}</div>
+                    <div class="text-[10px] text-slate-500 font-sans truncate max-w-[140px]">${hospitalName}</div>
+                </td>
+                <td class="py-2 px-3 text-teal-400 font-mono text-[10px]">${log.event_id}</td>
+                <td class="py-2 px-3 text-slate-300 font-mono">${log.patient_hash}</td>
                 <td class="py-2 px-3 text-slate-100 font-medium">${log.proposed_medication}</td>
                 <td class="py-2 px-3 ${statusClass}">${log.overall_status}</td>
                 <td class="py-2 px-3 text-slate-500 truncate max-w-[120px]" title="${log.audit_hash}">${log.audit_hash.substring(0, 16)}...</td>
@@ -513,5 +522,346 @@ function toggleAuditDrawer() {
         drawer.classList.add("hidden");
         icon.className = "fa-solid fa-chevron-down transition";
         text.textContent = "Show Logs";
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Institutional Physician Authentication & Verification Controller
+// ---------------------------------------------------------------------------
+let currentDoctor = null;
+let hospitalsList = [];
+let pendingVerificationEmail = "";
+
+async function loadAuthProfile() {
+    try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+            const data = await res.json();
+            if (data.practitioner) {
+                updateDoctorHeader(data.practitioner);
+            }
+        }
+    } catch (e) {
+        console.warn("Could not load doctor profile:", e);
+    }
+}
+
+function updateDoctorHeader(doctor) {
+    currentDoctor = doctor;
+    const pill = document.getElementById("current-doctor-pill");
+    const badge = document.getElementById("current-hospital-badge");
+    if (pill) pill.textContent = doctor.full_name || "Dr. Gregory House, MD";
+    if (badge) {
+        badge.textContent = doctor.hospital_name || "Princeton Plainsboro";
+        badge.title = `${doctor.role || 'PHYSICIAN'} • ${doctor.medical_license || 'NPI-1999887766'}`;
+    }
+}
+
+async function loadHospitalsAndDemoDoctors() {
+    try {
+        const [hospRes, pracRes] = await Promise.all([
+            fetch("/api/auth/hospitals"),
+            fetch("/api/auth/practitioners")
+        ]);
+
+        if (hospRes.ok) {
+            const hospData = await hospRes.json();
+            hospitalsList = hospData.hospitals || [];
+            populateHospitalDropdown(hospitalsList);
+        }
+
+        if (pracRes.ok) {
+            const pracData = await pracRes.json();
+            populateDemoDoctorsList(pracData.practitioners || []);
+        }
+    } catch (e) {
+        console.warn("Could not load hospital lists:", e);
+    }
+}
+
+function populateHospitalDropdown(hospitals) {
+    const select = document.getElementById("reg-hospital-select");
+    if (!select) return;
+    select.innerHTML = "";
+    hospitals.forEach(h => {
+        const opt = document.createElement("option");
+        opt.value = h.hospital_id;
+        opt.textContent = `${h.hospital_name} (${h.city_state})`;
+        opt.dataset.domain = h.domain_whitelist;
+        select.appendChild(opt);
+    });
+    onHospitalSelectChange();
+}
+
+function onHospitalSelectChange() {
+    const select = document.getElementById("reg-hospital-select");
+    const hint = document.getElementById("reg-domain-hint");
+    if (!select || !hint) return;
+    const selectedOpt = select.options[select.selectedIndex];
+    if (selectedOpt && selectedOpt.dataset.domain) {
+        hint.textContent = `Required email domain: @${selectedOpt.dataset.domain}`;
+    }
+}
+
+function populateDemoDoctorsList(doctors) {
+    const container = document.getElementById("demo-doctors-list");
+    if (!container) return;
+    container.innerHTML = "";
+
+    doctors.forEach(doc => {
+        const card = document.createElement("div");
+        card.className = "p-3 bg-slate-900 border border-slate-700/80 hover:border-teal-500/60 rounded-xl flex items-center justify-between transition cursor-pointer group";
+        card.onclick = () => switchDemoDoctor(doc.practitioner_id);
+
+        const isCurrent = currentDoctor && currentDoctor.practitioner_id === doc.practitioner_id;
+        const activeBadge = isCurrent ? `<span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono">ACTIVE</span>` : "";
+
+        card.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-full bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center font-bold text-sm">
+                    ${doc.full_name.replace("Dr. ", "").substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-white group-hover:text-teal-300 transition flex items-center space-x-2">
+                        <span>${doc.full_name}</span>
+                        ${activeBadge}
+                    </div>
+                    <div class="text-[11px] text-slate-400">${doc.hospital_name} • <span class="font-mono text-slate-500">${doc.medical_license}</span></div>
+                </div>
+            </div>
+            <button class="text-xs bg-slate-800 group-hover:bg-teal-600 group-hover:text-white text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600 transition font-medium">
+                Switch
+            </button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function openAuthModal() {
+    const modal = document.getElementById("auth-modal");
+    if (modal) {
+        modal.classList.remove("hidden");
+        switchAuthTab('demo');
+        hideAuthAlert();
+    }
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById("auth-modal");
+    if (modal) modal.classList.add("hidden");
+}
+
+function switchAuthTab(tab) {
+    hideAuthAlert();
+    const header = document.getElementById("modal-tabs-header");
+    if (header) header.classList.remove("hidden");
+
+    const tabs = ['demo', 'login', 'register'];
+    tabs.forEach(t => {
+        const content = document.getElementById(`auth-tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (content) content.classList.add("hidden");
+        if (btn) {
+            btn.className = "flex-1 py-3 px-4 text-center border-b-2 border-transparent hover:text-slate-200 cursor-pointer";
+        }
+    });
+
+    const activeContent = document.getElementById(`auth-tab-${tab}`);
+    const activeBtn = document.getElementById(`tab-btn-${tab}`);
+    const otpScreen = document.getElementById("auth-screen-otp");
+
+    if (otpScreen) otpScreen.classList.add("hidden");
+
+    if (activeContent) activeContent.classList.remove("hidden");
+    if (activeBtn) {
+        activeBtn.className = "flex-1 py-3 px-4 text-center border-b-2 border-teal-400 text-teal-300 font-semibold cursor-pointer";
+    }
+}
+
+function showAuthAlert(msg, type = "error") {
+    const alert = document.getElementById("auth-alert");
+    if (!alert) return;
+    alert.classList.remove("hidden");
+    if (type === "success") {
+        alert.className = "mb-4 p-3 rounded-lg text-xs font-mono bg-emerald-950 border border-emerald-500/50 text-emerald-300";
+    } else {
+        alert.className = "mb-4 p-3 rounded-lg text-xs font-mono bg-red-950 border border-red-500/50 text-red-300";
+    }
+    alert.innerHTML = msg;
+}
+
+function hideAuthAlert() {
+    const alert = document.getElementById("auth-alert");
+    if (alert) alert.classList.add("hidden");
+}
+
+async function switchDemoDoctor(pracId) {
+    try {
+        const res = await fetch("/api/auth/switch-demo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ practitioner_id: pracId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            updateDoctorHeader(data.practitioner);
+            closeAuthModal();
+            refreshAuditTrail();
+            loadHospitalsAndDemoDoctors();
+        } else {
+            showAuthAlert(data.detail || "Failed to switch doctor.", "error");
+        }
+    } catch (e) {
+        showAuthAlert(e.message, "error");
+    }
+}
+
+async function handleLogin() {
+    hideAuthAlert();
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    if (!email || !password) {
+        showAuthAlert("Please enter both institutional email and password.", "error");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.status === 403) {
+            // Unverified account -> trigger OTP verification screen
+            pendingVerificationEmail = email;
+            showOtpScreen(email, null);
+            showAuthAlert(data.detail, "error");
+            return;
+        }
+
+        if (!res.ok) {
+            showAuthAlert(data.detail || "Login failed.", "error");
+            return;
+        }
+
+        updateDoctorHeader(data.practitioner);
+        closeAuthModal();
+        refreshAuditTrail();
+    } catch (e) {
+        showAuthAlert(e.message, "error");
+    }
+}
+
+async function handleRegister() {
+    hideAuthAlert();
+    const full_name = document.getElementById("reg-name").value.trim();
+    const hospital_id = document.getElementById("reg-hospital-select").value;
+    const email = document.getElementById("reg-email").value.trim();
+    const medical_license = document.getElementById("reg-license").value.trim();
+    const password = document.getElementById("reg-password").value;
+
+    if (!full_name || !email || !medical_license || !password) {
+        showAuthAlert("All clinical credentials and institutional details are required.", "error");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ full_name, hospital_id, email, medical_license, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            showAuthAlert(data.detail || "Registration rejected.", "error");
+            return;
+        }
+
+        pendingVerificationEmail = email;
+        showOtpScreen(email, data.simulated_code);
+    } catch (e) {
+        showAuthAlert(e.message, "error");
+    }
+}
+
+function showOtpScreen(email, simulatedCode) {
+    ['demo', 'login', 'register'].forEach(t => {
+        const el = document.getElementById(`auth-tab-${t}`);
+        if (el) el.classList.add("hidden");
+    });
+    const header = document.getElementById("modal-tabs-header");
+    if (header) header.classList.add("hidden");
+
+    const otpScreen = document.getElementById("auth-screen-otp");
+    if (otpScreen) otpScreen.classList.remove("hidden");
+
+    const emailLabel = document.getElementById("otp-target-email");
+    if (emailLabel) emailLabel.textContent = email;
+
+    const simCodeLabel = document.getElementById("simulated-otp-code");
+    if (simCodeLabel) {
+        simCodeLabel.textContent = simulatedCode ? `${simulatedCode.substring(0,3)}-${simulatedCode.substring(3,6)}` : "DISPATCHED";
+    }
+
+    const input = document.getElementById("otp-input");
+    if (input) {
+        input.value = "";
+        input.focus();
+    }
+}
+
+async function handleVerifyOtp() {
+    hideAuthAlert();
+    const code = document.getElementById("otp-input").value.trim();
+    if (!code || code.length !== 6) {
+        showAuthAlert("Please enter the complete 6-digit verification code.", "error");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/auth/verify-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: pendingVerificationEmail, verification_code: code })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            showAuthAlert(data.detail || "Verification failed.", "error");
+            return;
+        }
+
+        updateDoctorHeader(data.practitioner);
+        closeAuthModal();
+        refreshAuditTrail();
+    } catch (e) {
+        showAuthAlert(e.message, "error");
+    }
+}
+
+async function handleResendOtp() {
+    hideAuthAlert();
+    try {
+        const res = await fetch("/api/auth/resend-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: pendingVerificationEmail })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            const simCodeLabel = document.getElementById("simulated-otp-code");
+            if (simCodeLabel && data.simulated_code) {
+                simCodeLabel.textContent = `${data.simulated_code.substring(0,3)}-${data.simulated_code.substring(3,6)}`;
+            }
+            showAuthAlert("New 6-digit code dispatched to local hospital inbox.", "success");
+        } else {
+            showAuthAlert(data.detail || "Could not resend code.", "error");
+        }
+    } catch (e) {
+        showAuthAlert(e.message, "error");
     }
 }

@@ -191,10 +191,12 @@ class ClinicalOrchestrator:
         cls,
         proposed_med: str,
         patient_id: Optional[str] = None,
-        raw_notes: Optional[str] = None
+        raw_notes: Optional[str] = None,
+        practitioner: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Executes end-to-end clinical safety review and logs cryptographic audit event.
+        Includes practitioner and institutional attribution for HIPAA § 164.312(a)(2)(i).
         """
         start_time = time.time()
         conn = cls.get_db()
@@ -253,18 +255,30 @@ class ClinicalOrchestrator:
 
         exec_time_ms = round((time.time() - start_time) * 1000 + 8.5, 2)
 
-        # Cryptographic Audit Log
+        # Resolve practitioner attribution
+        prac = practitioner or {}
+        prac_id = prac.get("practitioner_id", "PRAC-103")
+        prac_name = prac.get("full_name", "Dr. Gregory House, MD")
+        hosp_name = prac.get("hospital_name", "Princeton Plainsboro Teaching Hospital")
+
+        # Cryptographic Audit Log with Practitioner Identity
         log_entry = audit_logger.log_review(
             patient_token=patient_token,
             proposed_medication=proposed_med,
             overall_status=overall_status,
             alerts_count=len(alerts),
-            execution_time_ms=exec_time_ms
+            execution_time_ms=exec_time_ms,
+            practitioner_id=prac_id,
+            practitioner_name=prac_name,
+            hospital_name=hosp_name
         )
 
         return {
             "patient_id": patient_id or "ANONYMOUS",
             "patient_token": patient_token,
+            "practitioner_id": prac_id,
+            "practitioner_name": prac_name,
+            "hospital_name": hosp_name,
             "proposed_medication": proposed_med,
             "canonical_generic": canonical_drug,
             "overall_status": overall_status,

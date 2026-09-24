@@ -10,7 +10,7 @@ import csv
 import json
 import sqlite3
 from io import BytesIO, StringIO
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
@@ -26,6 +26,17 @@ from backend.audit_logger import audit_logger
 from backend.validators import InputValidator
 from backend.ai_bridge import ai_bridge
 from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, call_person_c_ai_engine
+from backend.auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    decode_access_token,
+    validate_hospital_domain,
+    generate_otp,
+    dispatch_simulated_email,
+    get_current_practitioner,
+    DEFAULT_DEMO_PRACTITIONER
+)
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -73,7 +84,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ---------------------------------------------------------------------------
-# Database Initialization
+# Database Initialization & Auto-Migration
 # ---------------------------------------------------------------------------
 def init_db():
     """Initializes SQLite database from schema.sql if not present."""
@@ -84,6 +95,19 @@ def init_db():
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         schema_sql = f.read()
     conn.executescript(schema_sql)
+
+    # Auto-migration for audit_logs practitioner attribution columns
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(audit_logs)")
+    existing_cols = [c[1] for c in cursor.fetchall()]
+    for col, def_val in [
+        ("practitioner_id", "PRAC-103"),
+        ("practitioner_name", "Dr. Gregory House, MD"),
+        ("hospital_name", "Princeton Plainsboro Teaching Hospital")
+    ]:
+        if col not in existing_cols:
+            cursor.execute(f"ALTER TABLE audit_logs ADD COLUMN {col} TEXT DEFAULT '{def_val}'")
+
     conn.commit()
     conn.close()
 
@@ -120,6 +144,28 @@ class ReviewRequest(BaseModel):
 
 class RedactRequest(BaseModel):
     text: str
+
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    hospital_id: str
+    medical_license: str
+    password: str
+    role: Optional[str] = "PHYSICIAN"
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    verification_code: str
+
+class ResendCodeRequest(BaseModel):
+    email: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class SwitchDemoRequest(BaseModel):
+    practitioner_id: str
 
 
 # ---------------------------------------------------------------------------
@@ -324,13 +370,336 @@ def extract_entities_endpoint(req: RedactRequest):
     return ClinicalRedactor.process_clinical_note(validated)
 
 
+# ---------------------------------------------------------------------------
+# Sovereign Authentication Endpoints (HIPAA § 164.312(a)(2)(i) & (iv))
+# ---------------------------------------------------------------------------
+@app.get("/api/auth/hospitals")
+def list_hospitals():
+    """Returns list of registered healthcare facilities and accepted email domains."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT hospital_id, hospital_name, facility_code, domain_whitelist, department, city_state FROM hospitals")
+    hospitals = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return {"hospitals": hospitals}
+
+
+@app.get("/api/auth/practitioners")
+def list_demo_practitioners():
+    """Returns pre-configured demo doctors for 1-click evaluation."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.full_name, p.email, p.medical_license, p.role, p.email_verified,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+    """)
+    practitioners = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return {"practitioners": practitioners}
+
+
+@app.get("/api/auth/me")
+def get_current_user_profile(request: Request):
+    """Returns the authenticated physician profile."""
+    prac = get_current_practitioner(request)
+    return {"practitioner": prac}
+
+
+@app.post("/api/auth/register")
+def register_practitioner(req: RegisterRequest):
+    """
+    Registers a clinical practitioner with institutional domain verification.
+    Dispatches a 6-digit verification code to local sovereign mail outbox.
+    """
+    if not req.full_name or len(req.full_name.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Full legal practitioner name is required.")
+
+    if not req.password or len(req.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+
+    if not req.medical_license or len(req.medical_license.strip()) < 4:
+        raise HTTPException(status_code=400, detail="Valid medical license (NPI or State Medical Council number) is required.")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # 1. Verify hospital existence and email domain whitelist
+    cursor.execute("SELECT hospital_name, domain_whitelist FROM hospitals WHERE hospital_id = ?", (req.hospital_id,))
+    hospital = cursor.fetchone()
+    if not hospital:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Selected hospital facility not found.")
+
+    domain_ok, domain_msg = validate_hospital_domain(req.email, hospital["domain_whitelist"])
+    if not domain_ok:
+        conn.close()
+        raise HTTPException(status_code=400, detail=domain_msg)
+
+    email_clean = req.email.strip().lower()
+
+    # 2. Check for duplicate email
+    cursor.execute("SELECT practitioner_id, email_verified FROM practitioners WHERE email = ?", (email_clean,))
+    existing = cursor.fetchone()
+    if existing:
+        if existing["email_verified"] == 1:
+            conn.close()
+            raise HTTPException(status_code=400, detail="An account with this institutional email already exists. Please log in.")
+        # If unverified, regenerate OTP for them
+        otp = generate_otp()
+        expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+        salt, pwd_hash = hash_password(req.password)
+        cursor.execute("""
+            UPDATE practitioners
+            SET full_name = ?, password_hash = ?, salt = ?, medical_license = ?,
+                verification_token = ?, token_expires_at = ?
+            WHERE email = ?
+        """, (req.full_name.strip(), pwd_hash, salt, req.medical_license.strip(), otp, expires, email_clean))
+        conn.commit()
+        conn.close()
+        dispatch_simulated_email(email_clean, req.full_name.strip(), hospital["hospital_name"], otp)
+        return {
+            "status": "PENDING_VERIFICATION",
+            "message": f"Verification code re-sent to {email_clean}. Enter the 6-digit code to activate.",
+            "email": email_clean,
+            "simulated_code": otp,
+            "hospital_name": hospital["hospital_name"]
+        }
+
+    # 3. Create new unverified practitioner
+    practitioner_id = f"PRAC-{int(datetime.now(timezone.utc).timestamp() * 1000) % 1000000}"
+    salt, pwd_hash = hash_password(req.password)
+    otp = generate_otp()
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+
+    cursor.execute("""
+        INSERT INTO practitioners (
+            practitioner_id, hospital_id, full_name, email, password_hash, salt,
+            medical_license, role, email_verified, verification_token, token_expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    """, (
+        practitioner_id, req.hospital_id, req.full_name.strip(), email_clean,
+        pwd_hash, salt, req.medical_license.strip(), req.role or "PHYSICIAN", otp, expires
+    ))
+    conn.commit()
+    conn.close()
+
+    dispatch_simulated_email(email_clean, req.full_name.strip(), hospital["hospital_name"], otp)
+
+    return {
+        "status": "PENDING_VERIFICATION",
+        "message": f"Institutional verification code sent to {email_clean}. Please verify to activate your account.",
+        "email": email_clean,
+        "simulated_code": otp,
+        "hospital_name": hospital["hospital_name"]
+    }
+
+
+@app.post("/api/auth/verify-email")
+def verify_email_endpoint(req: VerifyEmailRequest, response: Response):
+    """
+    Verifies 6-digit OTP code, marks doctor as active, and returns signed session token.
+    """
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.medical_license,
+               p.role, p.email_verified, p.verification_token, p.token_expires_at,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Practitioner account not found.")
+
+    if row["email_verified"] == 1:
+        conn.close()
+        token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+        response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+        return {
+            "status": "ALREADY_VERIFIED",
+            "message": "Account already verified.",
+            "access_token": token,
+            "practitioner": dict(row)
+        }
+
+    # Check OTP
+    stored_token = (row["verification_token"] or "").strip()
+    submitted_token = req.verification_code.strip()
+
+    if not stored_token or stored_token != submitted_token:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid 6-digit verification code. Please check and try again.")
+
+    # Check expiration
+    if row["token_expires_at"]:
+        try:
+            exp_dt = datetime.fromisoformat(row["token_expires_at"])
+            if datetime.now(timezone.utc) > exp_dt:
+                conn.close()
+                raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new code.")
+        except Exception:
+            pass
+
+    # Activate
+    cursor.execute("""
+        UPDATE practitioners
+        SET email_verified = 1, verification_token = NULL, token_expires_at = NULL
+        WHERE practitioner_id = ?
+    """, (row["practitioner_id"],))
+    conn.commit()
+    conn.close()
+
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+
+    practitioner_data = dict(row)
+    practitioner_data["email_verified"] = 1
+
+    return {
+        "status": "VERIFIED",
+        "message": f"Welcome, {row['full_name']}! Your institutional account with {row['hospital_name']} is now active.",
+        "access_token": token,
+        "practitioner": practitioner_data
+    }
+
+
+@app.post("/api/auth/resend-code")
+def resend_verification_code(req: ResendCodeRequest):
+    """Regenerates a new 6-digit OTP code."""
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.full_name, h.hospital_name
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Practitioner account not found.")
+
+    otp = generate_otp()
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    cursor.execute("""
+        UPDATE practitioners
+        SET verification_token = ?, token_expires_at = ?
+        WHERE email = ?
+    """, (otp, expires, email_clean))
+    conn.commit()
+    conn.close()
+
+    dispatch_simulated_email(email_clean, row["full_name"], row["hospital_name"], otp)
+
+    return {
+        "status": "CODE_RESENT",
+        "message": f"New verification code generated for {email_clean}.",
+        "simulated_code": otp
+    }
+
+
+@app.post("/api/auth/login")
+def login_endpoint(req: LoginRequest, response: Response):
+    """
+    Authenticates physician. Blocks unverified accounts per HIPAA § 164.312(a)(2)(iv).
+    """
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.password_hash, p.salt,
+               p.medical_license, p.role, p.email_verified,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if not verify_password(req.password, row["salt"], row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if row["email_verified"] != 1:
+        raise HTTPException(
+            status_code=403,
+            detail="Institutional email address is not yet verified. Please complete 6-digit verification."
+        )
+
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+
+    practitioner_data = dict(row)
+    del practitioner_data["password_hash"]
+    del practitioner_data["salt"]
+
+    return {
+        "status": "SUCCESS",
+        "message": f"Logged in as {row['full_name']} ({row['hospital_name']})",
+        "access_token": token,
+        "practitioner": practitioner_data
+    }
+
+
+@app.post("/api/auth/switch-demo")
+def switch_demo_doctor(req: SwitchDemoRequest, response: Response):
+    """1-click demo doctor switcher for hackathon judges."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.medical_license,
+               p.role, p.email_verified, h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.practitioner_id = ?
+    """, (req.practitioner_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Demo doctor '{req.practitioner_id}' not found.")
+
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": row["email"]})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+
+    return {
+        "status": "SWITCHED",
+        "message": f"Active reviewer switched to {row['full_name']}",
+        "access_token": token,
+        "practitioner": dict(row)
+    }
+
+
+@app.post("/api/auth/logout")
+def logout_endpoint(response: Response):
+    """Clears local session cookie."""
+    response.delete_cookie(key="medivault_session")
+    return {"status": "LOGGED_OUT", "message": "Session terminated."}
+
+
 @app.post("/api/review")
-def review_prescription(req: ReviewRequest):
+def review_prescription(req: ReviewRequest, request: Request):
     """
     Main Clinical Verification Engine.
     Cross-checks proposed prescription against patient diagnostic history & active medications.
+    Binds the authenticated physician & hospital to the SHA-256 audit ledger.
     """
     validated_med = InputValidator.validate_medication_name(req.proposed_medication)
+
+    # Resolve authenticated practitioner
+    current_doctor = get_current_practitioner(request)
 
     # If reviewing an existing patient ID, verify existence
     if req.patient_id and not req.raw_notes_override:
@@ -348,7 +717,8 @@ def review_prescription(req: ReviewRequest):
     result = ClinicalOrchestrator.process_review(
         proposed_med=validated_med,
         patient_id=req.patient_id if not req.raw_notes_override else None,
-        raw_notes=req.raw_notes_override
+        raw_notes=req.raw_notes_override,
+        practitioner=current_doctor
     )
     result["timestamp"] = datetime.now(timezone.utc).isoformat()
     return result
@@ -372,19 +742,25 @@ def verify_audit_chain():
 def export_audit_trail(format: str = Query("json", pattern="^(json|csv)$")):
     """
     Exports the complete local cryptographic audit log for compliance audits.
-    Supports JSON or CSV format.
+    Supports JSON or CSV format with physician and institutional attribution.
     """
     logs = audit_logger.get_recent_logs(limit=1000)
 
     if format == "csv":
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Timestamp (UTC)", "Event ID", "Patient Hash", "Proposed Medication", "Overall Status", "Alerts Count", "Zero Cloud Enforced", "SHA-256 Audit Hash"])
+        writer.writerow([
+            "Timestamp (UTC)", "Event ID", "Reviewing Physician", "Hospital Facility",
+            "Patient Hash", "Proposed Medication", "Overall Status", "Alerts Count",
+            "Zero Cloud Enforced", "SHA-256 Audit Hash"
+        ])
 
         for log in reversed(logs):
             writer.writerow([
                 log.get("timestamp"),
                 log.get("event_id"),
+                log.get("practitioner_name", "Dr. Gregory House, MD"),
+                log.get("hospital_name", "Princeton Plainsboro Teaching Hospital"),
                 log.get("patient_hash"),
                 log.get("proposed_medication"),
                 log.get("overall_status"),

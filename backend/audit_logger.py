@@ -74,21 +74,25 @@ class AuditLogger:
         proposed_medication: str,
         overall_status: str,
         alerts_count: int,
-        execution_time_ms: float
+        execution_time_ms: float,
+        practitioner_id: Optional[str] = "PRAC-103",
+        practitioner_name: Optional[str] = "Dr. Gregory House, MD",
+        hospital_name: Optional[str] = "Princeton Plainsboro Teaching Hospital"
     ) -> Dict[str, Any]:
         """
         Appends an immutable SHA-256 hash-chained event to the audit trail.
         Thread-safe under high-concurrency loads.
+        Includes HIPAA § 164.312(a)(2)(i) practitioner and institutional attribution.
         """
         with self._lock:
             timestamp = datetime.now(timezone.utc).isoformat()
             prev_hash = self.get_last_hash()
             event_id = f"EVT_{int(datetime.now(timezone.utc).timestamp() * 1000)}"
 
-            # Chained hash calculation
+            # Chained hash calculation including practitioner attribution
             payload = (
                 f"{prev_hash}|{timestamp}|{event_id}|{patient_token}|"
-                f"{proposed_medication}|{overall_status}|{alerts_count}|{execution_time_ms}"
+                f"{proposed_medication}|{overall_status}|{alerts_count}|{execution_time_ms}|{practitioner_id}"
             )
             current_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -96,6 +100,9 @@ class AuditLogger:
                 "timestamp": timestamp,
                 "event_id": event_id,
                 "patient_hash": patient_token,
+                "practitioner_id": practitioner_id,
+                "practitioner_name": practitioner_name,
+                "hospital_name": hospital_name,
                 "proposed_medication": proposed_medication,
                 "overall_status": overall_status,
                 "alerts_count": alerts_count,
@@ -116,13 +123,14 @@ class AuditLogger:
                 cursor.execute("PRAGMA busy_timeout = 5000;")
                 cursor.execute("""
                     INSERT INTO audit_logs (
-                        event_id, timestamp, patient_hash, proposed_medication,
-                        overall_status, alerts_count, zero_cloud_verified,
-                        execution_time_ms, prev_hash, audit_hash
-                    ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                        event_id, timestamp, patient_hash, practitioner_id, practitioner_name,
+                        hospital_name, proposed_medication, overall_status, alerts_count,
+                        zero_cloud_verified, execution_time_ms, prev_hash, audit_hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
                 """, (
-                    event_id, timestamp, patient_token, proposed_medication,
-                    overall_status, alerts_count, execution_time_ms, prev_hash, current_hash
+                    event_id, timestamp, patient_token, practitioner_id, practitioner_name,
+                    hospital_name, proposed_medication, overall_status, alerts_count,
+                    execution_time_ms, prev_hash, current_hash
                 ))
                 conn.commit()
                 conn.close()
@@ -170,15 +178,26 @@ class AuditLogger:
             # Recompute hash
             alerts_count = entry.get("alerts_count", 0)
             exec_time = entry.get("execution_time_ms", 0.0)
-            payload = (
-                f"{entry['prev_hash']}|{entry['timestamp']}|{entry['event_id']}|{entry['patient_hash']}|"
-                f"{entry['proposed_medication']}|{entry['overall_status']}|{alerts_count}|{exec_time}"
-            )
-            recomputed = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+            prac_id = entry.get("practitioner_id", "")
 
-            # Fallback check for genesis or legacy format
+            # Format A: With practitioner attribution (v1.2+)
+            payload_prac = (
+                f"{entry['prev_hash']}|{entry['timestamp']}|{entry['event_id']}|{entry['patient_hash']}|"
+                f"{entry['proposed_medication']}|{entry['overall_status']}|{alerts_count}|{exec_time}|{prac_id}"
+            )
+            recomputed = hashlib.sha256(payload_prac.encode("utf-8")).hexdigest()
+
+            # Format B: Standard payload without practitioner (v1.1)
             if recomputed != entry["audit_hash"]:
-                # Try legacy payload without alerts_count if written by v1.0
+                payload_std = (
+                    f"{entry['prev_hash']}|{entry['timestamp']}|{entry['event_id']}|{entry['patient_hash']}|"
+                    f"{entry['proposed_medication']}|{entry['overall_status']}|{alerts_count}|{exec_time}"
+                )
+                if hashlib.sha256(payload_std.encode("utf-8")).hexdigest() == entry["audit_hash"]:
+                    recomputed = entry["audit_hash"]
+
+            # Format C: Legacy payload (v1.0)
+            if recomputed != entry["audit_hash"]:
                 legacy_payload = (
                     f"{entry['prev_hash']}|{entry['timestamp']}|{entry['event_id']}|{entry['patient_hash']}|"
                     f"{entry['proposed_medication']}|{entry['overall_status']}|{exec_time}"
