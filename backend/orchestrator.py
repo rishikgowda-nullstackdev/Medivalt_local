@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from backend.redactor import ClinicalRedactor
 from backend.audit_logger import audit_logger
 from backend.pharmacology import PharmacologyEngine
+from backend.ai_bridge import ai_bridge
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
@@ -148,16 +149,30 @@ class ClinicalOrchestrator:
         overall_status: str,
         alerts: List[Dict[str, Any]]
     ) -> str:
-        """Generates clear, authoritative clinical explanation."""
+        """
+        Generates clinical rationale.
+        First attempts local SLM (llama3.2:3b via Ollama);
+        automatically falls back to deterministic synthesis if Ollama is offline.
+        """
         drug_label = proposed_med
         if proposed_med.lower() != canonical_drug.lower():
             drug_label = f"{proposed_med} (generic {canonical_drug})"
 
         if overall_status == "CRITICAL":
+            # Attempt local SLM explanation
+            if alerts:
+                slm_expl = ai_bridge.generate_clinical_explanation(
+                    proposed_drug=drug_label,
+                    conflicting_factor=alerts[0]["conflicting_factor"],
+                    mechanism=alerts[0]["clinical_mechanism"]
+                )
+                if slm_expl:
+                    return f"CRITICAL CONTRAINDICATION: {slm_expl}"
+
             conflicts = ", ".join([a["conflicting_factor"] for a in alerts[:2]])
             return (
                 f"CRITICAL CONTRAINDICATION: Prescribing '{drug_label}' carries severe clinical risk "
-                f"due to documented conflict with {conflicts}. Immediate alternative medication required."
+                f"due to documented conflict with {conflicts}. Immediate alternative medication required. [Deterministic Synthesis]"
             )
         elif overall_status == "WARNING":
             return (

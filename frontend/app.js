@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadPatientProfile(currentPatientId);
     refreshAuditTrail();
     setupFileDropZone();
+    checkAiStatus();
 
     // Listen to patient dropdown change
     const selectEl = document.getElementById("patient-select");
@@ -132,6 +133,26 @@ async function handleFileUpload(file) {
             <p class="text-xs text-red-300 font-medium">Upload Error: ${e.message}</p>
             <p class="text-[10px] text-slate-400">Click to retry</p>
         `;
+    }
+}
+
+async function checkAiStatus() {
+    try {
+        const res = await fetch("/api/ai-status");
+        if (!res.ok) return;
+        const data = await res.json();
+        const text = document.getElementById("ai-status-text");
+        if (text) {
+            if (data.online && data.target_model_ready) {
+                text.innerHTML = `<span class="text-emerald-400 font-semibold">Ollama: ${data.active_model} Ready</span>`;
+            } else if (data.online) {
+                text.innerHTML = `<span class="text-teal-300">Ollama: Online</span>`;
+            } else {
+                text.innerHTML = `<span class="text-slate-400">Rules Engine Active</span>`;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not check AI status");
     }
 }
 
