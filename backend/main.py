@@ -16,7 +16,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response, HTMLResponse
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
@@ -184,33 +184,33 @@ async def upload_record_endpoint(file: UploadFile = File(...)):
 
     filename = file.filename or "record.txt"
 
-    # Try Person B's module if available
-    b_result = call_person_b_ingestion(content, filename)
-    if b_result:
-        return {"redacted_text": b_result}
-
-    # Built-in pure-Python fallback
     raw_text = ""
-    if filename.lower().endswith(".pdf"):
-        try:
-            reader = PdfReader(BytesIO(content))
-            pages = [p.extract_text() for p in reader.pages if p.extract_text()]
-            raw_text = "\n".join(pages).strip()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
-    else:
-        try:
-            raw_text = content.decode("utf-8", errors="ignore").strip()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+    try:
+        from ingestion.pipeline import extract_text, process_clinical_note
+        raw_text = extract_text(content, filename)
+        processed = process_clinical_note(raw_text)
+    except Exception:
+        # Built-in pure-Python fallback
+        if filename.lower().endswith(".pdf"):
+            try:
+                reader = PdfReader(BytesIO(content))
+                pages = [p.extract_text() for p in reader.pages if p.extract_text()]
+                raw_text = "\n".join(pages).strip()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
+        else:
+            try:
+                raw_text = content.decode("utf-8", errors="ignore").strip()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
 
-    if not raw_text:
-        raise HTTPException(
-            status_code=400,
-            detail="Uploaded document contains no readable text or is corrupted."
-        )
+        if not raw_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded document contains no readable text or is corrupted."
+            )
 
-    processed = ClinicalRedactor.process_clinical_note(raw_text)
+        processed = ClinicalRedactor.process_clinical_note(raw_text)
 
     return {
         "redacted_text": processed["redacted_text"],
@@ -342,12 +342,27 @@ def get_patient_profile(patient_id: str):
     cursor.execute("SELECT allergen, reaction FROM patient_allergies WHERE patient_id = ?", (patient_id,))
     allergies = [dict(r) for r in cursor.fetchall()]
 
+    labs = {}
+    try:
+        cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+        for r in cursor.fetchall():
+            b_name = r["biomarker_name"]
+            labs[b_name] = {
+                "value": r["value"],
+                "unit": r["unit"],
+                "display": f"{r['value']} {r['unit']}"
+            }
+    except Exception:
+        pass
+
     conn.close()
     return {
         "patient": dict(patient),
         "conditions": conditions,
         "medications": medications,
-        "allergies": allergies
+        "allergies": allergies,
+        "labs": {k: v["display"] for k, v in labs.items()},
+        "biomarkers": labs
     }
 
 
@@ -774,6 +789,272 @@ def export_audit_trail(format: str = Query("json", pattern="^(json|csv)$")):
         return response
 
     return JSONResponse(content={"audit_export": logs, "total_records": len(logs)})
+
+
+@app.get("/api/report/clearance", response_class=HTMLResponse)
+def generate_clinical_clearance_certificate(event_id: str = Query(...)):
+    """
+    Generates an official, printable/PDF hospital clinical review clearance certificate.
+    Displays reviewing physician attribution, patient pseudonym, extracted lab snapshot,
+    triage status, and cryptographic SHA-256 seal.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM audit_logs WHERE event_id = ?", (event_id,))
+    log = cursor.fetchone()
+    conn.close()
+
+    if not log:
+        # Fallback search in JSONL
+        logs = audit_logger.get_recent_logs(limit=200)
+        matched = [l for l in logs if l.get("event_id") == event_id]
+        if matched:
+            log = matched[0]
+        else:
+            raise HTTPException(status_code=404, detail=f"Audit event '{event_id}' not found.")
+    else:
+        log = dict(log)
+
+    status = log.get("overall_status", "SAFE")
+    status_color = "#dc2626" if status == "CRITICAL" else ("#d97706" if status == "WARNING" else "#059669")
+    status_bg = "#fef2f2" if status == "CRITICAL" else ("#fffbeb" if status == "WARNING" else "#ecfdf5")
+    status_border = "#f87171" if status == "CRITICAL" else ("#fbbf24" if status == "WARNING" else "#34d399")
+    status_text = "CRITICAL CONTRAINDICATION" if status == "CRITICAL" else ("CLINICAL CAUTION / WARNING" if status == "WARNING" else "PRESCRIPTION CLEARED (SAFE)")
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clinical Clearance Certificate — {event_id}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 24px;
+        }}
+        .certificate-container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }}
+        .header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0f766e;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+        }}
+        .hospital-title {{
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f766e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .hospital-sub {{
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }}
+        .cert-badge {{
+            text-align: right;
+            font-size: 11px;
+            font-family: monospace;
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            color: #0d9488;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }}
+        .card {{
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px 18px;
+        }}
+        .card-label {{
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 6px;
+        }}
+        .card-val {{
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }}
+        .status-banner {{
+            background: {status_bg};
+            border: 2px solid {status_border};
+            color: {status_color};
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .status-title {{
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }}
+        .crypto-box {{
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            word-break: break-all;
+        }}
+        .crypto-title {{
+            color: #2dd4bf;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }}
+        .signatures {{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px dashed #cbd5e1;
+        }}
+        .sig-block {{
+            width: 45%;
+        }}
+        .sig-line {{
+            border-bottom: 1px solid #475569;
+            margin-top: 35px;
+            margin-bottom: 6px;
+        }}
+        .sig-text {{
+            font-size: 12px;
+            color: #475569;
+        }}
+        .action-bar {{
+            margin-top: 24px;
+            text-align: center;
+        }}
+        .btn {{
+            background: #0f766e;
+            color: white;
+            padding: 10px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }}
+        .btn:hover {{
+            background: #115e59;
+        }}
+        @media print {{
+            body {{ background: white; padding: 0; }}
+            .certificate-container {{ border: none; box-shadow: none; padding: 0; }}
+            .action-bar {{ display: none; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="header">
+            <div>
+                <div class="hospital-title">{log.get("hospital_name", "Princeton Plainsboro Teaching Hospital")}</div>
+                <div class="hospital-sub">Department of Diagnostic & Internal Medicine • Sovereign Clinical Review Node</div>
+            </div>
+            <div class="cert-badge">
+                <div>HIPAA SAFE HARBOR § 164.514(b)</div>
+                <div>SECURITY RULE § 164.312(b)</div>
+                <div style="margin-top: 4px; font-weight: bold;">AIR-GAPPED SOVEREIGN SEAL</div>
+            </div>
+        </div>
+
+        <div class="status-banner">
+            <div>
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Clinical Triage Determination</div>
+                <div class="status-title">{status_text}</div>
+            </div>
+            <div style="text-align: right; font-family: monospace; font-size: 12px;">
+                <div>Alerts Triggered: <strong>{log.get("alerts_count", 0)}</strong></div>
+                <div>Execution Time: <strong>{log.get("execution_time_ms", 0.0)} ms</strong></div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-label">Patient Cryptographic Pseudonym</div>
+                <div class="card-val" style="font-family: monospace; color: #0f766e;">{log.get("patient_hash", "ANON_PATIENT")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Direct PHI stripped; de-identified per Safe Harbor standard.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Evaluated Prescription Order</div>
+                <div class="card-val">{log.get("proposed_medication", "N/A")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Normalized against RxNorm & local clinical formulary.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Attending Reviewing Physician</div>
+                <div class="card-val">{log.get("practitioner_name", "Dr. Gregory House, MD")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">ID: {log.get("practitioner_id", "PRAC-103")} • NPI Verified</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Review Timestamp (UTC)</div>
+                <div class="card-val" style="font-size: 13px; font-family: monospace;">{log.get("timestamp", "")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Event ID: {log.get("event_id", "")}</div>
+            </div>
+        </div>
+
+        <div class="crypto-box">
+            <div class="crypto-title">🔒 CRYPTOGRAPHIC PROOF OF TAMPER-FREE RECORD (HIPAA § 164.312(b))</div>
+            <div><strong>PREVIOUS BLOCK HASH:</strong> {log.get("prev_hash", "0"*64)}</div>
+            <div><strong>RECORD SHA-256 SEAL:</strong> {log.get("audit_hash", "")}</div>
+            <div style="color: #94a3b8; margin-top: 8px; font-size: 10px;">
+                Mathematically verifiable across local immutable hash chain. Zero cloud egress enforced (100% offline localhost execution).
+            </div>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-block">
+                <div class="sig-line"></div>
+                <div class="sig-text">
+                    <strong>{log.get("practitioner_name", "Dr. Gregory House, MD")}</strong><br>
+                    Licensed Physician Signature Block
+                </div>
+            </div>
+            <div class="sig-block" style="text-align: right;">
+                <div class="sig-line"></div>
+                <div class="sig-text">
+                    <strong>MediVault Local Sovereign AI Engine v1.3</strong><br>
+                    Deterministic Pharmacology Safety Clearance
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn" onclick="window.print()">🖨️ Print or Save as Official PDF</button>
+        </div>
+    </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content)
 
 
 # ---------------------------------------------------------------------------

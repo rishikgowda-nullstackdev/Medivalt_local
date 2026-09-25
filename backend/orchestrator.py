@@ -1,7 +1,8 @@
 """
-MediVault Local - Clinical Pipeline Orchestrator (Day 3 Enhanced)
+MediVault Local - Clinical Pipeline Orchestrator (Day 5 Next-Gen CDSS)
 Coordinates document intake, de-identification, pharmacology normalization,
-allergy cross-checking, deterministic safety checks, and cryptographic audit logging.
+allergy cross-checking, quantitative lab thresholds, polypharmacy matrices,
+safe alternative recommendations, and cryptographic audit logging.
 Wires dynamic glue calls into Person B (/ingestion) and Person C (/ai_engine).
 """
 
@@ -37,6 +38,20 @@ def call_person_c_ai_engine(redacted_text: str) -> Optional[Dict[str, Any]]:
     except (ImportError, AttributeError):
         return None
 
+def call_person_c_full_safety(
+    proposed_med: str,
+    conditions: List[str],
+    medications: List[str],
+    allergies: List[str],
+    labs: Optional[Dict[str, Any]] = None
+) -> Optional[Tuple[str, List[Dict[str, Any]], str, List[Dict[str, Any]]]]:
+    """Dynamically calls Person C's full multi-dimensional clinical safety evaluation."""
+    try:
+        from ai_engine.engine import evaluate_full_safety
+        return evaluate_full_safety(proposed_med, conditions, medications, allergies, labs)
+    except (ImportError, AttributeError):
+        return None
+
 
 class ClinicalOrchestrator:
     """
@@ -60,7 +75,7 @@ class ClinicalOrchestrator:
         allergies: List[str]
     ) -> Tuple[str, List[Dict[str, Any]], str]:
         """
-        Runs comprehensive clinical checks:
+        Fallback clinical checks:
         1. Brand normalization (e.g., 'Advil' -> 'ibuprofen')
         2. Allergy cross-reactivity (e.g., Penicillin -> Amoxicillin)
         3. Deterministic Drug <-> Disease rules
@@ -69,20 +84,19 @@ class ClinicalOrchestrator:
         conn = cls.get_db()
         cursor = conn.cursor()
 
-        # Step 1: Normalize brand name to generic molecule
         canonical_drug, detected_brand = PharmacologyEngine.normalize_drug_name(proposed_med)
         search_drug = canonical_drug.lower()
 
         alerts = []
         overall_status = "SAFE"
 
-        # Step 2: Allergy Screening
+        # Allergy Screening
         allergy_alerts = PharmacologyEngine.check_drug_allergies(proposed_med, allergies)
         for a in allergy_alerts:
             overall_status = "CRITICAL"
             alerts.append(a)
 
-        # Step 3: Drug <-> Disease Contraindications
+        # Drug <-> Disease Contraindications
         for cond in conditions:
             cond_clean = cond.strip().lower()
             cursor.execute("""
@@ -111,7 +125,7 @@ class ClinicalOrchestrator:
                     "recommendation": row["recommendation"]
                 })
 
-        # Step 4: Drug <-> Drug Interactions
+        # Drug <-> Drug Interactions
         for med in medications:
             med_clean = med.strip().lower()
             med_generic, _ = PharmacologyEngine.normalize_drug_name(med)
@@ -205,6 +219,7 @@ class ClinicalOrchestrator:
         conditions = []
         medications = []
         allergies = []
+        labs: Dict[str, Any] = {}
         patient_token = "ANON_DEMO"
 
         if patient_id and not raw_notes:
@@ -217,38 +232,51 @@ class ClinicalOrchestrator:
             cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
             allergies = [r["allergen"] for r in cursor.fetchall()]
 
+            # Load quantitative patient labs if present
+            try:
+                cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+                for r in cursor.fetchall():
+                    b_name = r["biomarker_name"]
+                    labs[b_name] = {
+                        "value": r["value"],
+                        "unit": r["unit"],
+                        "display": f"{r['value']} {r['unit']}"
+                    }
+            except Exception:
+                pass
+
             patient_token = f"ANON_{patient_id}"
 
         elif raw_notes:
-            processed = ClinicalRedactor.process_clinical_note(raw_notes)
+            try:
+                from ingestion.pipeline import process_clinical_note
+                processed = process_clinical_note(raw_notes)
+            except (ImportError, AttributeError):
+                processed = ClinicalRedactor.process_clinical_note(raw_notes)
+
             patient_token = processed["patient_token"]
             conditions = processed["entities"]["diagnosed_conditions"]
             medications = processed["entities"]["current_medications"]
             allergies = processed["entities"]["allergies"]
+            labs = processed["entities"].get("biomarkers", {})
 
         conn.close()
 
-        # Step: Check Person C's AI Engine if ready
-        ai_engine_result = None
-        if raw_notes:
-            ai_engine_result = call_person_c_ai_engine(raw_notes)
+        # Step: Execute comprehensive safety evaluation via Person C's AI Engine
+        full_result = call_person_c_full_safety(proposed_med, conditions, medications, allergies, labs)
 
-        # Run safety cross-check with pharmacology engine
-        overall_status, alerts, canonical_drug = cls.check_contraindications(
-            proposed_med, conditions, medications, allergies
-        )
+        if full_result:
+            overall_status, alerts, canonical_drug, recommended_alternatives = full_result
+        else:
+            # Fallback to local deterministic check
+            overall_status, alerts, canonical_drug = cls.check_contraindications(
+                proposed_med, conditions, medications, allergies
+            )
+            recommended_alternatives = []
 
-        # If Person C's AI engine flagged something additional, integrate it
-        if ai_engine_result and ai_engine_result.get("flagged"):
-            if overall_status != "CRITICAL":
-                overall_status = ai_engine_result.get("severity", "WARNING")
-            alerts.append({
-                "severity": ai_engine_result.get("severity", "WARNING"),
-                "interaction_type": "AI_FLAG",
-                "conflicting_factor": "Local AI Engine Analysis",
-                "clinical_mechanism": ai_engine_result.get("reason", "Flagged by local SLM"),
-                "recommendation": "Review patient diagnostic profile."
-            })
+        # Filter dedicated alert categories for frontend widgets
+        polypharmacy_alerts = [a for a in alerts if a.get("interaction_type") == "POLYPHARMACY"]
+        lab_alerts = [a for a in alerts if a.get("interaction_type") == "LAB_THRESHOLD"]
 
         # Synthesize explanation
         explanation = cls.synthesize_explanation(proposed_med, canonical_drug, overall_status, alerts)
@@ -274,6 +302,7 @@ class ClinicalOrchestrator:
         )
 
         return {
+            "event_id": log_entry["event_id"],
             "patient_id": patient_id or "ANONYMOUS",
             "patient_token": patient_token,
             "practitioner_id": prac_id,
@@ -284,6 +313,10 @@ class ClinicalOrchestrator:
             "overall_status": overall_status,
             "total_alerts": len(alerts),
             "alerts": alerts,
+            "polypharmacy_alerts": polypharmacy_alerts,
+            "lab_alerts": lab_alerts,
+            "recommended_alternatives": recommended_alternatives,
+            "biomarkers": labs,
             "explanation": explanation,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
