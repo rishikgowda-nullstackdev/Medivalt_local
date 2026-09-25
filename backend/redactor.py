@@ -142,17 +142,37 @@ class ClinicalRedactor:
 
         # 3. Extract Allergies
         extracted_allergies = []
+
+        # Check for multi-line or bulleted allergy sections
+        allergy_block_match = re.search(r"(?i)\ballerg(?:ies|y|ic\s+to)[^\n:]*:\s*\n((?:\s*[-*•]\s*[^\n]+\n?)+)", text)
+        if allergy_block_match:
+            lines = allergy_block_match.group(1).strip().split("\n")
+            for line in lines:
+                cleaned = re.sub(r"^[-*•\s]+", "", line).strip()
+                allergen_name = re.split(r"[\(:;,]", cleaned)[0].strip()
+                if allergen_name:
+                    extracted_allergies.append(allergen_name.title())
+
+        # Check inline triggers
         for trigger in ALLERGY_TRIGGERS:
-            match = re.search(trigger, text)
-            if match:
+            for match in re.finditer(trigger, text):
                 if "NKDA" in match.group(0).upper():
                     extracted_allergies.append("No Known Drug Allergies (NKDA)")
                 else:
                     raw_allergies = match.group(1).split(",")
                     for a in raw_allergies:
                         cleaned = a.strip().rstrip(".;")
-                        if cleaned and len(cleaned) < 50:
-                            extracted_allergies.append(cleaned)
+                        allergen_part = re.split(r"[\(:;,]", cleaned)[0].strip()
+                        if allergen_part and len(allergen_part) < 50 and not allergen_part.lower().startswith("adverse"):
+                            extracted_allergies.append(allergen_part.title())
+
+        # Check direct mentions of critical drug allergies if allergy keyword is present
+        if "allerg" in text_lower:
+            for term in ["penicillin", "sulfa", "sulfonamides", "aspirin", "codeine", "cephalosporin"]:
+                if re.search(r"(?i)\b" + re.escape(term) + r"\b", text_lower):
+                    extracted_allergies.append(term.title())
+
+        extracted_allergies = sorted(list(set(extracted_allergies)))
 
         # 4. Extract Lab Biomarkers (eGFR, Creatinine, INR, BP)
         labs = {}

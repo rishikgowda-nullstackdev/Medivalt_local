@@ -1,0 +1,21 @@
+MERCY GENERAL HOSPITAL — ALLERGY & IMMUNOLOGY CLINICAL PROFILE
+PATIENT NAME: Eleanor Rigby | DOB: 09/30/1975 | MRN: 6601923
+SSN: 333-44-5555 | PHONE: (555) 321-9876
+ATTENDING PHYSICIAN: Dr. Robert Hughes, MD
+
+DIAGNOSTIC SUMMARY:
+1. Essential Hypertension (stage 1)
+2. Type 2 Diabetes Mellitus (well controlled, HbA1c 6.4%)
+3. Mild Chronic Osteoarthritis
+
+ALLERGIES & ADVERSE REACTIONS:
+- Penicillin (anaphylactic hypersensitivity with laryngeal edema requiring epinephrine)
+- Cephalosporins (moderate urticaria)
+
+CURRENT MEDICATIONS:
+- Lisinopril 10mg PO daily
+- Metformin 500mg PO daily
+
+CHIEF COMPLAINT:
+Patient presents with localized dental abscess. Dental surgeon inquired regarding empirical antibiotic therapy with Amoxicillin or Augmentin.
+Strict warning documented: Patient has life-threatening Penicillin / beta-lactam anaphylaxis history.

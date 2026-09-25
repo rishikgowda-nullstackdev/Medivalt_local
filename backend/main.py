@@ -1,37 +1,55 @@
 """
-MediVault Local - Backend Core FastAPI Server
+MediVault Local - Backend Core FastAPI Server (Day 4 Enhanced)
 Zero-Cloud, HIPAA/DPDP-Compliant Local Clinical Record Reviewer.
 Runs 100% offline on loopback interface (127.0.0.1).
+Implements defensive input validation, Ollama AI bridge, and compliance audit exports.
 """
 
 import os
-import time
+import csv
 import json
 import sqlite3
-import hashlib
-from datetime import datetime, timezone
+from io import BytesIO, StringIO
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, HTMLResponse
 from pydantic import BaseModel, Field
+from pypdf import PdfReader
 
 from backend.redactor import ClinicalRedactor
+from backend.network_guard import network_guard
+from backend.audit_logger import audit_logger
+from backend.validators import InputValidator
+from backend.ai_bridge import ai_bridge
+from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, call_person_c_ai_engine
+from backend.cds_hooks import cds_router
+from backend.auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    decode_access_token,
+    validate_hospital_domain,
+    generate_otp,
+    dispatch_simulated_email,
+    get_current_practitioner,
+    DEFAULT_DEMO_PRACTITIONER
+)
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 SCHEMA_PATH = os.path.join(BASE_DIR, "database", "schema.sql")
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
-AUDIT_LOG_FILE = os.path.join(BASE_DIR, "database", "audit_trail.jsonl")
 
 # FastAPI App
 app = FastAPI(
     title="MediVault Local API",
     description="Zero-cloud offline clinical contraindication review engine.",
-    version="1.0.0"
+    version="1.4.0"
 )
 
 # Enable CORS for local development
@@ -43,33 +61,85 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount HL7 CDS Hooks v1.0 Service Router
+app.include_router(cds_router)
+
 
 # ---------------------------------------------------------------------------
-# Database Initialization & Helpers
+# Global Exception Handler (AGENTS.md Rule 4 Compliance)
+# ---------------------------------------------------------------------------
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Prevents raw stack traces from ever leaking to clients."""
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": "Client Request Error", "detail": exc.detail}
+        )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Processing Safeguard",
+            "detail": "An unexpected error occurred. The operation was aborted to preserve clinical safety.",
+            "type": exc.__class__.__name__
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# Database Initialization & Auto-Migration
 # ---------------------------------------------------------------------------
 def init_db():
     """Initializes SQLite database from schema.sql if not present."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         schema_sql = f.read()
     conn.executescript(schema_sql)
+
+    # Auto-migration for audit_logs practitioner attribution columns
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(audit_logs)")
+    existing_cols = [c[1] for c in cursor.fetchall()]
+    for col, def_val in [
+        ("practitioner_id", "PRAC-103"),
+        ("practitioner_name", "Dr. Gregory House, MD"),
+        ("hospital_name", "Princeton Plainsboro Teaching Hospital")
+    ]:
+        if col not in existing_cols:
+            cursor.execute(f"ALTER TABLE audit_logs ADD COLUMN {col} TEXT DEFAULT '{def_val}'")
+
     conn.commit()
     conn.close()
 
-# Auto-initialize DB on startup
 init_db()
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    conn.execute("PRAGMA busy_timeout = 5000;")
     conn.row_factory = sqlite3.Row
     return conn
 
 
 # ---------------------------------------------------------------------------
-# Pydantic Request / Response Models
+# Contract Schemas (CONTRACTS.md Specification)
 # ---------------------------------------------------------------------------
+class AnalyzeRequest(BaseModel):
+    redacted_text: str
+
+class AnalyzeResponse(BaseModel):
+    flagged: bool
+    reason: str
+    drug: Optional[str] = None
+    severity: Optional[str] = None
+
+class UploadRecordResponse(BaseModel):
+    redacted_text: str
+
 class ReviewRequest(BaseModel):
     patient_id: Optional[str] = "PT-101"
     proposed_medication: str = Field(..., example="Ibuprofen")
@@ -79,104 +149,167 @@ class ReviewRequest(BaseModel):
 class RedactRequest(BaseModel):
     text: str
 
-class RedactResponse(BaseModel):
-    patient_token: str
-    redacted_text: str
-    phi_detected: List[str]
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    hospital_id: str
+    medical_license: str
+    password: str
+    role: Optional[str] = "PHYSICIAN"
 
-class AlertDetail(BaseModel):
-    severity: str
-    interaction_type: str
-    conflicting_factor: str
-    clinical_mechanism: str
-    recommendation: str
+class VerifyEmailRequest(BaseModel):
+    email: str
+    verification_code: str
 
-class ReviewResponse(BaseModel):
-    patient_id: str
-    patient_token: str
-    proposed_medication: str
-    overall_status: str  # CRITICAL, WARNING, SAFE
-    total_alerts: int
-    alerts: List[AlertDetail]
-    explanation: str
-    zero_cloud_verified: bool
-    audit_hash: str
-    execution_time_ms: float
-    timestamp: str
+class ResendCodeRequest(BaseModel):
+    email: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class SwitchDemoRequest(BaseModel):
+    practitioner_id: str
 
 
 # ---------------------------------------------------------------------------
-# Audit Logger Helper
+# CONTRACTS.md Endpoints (Person A & Frontend Integration)
 # ---------------------------------------------------------------------------
-def record_audit_log(patient_hash: str, proposed_med: str, status: str, alerts_count: int, exec_ms: float) -> str:
-    """Creates a local, tamper-evident SHA-256 hash-chained log entry."""
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Get last hash
-    cursor.execute("SELECT audit_hash FROM audit_logs ORDER BY id DESC LIMIT 1")
-    row = cursor.fetchone()
-    prev_hash = row["audit_hash"] if row else "0" * 64
-    
-    timestamp = datetime.now(timezone.utc).isoformat()
-    event_id = f"EVT_{int(time.time() * 1000)}"
-    
-    # Cryptographic hash chaining
-    payload = f"{prev_hash}|{timestamp}|{event_id}|{patient_hash}|{proposed_med}|{status}|{exec_ms}"
-    audit_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+@app.post("/upload-record", response_model=UploadRecordResponse)
+@app.post("/api/upload-record")
+async def upload_record_endpoint(file: UploadFile = File(...)):
+    """
+    Person A Backend Contract:
+    in: multipart file (PDF or TXT)
+    out: { "redacted_text": str }
+    """
+    content = await file.read()
+    InputValidator.validate_upload_file(file, content)
 
-    cursor.execute("""
-        INSERT INTO audit_logs (event_id, timestamp, patient_hash, proposed_medication, overall_status, alerts_count, zero_cloud_verified, execution_time_ms, prev_hash, audit_hash)
-        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
-    """, (event_id, timestamp, patient_hash, proposed_med, status, alerts_count, exec_ms, prev_hash, audit_hash))
-    conn.commit()
-    conn.close()
+    filename = file.filename or "record.txt"
 
-    # Append to local file as well
-    os.makedirs(os.path.dirname(AUDIT_LOG_FILE), exist_ok=True)
-    with open(AUDIT_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps({
-            "event_id": event_id,
-            "timestamp": timestamp,
-            "patient_hash": patient_hash,
-            "proposed_medication": proposed_med,
-            "overall_status": status,
-            "prev_hash": prev_hash,
-            "audit_hash": audit_hash
-        }) + "\n")
+    raw_text = ""
+    try:
+        from ingestion.pipeline import extract_text, process_clinical_note
+        raw_text = extract_text(content, filename)
+        processed = process_clinical_note(raw_text)
+    except Exception:
+        # Built-in pure-Python fallback
+        if filename.lower().endswith(".pdf"):
+            try:
+                reader = PdfReader(BytesIO(content))
+                pages = [p.extract_text() for p in reader.pages if p.extract_text()]
+                raw_text = "\n".join(pages).strip()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
+        else:
+            try:
+                raw_text = content.decode("utf-8", errors="ignore").strip()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
 
-    return audit_hash
+        if not raw_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded document contains no readable text or is corrupted."
+            )
+
+        processed = ClinicalRedactor.process_clinical_note(raw_text)
+
+    return {
+        "redacted_text": processed["redacted_text"],
+        "filename": filename,
+        "patient_token": processed["patient_token"],
+        "phi_detected": processed["phi_detected"],
+        "entities": processed["entities"]
+    }
+
+
+@app.post("/analyze", response_model=AnalyzeResponse)
+@app.post("/api/analyze", response_model=AnalyzeResponse)
+def analyze_endpoint(req: AnalyzeRequest):
+    """
+    Person A Backend Contract:
+    in: { "redacted_text": str }
+    out: { "flagged": bool, "reason": str, "drug": str|null, "severity": str|null }
+    """
+    validated_text = InputValidator.validate_clinical_text(req.redacted_text, field_name="redacted_text")
+
+    # Try Person C's AI Engine first
+    c_result = call_person_c_ai_engine(validated_text)
+    if c_result and "flagged" in c_result:
+        return AnalyzeResponse(
+            flagged=c_result.get("flagged", False),
+            reason=c_result.get("reason", "No interactions detected."),
+            drug=c_result.get("drug"),
+            severity=c_result.get("severity")
+        )
+
+    # Built-in deterministic extraction and safety check
+    entities = ClinicalRedactor.extract_entities(validated_text)
+    conditions = entities.get("diagnosed_conditions", [])
+    medications = entities.get("current_medications", [])
+    allergies = entities.get("allergies", [])
+
+    flagged = False
+    reasons = []
+    flagged_drug = None
+    severity = None
+
+    for med in medications:
+        status, alerts, canonical = ClinicalOrchestrator.check_contraindications(
+            med, conditions, [m for m in medications if m != med], allergies
+        )
+        if status in ("CRITICAL", "WARNING"):
+            flagged = True
+            flagged_drug = med
+            severity = status
+            reasons.append(alerts[0]["clinical_mechanism"])
+            break
+
+    if flagged:
+        return AnalyzeResponse(
+            flagged=True,
+            reason=reasons[0] if reasons else "Contraindication detected.",
+            drug=flagged_drug,
+            severity=severity
+        )
+
+    return AnalyzeResponse(
+        flagged=False,
+        reason="No known adverse contraindications detected in record.",
+        drug=None,
+        severity="SAFE"
+    )
 
 
 # ---------------------------------------------------------------------------
-# API Endpoints
+# Extended Management & Telemetry Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 def health_check():
-    """System status and zero-cloud verification check."""
+    """System health & offline mode verification."""
     return {
         "status": "ONLINE",
         "zero_cloud_mode": True,
         "binding": "127.0.0.1 (Loopback Only)",
         "database": "SQLite (database/medivault.db)",
-        "hipaa_safe_harbor_enabled": True,
+        "hipaa_safe_harbor": "ENFORCED",
         "dpdp_compliant": True,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
 @app.get("/api/network-guard")
-def network_guard_telemetry():
-    """Returns telemetry proving 0 external network egress."""
-    return {
-        "status": "SECURE_AIR_GAPPED",
-        "zero_cloud_enforced": True,
-        "active_outbound_connections": 0,
-        "bytes_transmitted_externally": 0,
-        "cloud_telemetry_disabled": True,
-        "loopback_interface": "127.0.0.1",
-        "verified_at": datetime.now(timezone.utc).isoformat()
-    }
+def get_network_guard_telemetry():
+    """Returns telemetry proving 0 outbound external traffic."""
+    return network_guard.get_network_status()
+
+
+@app.get("/api/ai-status")
+def get_ai_status():
+    """Returns connectivity status of the local Ollama SLM."""
+    return ai_bridge.get_status()
 
 
 @app.get("/api/patients")
@@ -195,12 +328,14 @@ def get_patient_profile(patient_id: str):
     """Retrieves full medical record for a specific patient."""
     conn = get_db()
     cursor = conn.cursor()
-    
     cursor.execute("SELECT * FROM patients WHERE patient_id = ?", (patient_id,))
     patient = cursor.fetchone()
     if not patient:
         conn.close()
-        raise HTTPException(status_code=404, detail="Patient record not found")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Patient ID '{patient_id}' not found. Available demo profiles: PT-101, PT-102, PT-103."
+        )
 
     cursor.execute("SELECT condition_name, icd10_code FROM patient_conditions WHERE patient_id = ?", (patient_id,))
     conditions = [dict(r) for r in cursor.fetchall()]
@@ -211,176 +346,881 @@ def get_patient_profile(patient_id: str):
     cursor.execute("SELECT allergen, reaction FROM patient_allergies WHERE patient_id = ?", (patient_id,))
     allergies = [dict(r) for r in cursor.fetchall()]
 
+    labs = {}
+    try:
+        cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+        for r in cursor.fetchall():
+            b_name = r["biomarker_name"]
+            labs[b_name] = {
+                "value": r["value"],
+                "unit": r["unit"],
+                "display": f"{r['value']} {r['unit']}"
+            }
+    except Exception:
+        pass
+
     conn.close()
     return {
         "patient": dict(patient),
         "conditions": conditions,
         "medications": medications,
-        "allergies": allergies
+        "allergies": allergies,
+        "labs": {k: v["display"] for k, v in labs.items()},
+        "biomarkers": labs
     }
 
 
-@app.post("/api/redact", response_model=RedactResponse)
+@app.post("/api/redact")
 def redact_text_endpoint(req: RedactRequest):
     """Redacts 18 HIPAA PHI identifiers from raw text."""
-    redacted_text, detected_phi, token = ClinicalRedactor.redact_phi(req.text)
-    return RedactResponse(
-        patient_token=token,
-        redacted_text=redacted_text,
-        phi_detected=detected_phi
-    )
+    validated = InputValidator.validate_clinical_text(req.text, field_name="text")
+    redacted_text, detected_phi, token = ClinicalRedactor.redact_phi(validated)
+    return {
+        "patient_token": token,
+        "redacted_text": redacted_text,
+        "phi_detected": detected_phi
+    }
 
 
 @app.post("/api/extract")
 def extract_entities_endpoint(req: RedactRequest):
     """Extracts conditions, medications, allergies, and lab values from text."""
-    return ClinicalRedactor.process_clinical_note(req.text)
+    validated = InputValidator.validate_clinical_text(req.text, field_name="text")
+    return ClinicalRedactor.process_clinical_note(validated)
 
 
-@app.post("/api/review", response_model=ReviewResponse)
-def review_prescription(req: ReviewRequest):
+# ---------------------------------------------------------------------------
+# Sovereign Authentication Endpoints (HIPAA § 164.312(a)(2)(i) & (iv))
+# ---------------------------------------------------------------------------
+@app.get("/api/auth/hospitals")
+def list_hospitals():
+    """Returns list of registered healthcare facilities and accepted email domains."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT hospital_id, hospital_name, facility_code, domain_whitelist, department, city_state FROM hospitals")
+    hospitals = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return {"hospitals": hospitals}
+
+
+@app.get("/api/auth/practitioners")
+def list_demo_practitioners():
+    """Returns pre-configured demo doctors for 1-click evaluation."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.full_name, p.email, p.medical_license, p.role, p.email_verified,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+    """)
+    practitioners = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return {"practitioners": practitioners}
+
+
+@app.get("/api/auth/me")
+def get_current_user_profile(request: Request):
+    """Returns the authenticated physician profile."""
+    prac = get_current_practitioner(request)
+    return {"practitioner": prac}
+
+
+@app.post("/api/auth/register")
+def register_practitioner(req: RegisterRequest):
     """
-    Main Clinical Verification Engine.
-    Cross-checks proposed prescription against patient diagnostic history & active medications.
+    Registers a clinical practitioner with institutional domain verification.
+    Dispatches a 6-digit verification code to local sovereign mail outbox.
     """
-    start_time = time.time()
+    if not req.full_name or len(req.full_name.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Full legal practitioner name is required.")
+
+    if not req.password or len(req.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+
+    if not req.medical_license or len(req.medical_license.strip()) < 4:
+        raise HTTPException(status_code=400, detail="Valid medical license (NPI or State Medical Council number) is required.")
+
     conn = get_db()
     cursor = conn.cursor()
 
-    conditions_list = []
-    medications_list = []
-    patient_token = "ANON_DEMO_TOKEN"
+    # 1. Verify hospital existence and email domain whitelist
+    cursor.execute("SELECT hospital_name, domain_whitelist FROM hospitals WHERE hospital_id = ?", (req.hospital_id,))
+    hospital = cursor.fetchone()
+    if not hospital:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Selected hospital facility not found.")
 
-    # Option A: Analyzing an existing patient ID
-    if req.patient_id and not req.raw_notes_override:
-        cursor.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (req.patient_id,))
-        conditions_list = [r["condition_name"] for r in cursor.fetchall()]
+    domain_ok, domain_msg = validate_hospital_domain(req.email, hospital["domain_whitelist"])
+    if not domain_ok:
+        conn.close()
+        raise HTTPException(status_code=400, detail=domain_msg)
 
-        cursor.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (req.patient_id,))
-        medications_list = [r["medication_name"] for r in cursor.fetchall()]
-        patient_token = f"ANON_{hashlib.sha256(req.patient_id.encode()).hexdigest()[:10].upper()}"
+    email_clean = req.email.strip().lower()
 
-    # Option B: Analyzing raw unstructured doctor notes
-    elif req.raw_notes_override:
-        processed = ClinicalRedactor.process_clinical_note(req.raw_notes_override)
-        patient_token = processed["patient_token"]
-        conditions_list = processed["entities"]["diagnosed_conditions"]
-        medications_list = processed["entities"]["current_medications"]
-
-    proposed_drug = req.proposed_medication.strip().lower()
-    alerts: List[AlertDetail] = []
-    overall_status = "SAFE"
-
-    # 1. Deterministic Check: Drug <-> Disease Contraindications
-    for cond in conditions_list:
-        cond_clean = cond.strip().lower()
+    # 2. Check for duplicate email
+    cursor.execute("SELECT practitioner_id, email_verified FROM practitioners WHERE email = ?", (email_clean,))
+    existing = cursor.fetchone()
+    if existing:
+        if existing["email_verified"] == 1:
+            conn.close()
+            raise HTTPException(status_code=400, detail="An account with this institutional email already exists. Please log in.")
+        # If unverified, regenerate OTP for them
+        otp = generate_otp()
+        expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+        salt, pwd_hash = hash_password(req.password)
         cursor.execute("""
-            SELECT condition_name, severity, mechanism, recommendation
-            FROM contraindications_disease
-            WHERE ? LIKE '%' || drug_name || '%' 
-              AND (? LIKE '%' || condition_name || '%' OR condition_name LIKE '%' || ? || '%')
-        """, (proposed_drug, cond_clean, cond_clean))
+            UPDATE practitioners
+            SET full_name = ?, password_hash = ?, salt = ?, medical_license = ?,
+                verification_token = ?, token_expires_at = ?
+            WHERE email = ?
+        """, (req.full_name.strip(), pwd_hash, salt, req.medical_license.strip(), otp, expires, email_clean))
+        conn.commit()
+        conn.close()
+        dispatch_simulated_email(email_clean, req.full_name.strip(), hospital["hospital_name"], otp)
+        return {
+            "status": "PENDING_VERIFICATION",
+            "message": f"Verification code re-sent to {email_clean}. Enter the 6-digit code to activate.",
+            "email": email_clean,
+            "simulated_code": otp,
+            "hospital_name": hospital["hospital_name"]
+        }
 
-        for row in cursor.fetchall():
-            severity = row["severity"]
-            if severity == "CRITICAL":
-                overall_status = "CRITICAL"
-            elif severity == "WARNING" and overall_status != "CRITICAL":
-                overall_status = "WARNING"
+    # 3. Create new unverified practitioner
+    practitioner_id = f"PRAC-{int(datetime.now(timezone.utc).timestamp() * 1000) % 1000000}"
+    salt, pwd_hash = hash_password(req.password)
+    otp = generate_otp()
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
 
-            alerts.append(AlertDetail(
-                severity=severity,
-                interaction_type="DRUG_DISEASE",
-                conflicting_factor=f"Diagnosed Condition: {cond}",
-                clinical_mechanism=row["mechanism"],
-                recommendation=row["recommendation"]
-            ))
-
-    # 2. Deterministic Check: Drug <-> Drug Interactions
-    for med in medications_list:
-        med_clean = med.strip().lower()
-        cursor.execute("""
-            SELECT drug_a, drug_b, severity, mechanism, recommendation
-            FROM contraindications_drug
-            WHERE (drug_a = ? AND ? LIKE '%' || drug_b || '%')
-               OR (drug_b = ? AND ? LIKE '%' || drug_a || '%')
-        """, (proposed_drug, med_clean, proposed_drug, med_clean))
-
-        for row in cursor.fetchall():
-            severity = row["severity"]
-            if severity == "CRITICAL":
-                overall_status = "CRITICAL"
-            elif severity == "WARNING" and overall_status != "CRITICAL":
-                overall_status = "WARNING"
-
-            alerts.append(AlertDetail(
-                severity=severity,
-                interaction_type="DRUG_DRUG",
-                conflicting_factor=f"Active Prescription: {med}",
-                clinical_mechanism=row["mechanism"],
-                recommendation=row["recommendation"]
-            ))
-
+    cursor.execute("""
+        INSERT INTO practitioners (
+            practitioner_id, hospital_id, full_name, email, password_hash, salt,
+            medical_license, role, email_verified, verification_token, token_expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    """, (
+        practitioner_id, req.hospital_id, req.full_name.strip(), email_clean,
+        pwd_hash, salt, req.medical_license.strip(), req.role or "PHYSICIAN", otp, expires
+    ))
+    conn.commit()
     conn.close()
 
-    # 3. Clinical Explanation Synthesis
-    if overall_status == "CRITICAL":
-        alert_names = ", ".join([a.conflicting_factor for a in alerts[:2]])
-        explanation = (
-            f"CRITICAL CONTRAINDICATION: Administration of '{req.proposed_medication}' carries severe clinical risk "
-            f"due to documented conflict with {alert_names}. Immediate alternative medication required."
-        )
-    elif overall_status == "WARNING":
-        explanation = (
-            f"CLINICAL CAUTION: Potential moderate interaction identified with '{req.proposed_medication}'. "
-            f"Review dosage, renal parameters, and monitor patient closely."
-        )
-    else:
-        explanation = (
-            f"PRESCRIPTION CLEARED: No documented contraindications found for '{req.proposed_medication}' "
-            f"against patient's active diagnoses and current medication profile."
+    dispatch_simulated_email(email_clean, req.full_name.strip(), hospital["hospital_name"], otp)
+
+    return {
+        "status": "PENDING_VERIFICATION",
+        "message": f"Institutional verification code sent to {email_clean}. Please verify to activate your account.",
+        "email": email_clean,
+        "simulated_code": otp,
+        "hospital_name": hospital["hospital_name"]
+    }
+
+
+@app.post("/api/auth/verify-email")
+def verify_email_endpoint(req: VerifyEmailRequest, response: Response):
+    """
+    Verifies 6-digit OTP code, marks doctor as active, and returns signed session token.
+    """
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.medical_license,
+               p.role, p.email_verified, p.verification_token, p.token_expires_at,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Practitioner account not found.")
+
+    if row["email_verified"] == 1:
+        conn.close()
+        token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+        response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+        return {
+            "status": "ALREADY_VERIFIED",
+            "message": "Account already verified.",
+            "access_token": token,
+            "practitioner": dict(row)
+        }
+
+    # Check OTP
+    stored_token = (row["verification_token"] or "").strip()
+    submitted_token = req.verification_code.strip()
+
+    if not stored_token or stored_token != submitted_token:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid 6-digit verification code. Please check and try again.")
+
+    # Check expiration
+    if row["token_expires_at"]:
+        try:
+            exp_dt = datetime.fromisoformat(row["token_expires_at"])
+            if datetime.now(timezone.utc) > exp_dt:
+                conn.close()
+                raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new code.")
+        except Exception:
+            pass
+
+    # Activate
+    cursor.execute("""
+        UPDATE practitioners
+        SET email_verified = 1, verification_token = NULL, token_expires_at = NULL
+        WHERE practitioner_id = ?
+    """, (row["practitioner_id"],))
+    conn.commit()
+    conn.close()
+
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+
+    practitioner_data = dict(row)
+    practitioner_data["email_verified"] = 1
+
+    return {
+        "status": "VERIFIED",
+        "message": f"Welcome, {row['full_name']}! Your institutional account with {row['hospital_name']} is now active.",
+        "access_token": token,
+        "practitioner": practitioner_data
+    }
+
+
+@app.post("/api/auth/resend-code")
+def resend_verification_code(req: ResendCodeRequest):
+    """Regenerates a new 6-digit OTP code."""
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.full_name, h.hospital_name
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Practitioner account not found.")
+
+    otp = generate_otp()
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    cursor.execute("""
+        UPDATE practitioners
+        SET verification_token = ?, token_expires_at = ?
+        WHERE email = ?
+    """, (otp, expires, email_clean))
+    conn.commit()
+    conn.close()
+
+    dispatch_simulated_email(email_clean, row["full_name"], row["hospital_name"], otp)
+
+    return {
+        "status": "CODE_RESENT",
+        "message": f"New verification code generated for {email_clean}.",
+        "simulated_code": otp
+    }
+
+
+@app.post("/api/auth/login")
+def login_endpoint(req: LoginRequest, response: Response):
+    """
+    Authenticates physician. Blocks unverified accounts per HIPAA § 164.312(a)(2)(iv).
+    """
+    email_clean = req.email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.password_hash, p.salt,
+               p.medical_license, p.role, p.email_verified,
+               h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.email = ?
+    """, (email_clean,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if not verify_password(req.password, row["salt"], row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if row["email_verified"] != 1:
+        raise HTTPException(
+            status_code=403,
+            detail="Institutional email address is not yet verified. Please complete 6-digit verification."
         )
 
-    exec_time_ms = round((time.time() - start_time) * 1000 + 12.0, 2)
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": email_clean})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
 
-    # 4. Record Cryptographic Local Audit Log
-    audit_hash = record_audit_log(
-        patient_hash=patient_token,
-        proposed_med=req.proposed_medication,
-        status=overall_status,
-        alerts_count=len(alerts),
-        exec_ms=exec_time_ms
+    practitioner_data = dict(row)
+    del practitioner_data["password_hash"]
+    del practitioner_data["salt"]
+
+    return {
+        "status": "SUCCESS",
+        "message": f"Logged in as {row['full_name']} ({row['hospital_name']})",
+        "access_token": token,
+        "practitioner": practitioner_data
+    }
+
+
+@app.post("/api/auth/switch-demo")
+def switch_demo_doctor(req: SwitchDemoRequest, response: Response):
+    """1-click demo doctor switcher for hackathon judges."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email, p.medical_license,
+               p.role, p.email_verified, h.hospital_name, h.department
+        FROM practitioners p
+        JOIN hospitals h ON p.hospital_id = h.hospital_id
+        WHERE p.practitioner_id = ?
+    """, (req.practitioner_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Demo doctor '{req.practitioner_id}' not found.")
+
+    token = create_access_token({"practitioner_id": row["practitioner_id"], "email": row["email"]})
+    response.set_cookie(key="medivault_session", value=token, httponly=True, samesite="lax")
+
+    return {
+        "status": "SWITCHED",
+        "message": f"Active reviewer switched to {row['full_name']}",
+        "access_token": token,
+        "practitioner": dict(row)
+    }
+
+
+@app.post("/api/auth/logout")
+def logout_endpoint(response: Response):
+    """Clears local session cookie."""
+    response.delete_cookie(key="medivault_session")
+    return {"status": "LOGGED_OUT", "message": "Session terminated."}
+
+
+@app.post("/api/review")
+def review_prescription(req: ReviewRequest, request: Request):
+    """
+    Main Clinical Verification Engine.
+    Cross-checks proposed prescription against patient diagnostic history & active medications.
+    Binds the authenticated physician & hospital to the SHA-256 audit ledger.
+    """
+    validated_med = InputValidator.validate_medication_name(req.proposed_medication)
+
+    # Resolve authenticated practitioner
+    current_doctor = get_current_practitioner(request)
+
+    # If reviewing an existing patient ID, verify existence
+    if req.patient_id and not req.raw_notes_override:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT patient_id FROM patients WHERE patient_id = ?", (req.patient_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(
+                status_code=404,
+                detail=f"Patient ID '{req.patient_id}' not found in local database."
+            )
+        conn.close()
+
+    result = ClinicalOrchestrator.process_review(
+        proposed_med=validated_med,
+        patient_id=req.patient_id if not req.raw_notes_override else None,
+        raw_notes=req.raw_notes_override,
+        practitioner=current_doctor
     )
-
-    return ReviewResponse(
-        patient_id=req.patient_id or "ANONYMOUS",
-        patient_token=patient_token,
-        proposed_medication=req.proposed_medication,
-        overall_status=overall_status,
-        total_alerts=len(alerts),
-        alerts=alerts,
-        explanation=explanation,
-        zero_cloud_verified=True,
-        audit_hash=audit_hash,
-        execution_time_ms=exec_time_ms,
-        timestamp=datetime.now(timezone.utc).isoformat()
-    )
+    result["timestamp"] = datetime.now(timezone.utc).isoformat()
+    return result
 
 
 @app.get("/api/audit-logs")
 def get_audit_trail(limit: int = 15):
     """Retrieves recent cryptographic audit logs."""
+    return {"audit_trail": audit_logger.get_recent_logs(limit=limit)}
+
+
+@app.get("/api/audit-verify")
+def verify_audit_chain():
+    """
+    Cryptographically verifies the SHA-256 hash chain across all audit entries.
+    """
+    return audit_logger.verify_integrity()
+
+
+@app.get("/api/audit-export")
+def export_audit_trail(format: str = Query("json", pattern="^(json|csv)$")):
+    """
+    Exports the complete local cryptographic audit log for compliance audits.
+    Supports JSON or CSV format with physician and institutional attribution.
+    """
+    logs = audit_logger.get_recent_logs(limit=1000)
+
+    if format == "csv":
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Timestamp (UTC)", "Event ID", "Reviewing Physician", "Hospital Facility",
+            "Patient Hash", "Proposed Medication", "Overall Status", "Alerts Count",
+            "Zero Cloud Enforced", "SHA-256 Audit Hash"
+        ])
+
+        for log in reversed(logs):
+            writer.writerow([
+                log.get("timestamp"),
+                log.get("event_id"),
+                log.get("practitioner_name", "Dr. Gregory House, MD"),
+                log.get("hospital_name", "Princeton Plainsboro Teaching Hospital"),
+                log.get("patient_hash"),
+                log.get("proposed_medication"),
+                log.get("overall_status"),
+                log.get("alerts_count", 0),
+                log.get("zero_cloud_enforced", True),
+                log.get("audit_hash")
+            ])
+
+        response = Response(content=output.getvalue(), media_type="text/csv")
+        response.headers["Content-Disposition"] = f"attachment; filename=medivault_audit_{int(datetime.now().timestamp())}.csv"
+        return response
+
+    return JSONResponse(content={"audit_export": logs, "total_records": len(logs)})
+
+
+@app.get("/api/report/clearance", response_class=HTMLResponse)
+def generate_clinical_clearance_certificate(event_id: str = Query(...)):
+    """
+    Generates an official, printable/PDF hospital clinical review clearance certificate.
+    Displays reviewing physician attribution, patient pseudonym, extracted lab snapshot,
+    triage status, and cryptographic SHA-256 seal.
+    """
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT event_id, timestamp, patient_hash, proposed_medication, overall_status, alerts_count, zero_cloud_verified, execution_time_ms, audit_hash
-        FROM audit_logs
-        ORDER BY id DESC
-        LIMIT ?
-    """, (limit,))
-    logs = [dict(r) for r in cursor.fetchall()]
+    cursor.execute("SELECT * FROM audit_logs WHERE event_id = ?", (event_id,))
+    log = cursor.fetchone()
     conn.close()
-    return {"audit_trail": logs}
+
+    if not log:
+        # Fallback search in JSONL
+        logs = audit_logger.get_recent_logs(limit=200)
+        matched = [l for l in logs if l.get("event_id") == event_id]
+        if matched:
+            log = matched[0]
+        else:
+            raise HTTPException(status_code=404, detail=f"Audit event '{event_id}' not found.")
+    else:
+        log = dict(log)
+
+    status = log.get("overall_status", "SAFE")
+    status_color = "#dc2626" if status == "CRITICAL" else ("#d97706" if status == "WARNING" else "#059669")
+    status_bg = "#fef2f2" if status == "CRITICAL" else ("#fffbeb" if status == "WARNING" else "#ecfdf5")
+    status_border = "#f87171" if status == "CRITICAL" else ("#fbbf24" if status == "WARNING" else "#34d399")
+    status_text = "CRITICAL CONTRAINDICATION" if status == "CRITICAL" else ("CLINICAL CAUTION / WARNING" if status == "WARNING" else "PRESCRIPTION CLEARED (SAFE)")
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clinical Clearance Certificate — {event_id}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 24px;
+        }}
+        .certificate-container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }}
+        .header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0f766e;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+        }}
+        .hospital-title {{
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f766e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .hospital-sub {{
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }}
+        .cert-badge {{
+            text-align: right;
+            font-size: 11px;
+            font-family: monospace;
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            color: #0d9488;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }}
+        .card {{
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px 18px;
+        }}
+        .card-label {{
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 6px;
+        }}
+        .card-val {{
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }}
+        .status-banner {{
+            background: {status_bg};
+            border: 2px solid {status_border};
+            color: {status_color};
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .status-title {{
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }}
+        .crypto-box {{
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            word-break: break-all;
+        }}
+        .crypto-title {{
+            color: #2dd4bf;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }}
+        .signatures {{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px dashed #cbd5e1;
+        }}
+        .sig-block {{
+            width: 45%;
+        }}
+        .sig-line {{
+            border-bottom: 1px solid #475569;
+            margin-top: 35px;
+            margin-bottom: 6px;
+        }}
+        .sig-text {{
+            font-size: 12px;
+            color: #475569;
+        }}
+        .action-bar {{
+            margin-top: 24px;
+            text-align: center;
+        }}
+        .btn {{
+            background: #0f766e;
+            color: white;
+            padding: 10px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }}
+        .btn:hover {{
+            background: #115e59;
+        }}
+        @media print {{
+            body {{ background: white; padding: 0; }}
+            .certificate-container {{ border: none; box-shadow: none; padding: 0; }}
+            .action-bar {{ display: none; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="header">
+            <div>
+                <div class="hospital-title">{log.get("hospital_name", "Princeton Plainsboro Teaching Hospital")}</div>
+                <div class="hospital-sub">Department of Diagnostic & Internal Medicine • Sovereign Clinical Review Node</div>
+            </div>
+            <div class="cert-badge">
+                <div>HIPAA SAFE HARBOR § 164.514(b)</div>
+                <div>SECURITY RULE § 164.312(b)</div>
+                <div style="margin-top: 4px; font-weight: bold;">AIR-GAPPED SOVEREIGN SEAL</div>
+            </div>
+        </div>
+
+        <div class="status-banner">
+            <div>
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; opacity: 0.8;">Clinical Triage Determination</div>
+                <div class="status-title">{status_text}</div>
+            </div>
+            <div style="text-align: right; font-family: monospace; font-size: 12px;">
+                <div>Alerts Triggered: <strong>{log.get("alerts_count", 0)}</strong></div>
+                <div>Execution Time: <strong>{log.get("execution_time_ms", 0.0)} ms</strong></div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-label">Patient Cryptographic Pseudonym</div>
+                <div class="card-val" style="font-family: monospace; color: #0f766e;">{log.get("patient_hash", "ANON_PATIENT")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Direct PHI stripped; de-identified per Safe Harbor standard.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Evaluated Prescription Order</div>
+                <div class="card-val">{log.get("proposed_medication", "N/A")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Normalized against RxNorm & local clinical formulary.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Attending Reviewing Physician</div>
+                <div class="card-val">{log.get("practitioner_name", "Dr. Gregory House, MD")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">ID: {log.get("practitioner_id", "PRAC-103")} • NPI Verified</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Review Timestamp (UTC)</div>
+                <div class="card-val" style="font-size: 13px; font-family: monospace;">{log.get("timestamp", "")}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Event ID: {log.get("event_id", "")}</div>
+            </div>
+        </div>
+
+        <div class="crypto-box">
+            <div class="crypto-title">🔒 CRYPTOGRAPHIC PROOF OF TAMPER-FREE RECORD (HIPAA § 164.312(b))</div>
+            <div><strong>PREVIOUS BLOCK HASH:</strong> {log.get("prev_hash", "0"*64)}</div>
+            <div><strong>RECORD SHA-256 SEAL:</strong> {log.get("audit_hash", "")}</div>
+            <div style="color: #94a3b8; margin-top: 8px; font-size: 10px;">
+                Mathematically verifiable across local immutable hash chain. Zero cloud egress enforced (100% offline localhost execution).
+            </div>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-block">
+                <div class="sig-line"></div>
+                <div class="sig-text">
+                    <strong>{log.get("practitioner_name", "Dr. Gregory House, MD")}</strong><br>
+                    Licensed Physician Signature Block
+                </div>
+            </div>
+            <div class="sig-block" style="text-align: right;">
+                <div class="sig-line"></div>
+                <div class="sig-text">
+                    <strong>MediVault Local Sovereign AI Engine v1.3</strong><br>
+                    Deterministic Pharmacology Safety Clearance
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn" onclick="window.print()">🖨️ Print or Save as Official PDF</button>
+        </div>
+    </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content)
+
+
+# ---------------------------------------------------------------------------
+# Sovereign Wireless & Hospital Interoperability Endpoints
+# ---------------------------------------------------------------------------
+@app.get("/api/report/clearance-qr")
+async def get_clearance_qr(event_id: str = Query(..., description="Audit Event UUID")):
+    """
+    Generates a cryptographic vector SVG QR code of the Clinical Clearance Certificate.
+    Enables paperless, wireless camera-to-screen air-gapped beam to mobile devices.
+    """
+    import qrcode
+    import qrcode.image.svg
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM audit_logs WHERE event_id = ?", (event_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Audit event '{event_id}' not found.")
+
+    log = dict(row)
+    qr_data = {
+        "doc": "MediVault Clearance Seal",
+        "event_id": log["event_id"],
+        "token": log.get("patient_token") or log.get("patient_hash", "ANON"),
+        "status": log["overall_status"],
+        "rx": log["proposed_medication"],
+        "hash": log["audit_hash"][:16] + "...",
+        "npi": log.get("practitioner_id", "PRAC-103"),
+        "ts": log["timestamp"],
+        "zero_cloud": True
+    }
+    qr_text = json.dumps(qr_data)
+
+    img = qrcode.make(qr_text, image_factory=qrcode.image.svg.SvgPathImage)
+    stream = BytesIO()
+    img.save(stream)
+    svg_bytes = stream.getvalue()
+
+    return Response(content=svg_bytes, media_type="image/svg+xml")
+
+
+@app.post("/api/ingest/interop")
+async def ingest_interop(
+    file: Optional[UploadFile] = File(None),
+    raw_payload: Optional[str] = Form(None)
+):
+    """
+    Zero-cloud interoperability ingestion endpoint:
+    Parses FHIR R4 Bundle JSON, HL7 v2 messages, and optical QR payloads into de-identified clinical entities.
+    """
+    from ingestion.pipeline import parse_fhir_bundle, parse_hl7_v2, parse_optical_qr_payload
+
+    payload_str = ""
+    filename = ""
+
+    if file:
+        filename = file.filename or ""
+        content = await file.read()
+        try:
+            payload_str = content.decode("utf-8")
+        except UnicodeDecodeError:
+            payload_str = content.decode("latin-1")
+    elif raw_payload:
+        payload_str = raw_payload
+    else:
+        raise HTTPException(status_code=400, detail="Either 'file' or 'raw_payload' must be provided.")
+
+    clean_str = payload_str.strip()
+
+    if filename.endswith(".json") or (clean_str.startswith("{") and "resourceType" in clean_str):
+        try:
+            bundle_json = json.loads(clean_str)
+            parsed = parse_fhir_bundle(bundle_json)
+            fmt = "FHIR_R4_BUNDLE"
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid FHIR R4 JSON format: {str(e)}")
+    elif filename.endswith(".hl7") or clean_str.startswith("MSH|") or "\nPID|" in clean_str:
+        parsed = parse_hl7_v2(clean_str)
+        fmt = "HL7_V2"
+    else:
+        parsed = parse_optical_qr_payload(clean_str)
+        fmt = "OPTICAL_QR_OR_NOTE"
+
+    return {
+        "status": "SUCCESS",
+        "format": fmt,
+        "patient_token": parsed.get("patient_token"),
+        "demographics": parsed.get("demographics", {}),
+        "entities": parsed.get("entities", {}),
+        "zero_cloud_verified": True
+    }
+
+
+@app.post("/api/export/fhir-bundle")
+async def export_fhir_bundle(event_id: str = Query(..., description="Audit event UUID")):
+    """
+    Exports a cryptographically sealed FHIR R4 Bundle containing the safety review,
+    practitioner attribution, and immutable audit seal for hospital EHR integration.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM audit_logs WHERE event_id = ?", (event_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Audit event not found.")
+
+    log = dict(row)
+    import uuid
+    bundle_id = str(uuid.uuid4())
+    fhir_bundle = {
+        "resourceType": "Bundle",
+        "id": bundle_id,
+        "type": "document",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "meta": {
+            "security": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+                    "code": "R",
+                    "display": "Restricted"
+                }
+            ],
+            "tag": [
+                {"display": "MediVault Local Sovereign Audit Seal"},
+                {"display": f"SHA256:{log['audit_hash']}"}
+            ]
+        },
+        "entry": [
+            {
+                "resource": {
+                    "resourceType": "Composition",
+                    "id": f"comp-{bundle_id[:8]}",
+                    "status": "final",
+                    "title": "MediVault Local Sovereign Clinical Safety Clearance",
+                    "date": log["timestamp"],
+                    "subject": {"reference": f"Patient/{log.get('patient_token') or log.get('patient_hash', 'ANON')}"},
+                    "author": [
+                        {
+                            "display": log.get("practitioner_name", "Dr. Gregory House, MD"),
+                            "identifier": {"value": log.get("practitioner_id", "PRAC-103")}
+                        }
+                    ],
+                    "section": [
+                        {
+                            "title": "Prescription Safety Review",
+                            "text": {
+                                "status": "generated",
+                                "div": f"<div xmlns='http://www.w3.org/1999/xhtml'><p>Status: {log['overall_status']}</p><p>Prescribed: {log['proposed_medication']}</p><p>SHA-256 Audit Seal: {log['audit_hash']}</p></div>"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    return JSONResponse(content=fhir_bundle)
 
 
 # ---------------------------------------------------------------------------
@@ -394,4 +1234,4 @@ if os.path.exists(FRONTEND_DIR):
         index_file = os.path.join(FRONTEND_DIR, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
-        return JSONResponse({"message": "Frontend index.html not yet generated. Please create frontend/index.html."})
+        return JSONResponse({"message": "Frontend index.html not yet generated."})

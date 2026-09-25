@@ -1,171 +1,97 @@
 """
-Polypharmacy safety checks for MediVault Local.
-
-This module performs deterministic checks for medication
-combinations that may create clinically important syndromes.
-
-The checks are:
-1. Triple Whammy
-2. QTc prolongation risk
-3. Serotonin syndrome risk
+MediVault Local - Multi-Drug Polypharmacy Matrix Engine (Person C)
+Detects lethal multi-drug combinations including 'The Triple Whammy',
+Cumulative QTc Prolongation, and Additive Serotonin Syndrome.
 """
+
+import os
+import json
+import sqlite3
+from typing import Dict, List, Any, Optional
+from ai_engine.pharmacology import PharmacologyKnowledge
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 
 
 class PolypharmacyEngine:
-    """Deterministic polypharmacy safety engine."""
+    """Evaluates multi-drug regimen synergies and cumulative pharmacological toxicity."""
 
-    # Medicines/classes involved in Triple Whammy:
-    # NSAID + ACE inhibitor/ARB + diuretic
-    NSAIDS = {
-        "ibuprofen",
-        "aspirin",
-        "naproxen",
-        "diclofenac",
-    }
-
-    ACE_INHIBITORS = {
-        "lisinopril",
-        "enalapril",
-        "ramipril",
-    }
-
-    ARBS = {
-        "losartan",
-        "valsartan",
-        "telmisartan",
-    }
-
-    DIURETICS = {
-        "furosemide",
-        "hydrochlorothiazide",
-        "spironolactone",
-    }
-
-    # Medicines associated with QT prolongation risk
-    QT_DRUGS = {
-        "amiodarone",
-        "sotalol",
-        "azithromycin",
-        "clarithromycin",
-        "ondansetron",
-    }
-
-    # Medicines associated with serotonergic activity
-    SEROTONERGIC_DRUGS = {
-        "sertraline",
-        "fluoxetine",
-        "escitalopram",
-        "paroxetine",
-        "venlafaxine",
-        "duloxetine",
-        "tramadol",
-        "linezolid",
-    }
-
-    @classmethod
-    def _normalize(cls, drug: str) -> str:
-        """Normalize a medicine name for deterministic comparison."""
-
-        if not drug:
-            return ""
-
-        return drug.strip().lower()
+    @staticmethod
+    def get_db():
+        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+        conn.execute("PRAGMA busy_timeout = 5000;")
+        conn.row_factory = sqlite3.Row
+        return conn
 
     @classmethod
     def evaluate_polypharmacy(
         cls,
-        proposed_med: str,
-        medications: list[str]
-    ) -> list[dict]:
+        proposed_drug: str,
+        active_medications: List[str]
+    ) -> List[Dict[str, Any]]:
         """
-        Evaluate the proposed medicine together with the
-        patient's current medications.
-
-        Returns a list of safety alerts.
+        Analyzes the combined patient drug regimen (active meds + proposed med)
+        for dangerous multi-drug class combinations.
         """
+        all_drugs = list(active_medications) + [proposed_drug]
+        if len(all_drugs) < 2:
+            return []
 
-        proposed = cls._normalize(proposed_med)
+        # Map each drug in regimen to its classes
+        drug_to_classes: Dict[str, List[str]] = {}
+        class_to_drugs: Dict[str, List[str]] = {}
 
-        current_meds = {
-            cls._normalize(med)
-            for med in medications
-            if med
-        }
-
-        # Include the proposed medication in the complete
-        # medication list for combination checks.
-        all_meds = current_meds | {proposed}
+        for d in all_drugs:
+            classes = PharmacologyKnowledge.get_drug_classes(d)
+            drug_to_classes[d] = classes
+            for c in classes:
+                if c not in class_to_drugs:
+                    class_to_drugs[c] = []
+                class_to_drugs[c].append(d)
 
         alerts = []
 
-        # --------------------------------------------------
-        # 1. TRIPLE WHAMMY
-        # --------------------------------------------------
+        # Query rules from polypharmacy_rules table
+        conn = cls.get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT rule_id, rule_name, required_classes, severity, mechanism, recommendation FROM polypharmacy_rules")
+        rules = [dict(r) for r in cursor.fetchall()]
+        conn.close()
 
-        has_nsaid = bool(all_meds & cls.NSAIDS)
-        has_ace_or_arb = bool(
-            all_meds & (cls.ACE_INHIBITORS | cls.ARBS)
-        )
-        has_diuretic = bool(all_meds & cls.DIURETICS)
+        # Check each rule
+        for rule in rules:
+            try:
+                req_classes = json.loads(rule["required_classes"])
+            except Exception:
+                continue
 
-        if has_nsaid and has_ace_or_arb and has_diuretic:
-            alerts.append({
-                "severity": "CRITICAL",
-                "interaction_type": "POLYPHARMACY",
-                "conflicting_factor": "Triple Whammy medication combination",
-                "clinical_mechanism": (
-                    "Concurrent use of an NSAID, an ACE inhibitor or "
-                    "ARB, and a diuretic can reduce renal perfusion "
-                    "and increase the risk of acute kidney injury."
-                ),
-                "recommendation": (
-                    "Review the combination and consider safer "
-                    "alternatives where clinically appropriate."
-                ),
-            })
+            # Check if all required classes are present in the combined regimen
+            matching_drugs_cluster = []
+            all_classes_matched = True
 
-        # --------------------------------------------------
-        # 2. QTc PROLONGATION
-        # --------------------------------------------------
+            for req_cls in req_classes:
+                if req_cls in class_to_drugs and len(class_to_drugs[req_cls]) > 0:
+                    matching_drugs_cluster.append(class_to_drugs[req_cls][0])
+                else:
+                    all_classes_matched = False
+                    break
 
-        qt_meds = all_meds & cls.QT_DRUGS
+            if all_classes_matched and len(set(matching_drugs_cluster)) >= 2:
+                # Make sure the proposed drug is actively contributing to the dangerous cluster
+                proposed_classes = drug_to_classes.get(proposed_drug, [])
+                if any(c in req_classes for c in proposed_classes):
+                    cluster_str = " + ".join([d.title() for d in list(dict.fromkeys(matching_drugs_cluster))])
 
-        if len(qt_meds) >= 2:
-            alerts.append({
-                "severity": "WARNING",
-                "interaction_type": "POLYPHARMACY",
-                "conflicting_factor": "Multiple QT-prolonging medications",
-                "clinical_mechanism": (
-                    "Concurrent use of multiple QT-prolonging medicines "
-                    "may increase the risk of QT interval prolongation "
-                    "and potentially serious cardiac arrhythmias."
-                ),
-                "recommendation": (
-                    "Review the medication combination and consider "
-                    "ECG monitoring or alternative therapy where appropriate."
-                ),
-            })
-
-        # --------------------------------------------------
-        # 3. SEROTONIN SYNDROME
-        # --------------------------------------------------
-
-        serotonergic_meds = all_meds & cls.SEROTONERGIC_DRUGS
-
-        if len(serotonergic_meds) >= 2:
-            alerts.append({
-                "severity": "CRITICAL",
-                "interaction_type": "POLYPHARMACY",
-                "conflicting_factor": "Multiple serotonergic medications",
-                "clinical_mechanism": (
-                    "Concurrent use of multiple serotonergic medicines "
-                    "may increase serotonergic activity and the risk "
-                    "of serotonin syndrome."
-                ),
-                "recommendation": (
-                    "Review the serotonergic medication combination "
-                    "and consider safer alternatives where appropriate."
-                ),
-            })
+                    alerts.append({
+                        "severity": rule["severity"],
+                        "interaction_type": "POLYPHARMACY",
+                        "rule_id": rule["rule_id"],
+                        "rule_name": rule["rule_name"],
+                        "conflicting_factor": f"Cumulative Polypharmacy Toxicity: [{cluster_str}]",
+                        "interacting_drugs": list(dict.fromkeys(matching_drugs_cluster)),
+                        "clinical_mechanism": rule["mechanism"],
+                        "recommendation": rule["recommendation"]
+                    })
 
         return alerts

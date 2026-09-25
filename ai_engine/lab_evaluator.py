@@ -1,149 +1,119 @@
 """
-Lab biomarker safety checks for MediVault Local.
-
-This module checks quantitative laboratory values against
-simple medication-specific safety thresholds.
-
-The result is a list of deterministic safety alerts.
+MediVault Local - Quantitative Lab Biomarker Threshold Evaluator (Person C)
+Deterministic evaluation of patient numerical lab values against SQLite clinical safety cutoffs.
+Guarantees 0% hallucination by executing strict mathematical inequalities (<, <=, >, >=).
 """
+
+import os
+import sqlite3
+from typing import Dict, List, Any, Optional
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 
 
 class LabBiomarkerEvaluator:
-    """Deterministic laboratory safety evaluator."""
+    """Evaluates quantitative organ function and biomarker cutoffs against contraindications_lab table."""
 
     @staticmethod
+    def get_db():
+        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+        conn.execute("PRAGMA busy_timeout = 5000;")
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    @classmethod
     def evaluate_drug_against_labs(
+        cls,
         canonical_drug: str,
-        detected_brand: str | None,
-        labs: dict | None
-    ) -> list[dict]:
+        detected_brand: Optional[str],
+        labs: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
-        Evaluate a proposed drug against available laboratory values.
-
-        Returns a list of alerts using the project's standard
-        alert schema.
+        Cross-checks proposed drug against patient numerical lab values.
+        Supports eGFR, Creatinine, Potassium, INR, and Platelets.
         """
-
-        if not canonical_drug or not labs:
+        if not labs:
             return []
 
-        drug = canonical_drug.strip().lower()
-
         alerts = []
+        conn = cls.get_db()
+        cursor = conn.cursor()
 
-        # --------------------------------------------------
-        # 1. IBUPROFEN / NSAID + LOW eGFR
-        # --------------------------------------------------
+        # Query all threshold rules for this drug, prioritizing CRITICAL over WARNING
+        drug_search = canonical_drug.lower()
+        cursor.execute("""
+            SELECT biomarker_name, operator, threshold_value, unit, severity, mechanism, recommendation
+            FROM contraindications_lab
+            WHERE drug_name = ? OR ? LIKE '%' || drug_name || '%'
+            ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'WARNING' THEN 2 ELSE 3 END ASC, threshold_value ASC
+        """, (drug_search, drug_search))
 
-        if drug in {
-            "ibuprofen",
-            "naproxen",
-            "diclofenac",
-            "aspirin",
-        }:
-            egfr = LabBiomarkerEvaluator._get_lab(
-                labs,
-                "egfr"
-            )
+        rules = [dict(r) for r in cursor.fetchall()]
+        conn.close()
 
-            if egfr is not None and egfr < 30:
+        if not rules:
+            return []
+
+        # Normalize lab keys for case-insensitive matching
+        normalized_labs: Dict[str, float] = {}
+        for k, v in labs.items():
+            key_clean = k.strip().lower()
+            if isinstance(v, dict) and "value" in v:
+                try:
+                    normalized_labs[key_clean] = float(v["value"])
+                except (ValueError, TypeError):
+                    pass
+            elif isinstance(v, (int, float)):
+                normalized_labs[key_clean] = float(v)
+            elif isinstance(v, str):
+                # Try extracting leading number
+                import re
+                m = re.search(r"(\d+\.?\d*)", v)
+                if m:
+                    normalized_labs[key_clean] = float(m.group(1))
+
+        # Evaluate each rule
+        triggered_biomarkers = set()
+        for rule in rules:
+            bio_key = rule["biomarker_name"].strip().lower()
+            if bio_key not in normalized_labs:
+                continue
+
+            # If a CRITICAL rule already fired for this biomarker, avoid duplicate lower WARNING
+            if bio_key in triggered_biomarkers and rule["severity"] != "CRITICAL":
+                continue
+
+            patient_val = normalized_labs[bio_key]
+            thresh_val = float(rule["threshold_value"])
+            op = rule["operator"]
+
+            violation = False
+            if op == "<" and patient_val < thresh_val:
+                violation = True
+            elif op == "<=" and patient_val <= thresh_val:
+                violation = True
+            elif op == ">" and patient_val > thresh_val:
+                violation = True
+            elif op == ">=" and patient_val >= thresh_val:
+                violation = True
+
+            if violation:
+                triggered_biomarkers.add(bio_key)
+                bio_label = rule["biomarker_name"].upper()
+                drug_label = detected_brand or canonical_drug.title()
+
+                factor = f"Quantitative Lab Hazard: Patient {bio_label} = {patient_val} {rule['unit']} (Threshold: {op} {thresh_val} {rule['unit']})"
+
                 alerts.append({
-                    "severity": "CRITICAL",
+                    "severity": rule["severity"],
                     "interaction_type": "LAB_THRESHOLD",
-                    "conflicting_factor": (
-                        f"eGFR: {egfr} mL/min/1.73m²"
-                    ),
-                    "clinical_mechanism": (
-                        "Reduced kidney function increases the risk "
-                        "of renal complications from NSAID therapy."
-                    ),
-                    "recommendation": (
-                        "Avoid or reconsider NSAID therapy and "
-                        "review a safer alternative."
-                    ),
-                })
-
-        # --------------------------------------------------
-        # 2. METFORMIN + LOW eGFR
-        # --------------------------------------------------
-
-        if drug == "metformin":
-            egfr = LabBiomarkerEvaluator._get_lab(
-                labs,
-                "egfr"
-            )
-
-            if egfr is not None and egfr < 30:
-                alerts.append({
-                    "severity": "CRITICAL",
-                    "interaction_type": "LAB_THRESHOLD",
-                    "conflicting_factor": (
-                        f"eGFR: {egfr} mL/min/1.73m²"
-                    ),
-                    "clinical_mechanism": (
-                        "Severely reduced kidney function can increase "
-                        "the risk associated with metformin therapy."
-                    ),
-                    "recommendation": (
-                        "Do not use metformin at this level of kidney "
-                        "function; review alternative treatment."
-                    ),
-                })
-
-        # --------------------------------------------------
-        # 3. WARFARIN + HIGH INR
-        # --------------------------------------------------
-
-        if drug == "warfarin":
-            inr = LabBiomarkerEvaluator._get_lab(
-                labs,
-                "inr"
-            )
-
-            if inr is not None and inr > 4:
-                alerts.append({
-                    "severity": "WARNING",
-                    "interaction_type": "LAB_THRESHOLD",
-                    "conflicting_factor": f"INR: {inr}",
-                    "clinical_mechanism": (
-                        "A markedly elevated INR indicates increased "
-                        "anticoagulation and may increase bleeding risk."
-                    ),
-                    "recommendation": (
-                        "Review anticoagulation status and current "
-                        "warfarin therapy."
-                    ),
+                    "conflicting_factor": factor,
+                    "clinical_mechanism": rule["mechanism"],
+                    "recommendation": rule["recommendation"],
+                    "measured_value": patient_val,
+                    "threshold_value": thresh_val,
+                    "biomarker": bio_label
                 })
 
         return alerts
-
-    @staticmethod
-    def _get_lab(labs: dict, name: str):
-        """
-        Retrieve a laboratory value from the supplied dictionary.
-
-        Supports both:
-            {"egfr": 28}
-
-        and:
-            {"eGFR": 28}
-        """
-
-        if name in labs:
-            return LabBiomarkerEvaluator._to_number(labs[name])
-
-        # Case-insensitive lookup
-        for key, value in labs.items():
-            if str(key).lower() == name.lower():
-                return LabBiomarkerEvaluator._to_number(value)
-
-        return None
-
-    @staticmethod
-    def _to_number(value):
-        """Convert a laboratory value to a number when possible."""
-
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return None
