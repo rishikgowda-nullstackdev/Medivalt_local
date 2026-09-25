@@ -45,6 +45,17 @@ CREATE TABLE IF NOT EXISTS patient_allergies (
     UNIQUE(patient_id, allergen)
 );
 
+-- 4b. Patient Clinical Lab Biomarkers
+CREATE TABLE IF NOT EXISTS patient_labs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    biomarker_name TEXT NOT NULL,
+    value REAL NOT NULL,
+    unit TEXT NOT NULL,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE(patient_id, biomarker_name)
+);
+
 -- 5. Drug <-> Disease Contraindications Table
 CREATE TABLE IF NOT EXISTS contraindications_disease (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,6 +161,16 @@ INSERT OR IGNORE INTO patient_allergies (patient_id, allergen, reaction) VALUES
 ('PT-102', 'Aspirin', 'Severe bronchospasm / urticaria'),
 ('PT-103', 'Codeine', 'Severe nausea and dizziness');
 
+-- Seed Quantitative Patient Labs
+INSERT OR IGNORE INTO patient_labs (patient_id, biomarker_name, value, unit) VALUES
+('PT-101', 'egfr', 38.0, 'mL/min/1.73m2'),
+('PT-101', 'creatinine', 2.1, 'mg/dL'),
+('PT-101', 'potassium', 4.6, 'mEq/L'),
+('PT-102', 'egfr', 92.0, 'mL/min/1.73m2'),
+('PT-102', 'potassium', 4.1, 'mEq/L'),
+('PT-103', 'inr', 2.8, 'INR'),
+('PT-103', 'platelets', 165.0, 'x10^3/uL');
+
 -- Seed High-Risk Drug-Disease Contraindications
 INSERT OR IGNORE INTO contraindications_disease (drug_name, condition_name, severity, mechanism, recommendation) VALUES
 ('ibuprofen', 'chronic kidney disease', 'CRITICAL', 'Inhibits renal vasodilating prostaglandins (PGE2, PGI2); precipitates acute afferent arteriolar vasoconstriction and acute renal failure in pre-existing CKD.', 'Absolute contraindication. Avoid NSAIDs. Consider Acetaminophen (max 2g/day) or topical analgesics.'),
@@ -191,4 +212,76 @@ INSERT OR IGNORE INTO practitioners (practitioner_id, hospital_id, full_name, em
 ('PRAC-101', 'HOSP-01', 'Dr. Sarah Jenkins, MD', 'dr.jenkins@metrogeneral.org', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1982736450', 'PHYSICIAN', 1),
 ('PRAC-102', 'HOSP-02', 'Dr. John Watson, MD', 'dr.watson@stjude.org', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1122334455', 'PHYSICIAN', 1),
 ('PRAC-103', 'HOSP-03', 'Dr. Gregory House, MD', 'dr.house@princeton.edu', '9058762181cd08075e77f57abd2cf5d7e98d0568493d57151f6f97d734fd316c', 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6', 'NPI-1999887766', 'PHYSICIAN', 1);
+
+-- =========================================================================
+-- NEXT-GENERATION CLINICAL DECISION SUPPORT TABLES & SEEDS
+-- =========================================================================
+
+-- 10. Quantitative Lab Biomarker Threshold Rules
+CREATE TABLE IF NOT EXISTS contraindications_lab (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    drug_name TEXT NOT NULL COLLATE NOCASE,
+    biomarker_name TEXT NOT NULL COLLATE NOCASE, -- e.g. 'eGFR', 'potassium', 'inr', 'platelets'
+    operator TEXT NOT NULL CHECK(operator IN ('<', '<=', '>', '>=')),
+    threshold_value REAL NOT NULL,
+    unit TEXT NOT NULL,
+    severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING')),
+    mechanism TEXT NOT NULL,
+    recommendation TEXT NOT NULL,
+    UNIQUE(drug_name, biomarker_name, operator, threshold_value)
+);
+
+-- 11. Multi-Drug Polypharmacy Rules
+CREATE TABLE IF NOT EXISTS polypharmacy_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rule_id TEXT UNIQUE NOT NULL,
+    rule_name TEXT NOT NULL,
+    required_classes TEXT NOT NULL, -- JSON array of required drug classes
+    severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING')),
+    mechanism TEXT NOT NULL,
+    recommendation TEXT NOT NULL
+);
+
+-- 12. Clinical Safe Alternatives Formulary
+CREATE TABLE IF NOT EXISTS safe_alternatives (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    blocked_drug TEXT NOT NULL COLLATE NOCASE,
+    clinical_condition TEXT NOT NULL COLLATE NOCASE,
+    suggested_alternative TEXT NOT NULL,
+    dosage_guide TEXT NOT NULL,
+    clinical_rationale TEXT NOT NULL,
+    UNIQUE(blocked_drug, clinical_condition, suggested_alternative)
+);
+
+-- Seed Quantitative Lab Thresholds
+INSERT OR IGNORE INTO contraindications_lab (drug_name, biomarker_name, operator, threshold_value, unit, severity, mechanism, recommendation) VALUES
+('metformin', 'egfr', '<', 30.0, 'mL/min/1.73m2', 'CRITICAL', 'Severe renal impairment significantly reduces metformin clearance, precipitating life-threatening lactic acidosis (50% mortality rate).', 'Absolute contraindication if eGFR < 30 mL/min. Discontinue immediately. Consider Insulin or Linagliptin.'),
+('metformin', 'egfr', '<=', 44.0, 'mL/min/1.73m2', 'WARNING', 'Moderate renal impairment (eGFR 30-44 mL/min) increases drug accumulation risk.', 'Dose titration required: limit maximum dose to 1000mg/day. Monitor renal function every 3 months.'),
+('lisinopril', 'potassium', '>', 5.0, 'mEq/L', 'CRITICAL', 'ACE-inhibitor suppresses aldosterone, preventing renal potassium excretion and inducing fatal hyperkalemic cardiac arrest.', 'Contraindicated while potassium > 5.0 mEq/L. Suspend ACEi, administer potassium binder, and switch to CCB (Amlodipine).'),
+('spironolactone', 'potassium', '>', 5.0, 'mEq/L', 'CRITICAL', 'Potassium-sparing aldosterone antagonist in pre-existing hyperkalemia dramatically accelerates cardiac conduction abnormalities.', 'Absolute contraindication. Avoid spironolactone when baseline K+ exceeds 5.0 mEq/L.'),
+('warfarin', 'inr', '>', 3.5, 'INR', 'CRITICAL', 'Supratherapeutic anticoagulation level (INR > 3.5) drastically multiplies spontaneous intracranial and gastrointestinal hemorrhage hazard.', 'Hold warfarin dose. Assess bleeding symptoms, consider low-dose oral Vitamin K1, and recheck INR in 24 hours.'),
+('aspirin', 'platelets', '<', 50.0, 'x10^3/uL', 'CRITICAL', 'Irreversible platelet cyclooxygenase inhibition in profound thrombocytopenia (<50k) creates severe spontaneous hemorrhagic diathesis.', 'Contraindicated. Discontinue antiplatelet therapy until platelet recovery above 50,000/uL.'),
+('clopidogrel', 'platelets', '<', 50.0, 'x10^3/uL', 'CRITICAL', 'P2Y12 inhibition combined with severe thrombocytopenia precipitates life-threatening mucosal and microvascular bleeding.', 'Discontinue clopidogrel immediately. Consult hematology.'),
+('enoxaparin', 'egfr', '<', 30.0, 'mL/min/1.73m2', 'WARNING', 'Low-molecular-weight heparin is cleared primarily via kidneys; accumulation in eGFR < 30 markedly elevates major bleed rates.', 'Reduce dose by 50% (e.g. 1 mg/kg once daily instead of BID) or switch to Unfractionated Heparin (monitored by aPTT).'),
+('ibuprofen', 'egfr', '<', 30.0, 'mL/min/1.73m2', 'CRITICAL', 'In severe renal insufficiency (eGFR < 30), NSAID afferent vasoconstriction induces acute renal necrosis and fluid overload.', 'Absolute contraindication. Switch to Acetaminophen or topical analgesics.');
+
+-- Seed Polypharmacy Rules
+INSERT OR IGNORE INTO polypharmacy_rules (rule_id, rule_name, required_classes, severity, mechanism, recommendation) VALUES
+('TRIPLE_WHAMMY', 'The Triple Whammy (Renal Perfusion Collapse)', '["ace_inhibitor_or_arb", "diuretic", "nsaid"]', 'CRITICAL', 'Concurrent administration of an ACEi/ARB (efferent arteriolar dilation) + Diuretic (hypovolemia/decreased renal plasma flow) + NSAID (afferent arteriolar constriction) eliminates glomerular filtration pressure, causing acute ischemic renal failure.', 'Emergency de-escalation: Discontinue NSAID immediately. Substitute with Acetaminophen (max 2g/day) or topical analgesics. Rehydrate and check BMP within 48h.'),
+('QTC_PROLONGATION_HIGH', 'Cumulative QTc Prolongation & Arrhythmia Hazard', '["qt_prolonging_cardiac", "qt_prolonging_antimicrobial", "qt_prolonging_psych_or_antiemetic"]', 'CRITICAL', 'Additive cardiac delayed-rectifier potassium current (IKr) blockade dramatically prolongs ventricular repolarization, triggering polymorphic ventricular tachycardia (Torsades de Pointes).', 'Avoid multi-agent QT combination. Obtain baseline 12-lead ECG and monitor serum potassium/magnesium. Choose non-QT prolonging alternative.'),
+('SEROTONIN_SYNDROME_COMBO', 'Cumulative Serotonergic Toxicity (Serotonin Syndrome)', '["ssri_or_snri", "serotonergic_analgesic", "maoi_or_triptan"]', 'CRITICAL', 'Additive serotonergic hyperstimulation of 5-HT1A and 5-HT2A receptors triggers acute Serotonin Syndrome: autonomic hyperactivity, neuromuscular clonus, hyperthermia, and potential fatal cardiovascular collapse.', 'Discontinue serotonergic analgesic immediately. Do not co-prescribe Tramadol with multiple serotonergic agents.');
+
+-- Seed Clinical Safe Alternatives
+INSERT OR IGNORE INTO safe_alternatives (blocked_drug, clinical_condition, suggested_alternative, dosage_guide, clinical_rationale) VALUES
+('ibuprofen', 'chronic kidney disease', 'Acetaminophen', '500mg PO Q6H PRN (Max 2000mg/24h)', 'Lacks renal prostaglandin inhibition; hepatic metabolism preserves glomerular filtration and renal perfusion.'),
+('ibuprofen', 'chronic kidney disease', 'Lidocaine 5% Topical Patch', 'Apply 1 patch topically to affected joint for 12h on / 12h off', 'Provides local analgesia with negligible systemic bioavailability (<3%), zero nephrotoxicity, and zero GI toxicity.'),
+('naproxen', 'chronic kidney disease', 'Acetaminophen', '500mg PO Q6H PRN (Max 2000mg/24h)', 'Safe non-NSAID analgesic for mild-to-moderate osteoarthritis pain in renal disease.'),
+('propranolol', 'asthma', 'Metoprolol Succinate', '25mg PO once daily (titrate cautiously)', 'Cardioselective beta-1 adrenergic antagonist with ~20-fold greater affinity for cardiac beta-1 than bronchial beta-2 receptors at low doses.'),
+('propranolol', 'asthma', 'Amlodipine', '5mg PO once daily', 'Dihydropyridine calcium channel blocker; reduces systemic vascular resistance with zero bronchospastic airway effect.'),
+('timolol', 'asthma', 'Betaxolol Ophthalmic', '0.25% 1 drop in affected eye(s) BID', 'Cardioselective beta-1 antagonist with significantly lower incidence of pulmonary adverse effects than non-selective timolol.'),
+('amoxicillin', 'penicillin allergy', 'Azithromycin', '500mg PO Day 1, then 250mg PO daily Days 2-5', 'Macrolide antibiotic with zero beta-lactam cross-reactivity; effective against respiratory and soft-tissue bacterial pathogens.'),
+('amoxicillin', 'penicillin allergy', 'Levofloxacin', '500mg PO once daily', 'Fluoroquinolone with distinct quinolone chemical structure; complete lack of cross-reactivity in penicillin anaphylaxis.'),
+('metformin', 'chronic kidney disease', 'Linagliptin', '5mg PO once daily', 'DPP-4 inhibitor with primary biliary and fecal elimination; 100% safe without dose adjustment even in severe renal failure (eGFR < 30).'),
+('warfarin', 'peptic ulcer', 'Apixaban', '5mg PO BID (reduce to 2.5mg if age >=80, wt <=60kg, or Cr >=1.5)', 'Direct oral factor Xa inhibitor with significantly lower incidence of major intracranial hemorrhage compared to warfarin.');
+
 

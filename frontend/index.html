@@ -1,1283 +1,348 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MediVault Local ΓÇö Sovereign AI Clinical Reviewer</title>
+  <title>MediVault Local — Zero-Cloud Clinical Record Reviewer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    /* ΓöÇΓöÇ DARK THEME (default) ΓöÇΓöÇ */
-    :root {
-      --teal: #14b8a6;
-      --teal-bright: #2dd4bf;
-      --cyan: #06b6d4;
-      --navy: #0a0f1e;
-      --navy-mid: #0d1427;
-      --card: rgba(13,20,39,0.85);
-      --glass: rgba(20,184,166,0.06);
-      --border: rgba(20,184,166,0.18);
-
-      /* Semantic tokens ΓÇô dark */
-      --bg-page: #0a0f1e;
-      --bg-header: rgba(10,15,30,0.85);
-      --bg-card: rgba(13,20,39,0.70);
-      --bg-input: rgba(255,255,255,0.04);
-      --bg-pill: rgba(20,184,166,0.06);
-      --bg-tab-bar: rgba(255,255,255,0.03);
-      --bg-tab-active: rgba(20,184,166,0.15);
-      --text-primary: #e2e8f0;
-      --text-muted: rgba(148,163,184,0.7);
-      --text-faint: rgba(148,163,184,0.4);
-      --border-main: rgba(20,184,166,0.12);
-      --border-input: rgba(255,255,255,0.08);
-      --border-card: rgba(20,184,166,0.12);
-      --shadow-card: 0 8px 32px rgba(0,0,0,0.3);
-      --auth-backdrop: var(--navy);
-      --particle-color-1: rgba(20,184,166,;
-      --particle-color-2: rgba(6,182,212,;
-      --particle-color-3: rgba(45,212,191,;
-      --splash-bg: #0a0f1e;
-      --float-card-bg: rgba(13,20,39,0.95);
-      --audit-table-hover: rgba(20,184,166,0.03);
-      --drop-zone-border: rgba(20,184,166,0.2);
-      --recommendation-bg: rgba(20,184,166,0.06);
-      --recommendation-border: rgba(20,184,166,0.15);
-      --otp-box-bg: rgba(20,184,166,0.05);
-      --otp-box-border: rgba(20,184,166,0.15);
-      --switch-modal-bg: rgba(13,20,39,0.98);
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
-
-    /* ΓöÇΓöÇ LIGHT THEME ΓöÇΓöÇ */
-    html.light {
-      --navy: #f0f4f8;
-      --navy-mid: #e2eaf2;
-      --bg-page: #f0f4f8;
-      --bg-header: rgba(240,244,248,0.90);
-      --bg-card: rgba(255,255,255,0.85);
-      --bg-input: rgba(0,0,0,0.04);
-      --bg-pill: rgba(20,184,166,0.08);
-      --bg-tab-bar: rgba(0,0,0,0.04);
-      --bg-tab-active: rgba(20,184,166,0.12);
-      --text-primary: #0f172a;
-      --text-muted: rgba(51,65,85,0.75);
-      --text-faint: rgba(100,116,139,0.6);
-      --border-main: rgba(20,184,166,0.2);
-      --border-input: rgba(0,0,0,0.1);
-      --border-card: rgba(20,184,166,0.15);
-      --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
-      --auth-backdrop: #f0f4f8;
-      --float-card-bg: rgba(255,255,255,0.98);
-      --audit-table-hover: rgba(20,184,166,0.04);
-      --drop-zone-border: rgba(20,184,166,0.25);
-      --recommendation-bg: rgba(20,184,166,0.05);
-      --recommendation-border: rgba(20,184,166,0.2);
-      --otp-box-bg: rgba(20,184,166,0.04);
-      --otp-box-border: rgba(20,184,166,0.18);
-      --switch-modal-bg: rgba(255,255,255,0.99);
+    .status-pulse {
+      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      margin: 0; padding: 0;
-      background: var(--bg-page);
-      color: var(--text-primary);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      overflow-x: hidden;
-      transition: background 0.35s ease, color 0.35s ease;
+    .drop-zone--over {
+      border-color: #14b8a6 !important;
+      background-color: rgba(20, 184, 166, 0.1) !important;
     }
-
-    /* ΓöÇΓöÇ PARTICLE CANVAS ΓöÇΓöÇ */
-    #particle-canvas {
-      position: fixed; inset: 0; z-index: 0;
-      pointer-events: none;
-    }
-
-    /* ΓöÇΓöÇ SPLASH SCREEN ΓöÇΓöÇ */
-    #splash {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--navy);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 32px;
-      transition: opacity 0.8s ease, visibility 0.8s ease;
-    }
-    #splash.fade-out { opacity: 0; visibility: hidden; }
-
-    .splash-logo-ring {
-      position: relative;
-      width: 140px; height: 140px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .splash-ring-outer {
-      position: absolute; inset: 0;
-      border-radius: 50%;
-      border: 2px solid rgba(20,184,166,0.3);
-      animation: spin-slow 8s linear infinite;
-    }
-    .splash-ring-outer::before {
-      content: '';
-      position: absolute; top: -3px; left: 50%; width: 6px; height: 6px;
-      background: var(--teal-bright);
-      border-radius: 50%;
-      box-shadow: 0 0 12px 4px var(--teal-bright);
-      transform: translateX(-50%);
-    }
-    .splash-ring-inner {
-      position: absolute; inset: 16px;
-      border-radius: 50%;
-      border: 1px solid rgba(6,182,212,0.25);
-      animation: spin-slow 5s linear infinite reverse;
-    }
-    .splash-ring-inner::before {
-      content: '';
-      position: absolute; bottom: -3px; left: 50%; width: 5px; height: 5px;
-      background: var(--cyan);
-      border-radius: 50%;
-      box-shadow: 0 0 10px 3px var(--cyan);
-      transform: translateX(-50%);
-    }
-    .splash-shield-wrap {
-      position: relative; z-index: 1;
-      display: flex; align-items: center; justify-content: center;
-      width: 80px; height: 80px;
-      background: radial-gradient(circle, rgba(20,184,166,0.15) 0%, transparent 70%);
-    }
-    .splash-shield {
-      font-size: 54px;
-      color: var(--teal-bright);
-      filter: drop-shadow(0 0 20px rgba(45,212,191,0.8)) drop-shadow(0 0 40px rgba(20,184,166,0.4));
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-    .splash-cross {
-      position: absolute;
-      font-size: 22px;
-      color: white;
-      filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-    .splash-title {
-      font-size: 32px; font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #fff 30%, var(--teal-bright) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      animation: fade-up 0.6s ease 0.3s both;
-    }
-    .splash-subtitle {
-      font-size: 13px; color: rgba(148,163,184,0.8);
-      letter-spacing: 3px; text-transform: uppercase;
-      animation: fade-up 0.6s ease 0.5s both;
-    }
-    .splash-progress {
-      width: 200px; height: 2px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 99px; overflow: hidden;
-      animation: fade-up 0.6s ease 0.7s both;
-    }
-    .splash-progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--teal), var(--cyan));
-      border-radius: 99px;
-      box-shadow: 0 0 8px var(--teal);
-      animation: load-bar 2.2s cubic-bezier(0.4,0,0.2,1) 0.4s forwards;
-    }
-
-    /* ΓöÇΓöÇ AUTH GATE ΓöÇΓöÇ */
-    #auth-gate {
-      position: fixed; inset: 0; z-index: 500;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; visibility: hidden;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-    }
-    #auth-gate.visible { opacity: 1; visibility: visible; }
-    #auth-gate.slide-out {
-      opacity: 0; transform: scale(1.04);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-
-    .auth-backdrop {
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 30%,
-        rgba(20,184,166,0.08) 0%, transparent 60%),
-        var(--auth-backdrop);
-      transition: background 0.35s ease;
-    }
-    .auth-card {
-      position: relative; z-index: 1;
-      width: 420px; max-width: calc(100vw - 32px);
-      background: var(--bg-card);
-      backdrop-filter: blur(24px);
-      border: 1px solid var(--border-card);
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(20,184,166,0.08),
-        0 25px 60px rgba(0,0,0,0.35),
-        0 0 80px rgba(20,184,166,0.06);
-      animation: slide-up 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
-      transition: background 0.35s ease, border-color 0.35s ease;
-    }
-    .auth-header-strip {
-      padding: 28px 28px 0;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      text-align: center;
-    }
-    .auth-logo-mini {
-      width: 56px; height: 56px;
-      background: radial-gradient(circle, rgba(20,184,166,0.2) 0%, transparent 70%);
-      border: 1px solid rgba(20,184,166,0.3);
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; color: var(--teal-bright);
-      box-shadow: 0 0 20px rgba(20,184,166,0.2);
-    }
-    .auth-title {
-      font-size: 22px; font-weight: 700; color: var(--text-primary);
-    }
-    .auth-subtitle {
-      font-size: 12px; color: var(--text-muted);
-    }
-    .auth-tabs {
-      display: flex; margin: 20px 28px 0;
-      background: var(--bg-tab-bar);
-      border: 1px solid var(--border-input);
-      border-radius: 12px; padding: 4px; gap: 2px;
-    }
-    .auth-tab-btn {
-      flex: 1; padding: 8px 12px;
-      border-radius: 9px; border: none; cursor: pointer;
-      font-size: 12px; font-weight: 500;
-      color: var(--text-muted);
-      background: transparent;
-      transition: all 0.2s ease;
-    }
-    .auth-tab-btn.active {
-      background: var(--bg-tab-active);
-      color: var(--teal-bright);
-      border: 1px solid rgba(20,184,166,0.25);
-    }
-    .auth-body { padding: 20px 28px 28px; }
-    .auth-tab-content { display: none; }
-    .auth-tab-content.active { display: block; animation: fade-in 0.25s ease; }
-
-    /* ΓöÇΓöÇ INPUT STYLE ΓöÇΓöÇ */
-    .mv-input {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1px solid var(--border-input);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px; color: var(--text-primary);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.35s;
-    }
-    .mv-input:focus {
-      border-color: rgba(20,184,166,0.5);
-      box-shadow: 0 0 0 3px rgba(20,184,166,0.1);
-    }
-    .mv-input::placeholder { color: var(--text-faint); }
-    .mv-label {
-      display: block; font-size: 11px; font-weight: 500;
-      color: var(--text-muted); margin-bottom: 5px;
-      letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .mv-btn-primary {
-      width: 100%;
-      background: linear-gradient(135deg, #0d9488, #0891b2);
-      color: white; font-weight: 600; font-size: 14px;
-      padding: 12px; border: none; border-radius: 12px;
-      cursor: pointer; transition: all 0.2s ease;
-      box-shadow: 0 4px 16px rgba(13,148,136,0.3);
-    }
-    .mv-btn-primary:hover {
-      background: linear-gradient(135deg, #14b8a6, #06b6d4);
-      box-shadow: 0 6px 24px rgba(20,184,166,0.4);
-      transform: translateY(-1px);
-    }
-    .mv-btn-secondary {
-      width: 100%;
-      background: var(--bg-input);
-      color: var(--text-muted); font-weight: 500; font-size: 13px;
-      padding: 10px; border: 1px solid var(--border-input);
-      border-radius: 10px; cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .mv-btn-secondary:hover {
-      background: rgba(20,184,166,0.08);
-      border-color: rgba(20,184,166,0.3);
-      color: var(--teal-bright);
-    }
-
-    /* ΓöÇΓöÇ DEMO DOCTOR CARDS ΓöÇΓöÇ */
-    .demo-doc-card {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-input);
-      border-radius: 12px; cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .demo-doc-card:hover {
-      background: rgba(20,184,166,0.07);
-      border-color: rgba(20,184,166,0.2);
-    }
-    .doc-avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: linear-gradient(135deg, rgba(20,184,166,0.3), rgba(6,182,212,0.2));
-      border: 1px solid rgba(20,184,166,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; color: var(--teal-bright);
-    }
-    .doc-switch-btn {
-      font-size: 11px; padding: 5px 12px;
-      background: rgba(20,184,166,0.1);
-      border: 1px solid rgba(20,184,166,0.25);
-      border-radius: 8px; color: var(--teal-bright);
-      cursor: pointer; transition: all 0.2s;
-    }
-    .doc-switch-btn:hover { background: rgba(20,184,166,0.2); }
-
-    /* ΓöÇΓöÇ OTP SCREEN ΓöÇΓöÇ */
-    #otp-screen { display: none; }
-    #otp-screen.active { display: block; animation: fade-in 0.25s ease; }
-
-    /* ΓöÇΓöÇ MAIN APP ΓöÇΓöÇ */
-    #main-app {
-      position: relative; z-index: 10;
-      min-height: 100vh;
-      opacity: 0; visibility: hidden;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-    }
-    #main-app.visible { opacity: 1; visibility: visible; }
-
-    /* ΓöÇΓöÇ HEADER ΓöÇΓöÇ */
-    .mv-header {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--bg-header);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-main);
-      box-shadow: 0 1px 0 rgba(20,184,166,0.05), 0 4px 20px rgba(0,0,0,0.15);
-      transition: background 0.35s ease, border-color 0.35s ease;
-    }
-    .mv-header-inner {
-      max-width: 1400px; margin: 0 auto;
-      padding: 12px 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    }
-    .mv-logo { display: flex; align-items: center; gap: 10px; }
-    .mv-logo-icon {
-      position: relative; width: 42px; height: 42px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .mv-logo-icon-ring {
-      position: absolute; inset: 0; border-radius: 12px;
-      border: 1px solid rgba(20,184,166,0.35);
-      animation: shimmer-border 3s ease infinite;
-    }
-    .mv-logo-icon i.shield {
-      font-size: 22px; color: var(--teal-bright);
-      filter: drop-shadow(0 0 8px rgba(45,212,191,0.6));
-    }
-    .mv-logo-icon i.cross { position: absolute; font-size: 9px; color: white; }
-    .mv-logo-text { line-height: 1; }
-    .mv-logo-text .name {
-      font-size: 17px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px;
-    }
-    .mv-logo-text .name span { color: var(--teal-bright); }
-    .mv-logo-text .tag {
-      font-size: 9px; color: var(--text-faint);
-      letter-spacing: 2px; text-transform: uppercase; margin-top: 1px;
-    }
-
-    .header-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .pill {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 12px; border-radius: 99px;
-      font-size: 11px; font-weight: 500; border: 1px solid;
-    }
-    .pill-airgap {
-      background: rgba(16,185,129,0.08);
-      border-color: rgba(16,185,129,0.25); color: #059669;
-    }
-    html:not(.light) .pill-airgap { color: #6ee7b7; }
-    .pill-airgap .dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #10b981; box-shadow: 0 0 6px #10b981;
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-    .pill-hipaa {
-      background: var(--bg-pill);
-      border-color: rgba(20,184,166,0.2); color: var(--text-muted);
-    }
-    .pill-ollama {
-      background: var(--bg-pill);
-      border-color: rgba(20,184,166,0.2); color: var(--text-muted);
-    }
-    .header-doc-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 14px 6px 8px;
-      background: rgba(20,184,166,0.08);
-      border: 1px solid rgba(20,184,166,0.2);
-      border-radius: 99px; cursor: pointer;
-      transition: all 0.2s ease; color: var(--text-primary);
-    }
-    .header-doc-btn:hover {
-      background: rgba(20,184,166,0.14);
-      border-color: rgba(20,184,166,0.4);
-    }
-    .header-doc-avatar {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--teal), var(--cyan));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: white;
-    }
-
-    /* ΓöÇΓöÇ THEME TOGGLE ΓöÇΓöÇ */
-    .theme-toggle-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 36px; height: 36px; border-radius: 10px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-input);
-      cursor: pointer; transition: all 0.2s ease;
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .theme-toggle-btn:hover {
-      background: rgba(20,184,166,0.1);
-      border-color: rgba(20,184,166,0.3);
-      color: var(--teal-bright);
-    }
-    .theme-toggle-btn .icon-sun,
-    .theme-toggle-btn .icon-moon { font-size: 14px; transition: all 0.3s ease; }
-    html:not(.light) .theme-toggle-btn .icon-sun { display: none; }
-    html.light .theme-toggle-btn .icon-moon { display: none; }
-
-    /* ΓöÇΓöÇ MAIN LAYOUT ΓöÇΓöÇ */
-    .mv-main {
-      max-width: 1400px; margin: 0 auto;
-      padding: 24px 24px 100px;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 20px;
-    }
-    @media (max-width: 900px) { .mv-main { grid-template-columns: 1fr; } }
-
-    /* ΓöÇΓöÇ GLASS CARD ΓöÇΓöÇ */
-    .glass-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-card);
-      border-radius: 20px;
-      box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.04);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.35s ease;
-    }
-    .glass-card:hover { border-color: rgba(20,184,166,0.2); }
-    .glass-card-header { padding: 16px 20px 0; display: flex; align-items: center; }
-    .glass-card-title {
-      font-size: 11px; font-weight: 600;
-      color: var(--teal-bright);
-      letter-spacing: 1.5px; text-transform: uppercase;
-      display: flex; align-items: center; gap: 7px;
-    }
-
-    /* ΓöÇΓöÇ INTAKE TABS ΓöÇΓöÇ */
-    .intake-tabs {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 4px; padding: 4px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 12px; margin-bottom: 16px;
-    }
-    .intake-tab {
-      padding: 9px; text-align: center;
-      border-radius: 9px; cursor: pointer;
-      font-size: 12px; font-weight: 500;
-      color: rgba(148,163,184,0.6);
-      border: none; background: transparent;
-      transition: all 0.2s ease;
-    }
-    .intake-tab.active {
-      background: rgba(20,184,166,0.15);
-      color: var(--teal-bright);
-      border: 1px solid rgba(20,184,166,0.2);
-    }
-
-    /* ΓöÇΓöÇ CONDITION TAGS ΓöÇΓöÇ */
-    .tag-danger {
-      padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 500;
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.25);
-      color: #fca5a5;
-    }
-    .tag-neutral {
-      padding: 4px 10px; border-radius: 8px; font-size: 11px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      color: rgba(226,232,240,0.8);
-    }
-    .tag-warning {
-      padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 500;
-      background: rgba(245,158,11,0.1);
-      border: 1px solid rgba(245,158,11,0.25);
-      color: #fcd34d;
-    }
-    .tag-med {
-      padding: 4px 10px; border-radius: 8px; font-size: 11px;
-      background: rgba(20,184,166,0.08);
-      border: 1px solid rgba(20,184,166,0.18);
-      color: var(--teal-bright);
-    }
-
-    /* ΓöÇΓöÇ RESULT BANNER ΓöÇΓöÇ */
-    .result-banner {
-      border-radius: 16px; padding: 16px;
-      margin-bottom: 16px;
-      display: flex; gap: 14px; align-items: flex-start;
-      border: 1px solid;
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .result-banner.critical {
-      background: rgba(239,68,68,0.08);
-      border-color: rgba(239,68,68,0.3);
-      box-shadow: 0 0 30px rgba(239,68,68,0.12), inset 0 1px 0 rgba(239,68,68,0.15);
-    }
-    .result-banner.warning {
-      background: rgba(245,158,11,0.08);
-      border-color: rgba(245,158,11,0.3);
-      box-shadow: 0 0 30px rgba(245,158,11,0.1);
-    }
-    .result-banner.safe {
-      background: rgba(16,185,129,0.08);
-      border-color: rgba(16,185,129,0.3);
-      box-shadow: 0 0 30px rgba(16,185,129,0.1);
-    }
-    .result-banner.idle {
-      background: rgba(255,255,255,0.02);
-      border-color: rgba(255,255,255,0.06);
-    }
-
-    /* ΓöÇΓöÇ ALERT CARD ΓöÇΓöÇ */
-    .alert-card {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 14px; padding: 14px;
-      font-size: 12px;
-      animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
-    }
-    .alert-card.critical { border-left: 3px solid #ef4444; }
-    .alert-card.warning { border-left: 3px solid #f59e0b; }
-    .recommendation-box {
-      margin-top: 10px; padding: 10px 12px;
-      background: rgba(20,184,166,0.06);
-      border: 1px solid rgba(20,184,166,0.15);
-      border-radius: 10px; font-size: 11px;
-      color: rgba(148,163,184,0.9); font-family: monospace;
-    }
-
-    /* ΓöÇΓöÇ QUICK CHIPS ΓöÇΓöÇ */
-    .chip {
-      font-size: 11px; padding: 5px 11px;
-      border-radius: 8px; cursor: pointer;
-      border: 1px solid; font-weight: 500;
-      transition: all 0.15s ease; white-space: nowrap;
-    }
-    .chip-red {
-      background: rgba(239,68,68,0.07);
-      border-color: rgba(239,68,68,0.25);
-      color: #fca5a5;
-    }
-    .chip-red:hover { background: rgba(239,68,68,0.15); }
-    .chip-amber {
-      background: rgba(245,158,11,0.07);
-      border-color: rgba(245,158,11,0.25);
-      color: #fcd34d;
-    }
-    .chip-amber:hover { background: rgba(245,158,11,0.15); }
-    .chip-purple {
-      background: rgba(168,85,247,0.07);
-      border-color: rgba(168,85,247,0.25);
-      color: #d8b4fe;
-    }
-    .chip-purple:hover { background: rgba(168,85,247,0.15); }
-
-    /* ΓöÇΓöÇ RUN BUTTON ΓöÇΓöÇ */
-    .run-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
-      color: white; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
-      padding: 14px; border: none; border-radius: 14px;
-      cursor: pointer; transition: all 0.2s ease;
-      box-shadow: 0 4px 20px rgba(13,148,136,0.35);
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      position: relative; overflow: hidden;
-    }
-    .run-btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-      transform: translateX(-100%);
-      transition: transform 0.6s ease;
-    }
-    .run-btn:hover::before { transform: translateX(100%); }
-    .run-btn:hover {
-      background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
-      box-shadow: 0 6px 30px rgba(20,184,166,0.45);
-      transform: translateY(-2px);
-    }
-    .run-btn:disabled {
-      opacity: 0.6; cursor: not-allowed; transform: none;
-    }
-
-    /* ΓöÇΓöÇ AUDIT SECTION ΓöÇΓöÇ */
-    .audit-section {
-      max-width: 1400px; margin: 0 auto;
-      padding: 0 24px 40px;
-    }
-    .audit-drawer-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; cursor: pointer;
-      border-bottom: 1px solid rgba(20,184,166,0.08);
-    }
-    .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .audit-table th {
-      padding: 10px 14px; text-align: left;
-      color: rgba(148,163,184,0.5);
-      font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .audit-table td {
-      padding: 11px 14px; font-family: monospace;
-      color: rgba(226,232,240,0.8);
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-    }
-    .audit-table tr:hover td { background: rgba(20,184,166,0.03); }
-
-    /* ΓöÇΓöÇ FLOATING DOCTOR CARD ΓöÇΓöÇ */
-    #floating-doc-card {
-      position: fixed; bottom: 24px; right: 24px; z-index: 200;
-      width: 280px;
-      background: rgba(13,20,39,0.95);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(20,184,166,0.2);
-      border-radius: 20px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(20,184,166,0.05);
-      overflow: hidden;
-      opacity: 0; visibility: hidden;
-      transform: translateY(20px) scale(0.95);
-      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    #floating-doc-card.visible {
-      opacity: 1; visibility: visible;
-      transform: translateY(0) scale(1);
-    }
-    .float-card-header {
-      padding: 14px 16px;
-      background: linear-gradient(135deg, rgba(20,184,166,0.12), rgba(6,182,212,0.06));
-      border-bottom: 1px solid rgba(20,184,166,0.12);
-      display: flex; align-items: center; gap: 10px;
-    }
-    .float-doc-avatar {
-      width: 44px; height: 44px; border-radius: 14px;
-      background: linear-gradient(135deg, var(--teal), var(--cyan));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 700; color: white;
-      box-shadow: 0 4px 12px rgba(20,184,166,0.3);
-    }
-    .float-doc-name { font-size: 13px; font-weight: 700; color: white; }
-    .float-doc-role { font-size: 10px; color: rgba(148,163,184,0.6); margin-top: 1px; }
-    .float-card-body { padding: 12px 16px; }
-    .float-stat-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      font-size: 11px;
-    }
-    .float-stat-row:last-child { border-bottom: none; }
-    .float-stat-label { color: rgba(148,163,184,0.5); }
-    .float-stat-value { color: rgba(226,232,240,0.9); font-weight: 500; font-family: monospace; }
-    .float-card-footer {
-      padding: 10px 16px;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      display: flex; gap: 6px;
-    }
-    .float-btn {
-      flex: 1; padding: 7px; border-radius: 8px; cursor: pointer;
-      font-size: 11px; font-weight: 500; border: 1px solid; transition: all 0.2s;
-    }
-    .float-btn-change {
-      background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.25);
-      color: var(--teal-bright);
-    }
-    .float-btn-change:hover { background: rgba(20,184,166,0.2); }
-    .float-btn-collapse {
-      background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);
-      color: rgba(148,163,184,0.6);
-    }
-    .float-btn-collapse:hover { background: rgba(255,255,255,0.06); }
-    #doc-card-toggle {
-      position: fixed; bottom: 24px; right: 24px; z-index: 199;
-      width: 48px; height: 48px; border-radius: 14px;
-      background: linear-gradient(135deg, var(--teal), var(--cyan));
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; box-shadow: 0 4px 16px rgba(20,184,166,0.4);
-      transition: all 0.2s ease;
-      opacity: 0; visibility: hidden;
-    }
-    #doc-card-toggle.visible { opacity: 1; visibility: visible; }
-    #doc-card-toggle:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(20,184,166,0.5); }
-
-    /* ΓöÇΓöÇ DROP ZONE ΓöÇΓöÇ */
-    .drop-zone {
-      border: 2px dashed rgba(20,184,166,0.2);
-      border-radius: 12px; padding: 24px;
-      text-align: center; cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .drop-zone:hover, .drop-zone.over {
-      border-color: rgba(20,184,166,0.5);
-      background: rgba(20,184,166,0.04);
-    }
-
-    /* ΓöÇΓöÇ ANIMATIONS ΓöÇΓöÇ */
-    @keyframes spin-slow { to { transform: rotate(360deg); } }
-    @keyframes pulse-glow {
-      0%, 100% { filter: drop-shadow(0 0 20px rgba(45,212,191,0.8)) drop-shadow(0 0 40px rgba(20,184,166,0.4)); }
-      50% { filter: drop-shadow(0 0 30px rgba(45,212,191,1)) drop-shadow(0 0 60px rgba(20,184,166,0.6)); }
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; box-shadow: 0 0 6px #10b981; }
-      50% { opacity: 0.7; box-shadow: 0 0 12px #10b981; }
-    }
-    @keyframes load-bar {
-      from { width: 0; }
-      to { width: 100%; }
-    }
-    @keyframes fade-up {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slide-up {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fade-in {
-      from { opacity: 0; } to { opacity: 1; }
-    }
-    @keyframes shimmer-border {
-      0%, 100% { border-color: rgba(20,184,166,0.35); box-shadow: 0 0 8px rgba(20,184,166,0.1); }
-      50% { border-color: rgba(20,184,166,0.6); box-shadow: 0 0 16px rgba(20,184,166,0.25); }
-    }
-    @keyframes enter-card {
-      from { opacity: 0; transform: translateY(16px) scale(0.98); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .enter-anim { animation: enter-card 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
-
-    /* ΓöÇΓöÇ AUTH ALERT ΓöÇΓöÇ */
-    .auth-alert {
-      padding: 10px 14px; border-radius: 10px; font-size: 12px;
-      margin-bottom: 14px; display: none;
-    }
-    .auth-alert.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
-    .auth-alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
-
-    /* ΓöÇΓöÇ SCROLLBAR ΓöÇΓöÇ */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.2); border-radius: 99px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(20,184,166,0.35); }
-
-    /* ΓöÇΓöÇ OTP INPUT ΓöÇΓöÇ */
-    .otp-input {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(20,184,166,0.3);
-      border-radius: 14px;
-      padding: 14px;
-      text-align: center;
-      font-size: 28px; font-weight: 700; letter-spacing: 10px;
-      color: var(--teal-bright); font-family: monospace;
-      outline: none;
-    }
-    .otp-input:focus { border-color: rgba(20,184,166,0.6); box-shadow: 0 0 0 3px rgba(20,184,166,0.1); }
-
-    /* ΓöÇΓöÇ INTEGRITY BANNER ΓöÇΓöÇ */
-    .integrity-banner {
-      padding: 10px 14px; border-radius: 10px; font-size: 11px;
-      font-family: monospace; display: none;
-    }
-    .integrity-banner.visible { display: flex; align-items: center; gap: 8px; }
-    .integrity-banner.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
-    .integrity-banner.fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
-
-    .separator { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 12px 0; }
   </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
 
-<!-- PARTICLE CANVAS -->
-<canvas id="particle-canvas"></canvas>
-
-<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-     SPLASH SCREEN
-ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
-<div id="splash">
-  <div class="splash-logo-ring">
-    <div class="splash-ring-outer"></div>
-    <div class="splash-ring-inner"></div>
-    <div class="splash-shield-wrap">
-      <i class="fa-solid fa-shield-heart splash-shield"></i>
-      <i class="fa-solid fa-plus splash-cross"></i>
-    </div>
-  </div>
-  <div style="text-align:center">
-    <div class="splash-title">MediVault <span style="color:var(--teal-bright)">Local</span></div>
-    <div class="splash-subtitle">Sovereign AI ┬╖ Zero Cloud ┬╖ HIPAA Compliant</div>
-  </div>
-  <div class="splash-progress">
-    <div class="splash-progress-bar"></div>
-  </div>
-</div>
-
-<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-     AUTH GATE
-ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
-<div id="auth-gate">
-  <div class="auth-backdrop"></div>
-  <div class="auth-card">
-    <div class="auth-header-strip">
-      <div class="auth-logo-mini">
-        <i class="fa-solid fa-shield-heart"></i>
-      </div>
-      <div class="auth-title">MediVault <span style="color:var(--teal-bright)">Local</span></div>
-      <div class="auth-subtitle">HIPAA ┬º 164.514(b) ┬╖ DPDP 2023 ┬╖ Sovereign AI</div>
-    </div>
-
-    <div class="auth-tabs" id="auth-tabs-bar">
-      <button class="auth-tab-btn active" onclick="switchAuthGateTab('demo')" id="gtab-demo">
-        <i class="fa-solid fa-bolt mr-1"></i> Demo Staff
-      </button>
-      <button class="auth-tab-btn" onclick="switchAuthGateTab('login')" id="gtab-login">
-        <i class="fa-solid fa-right-to-bracket mr-1"></i> Sign In
-      </button>
-      <button class="auth-tab-btn" onclick="switchAuthGateTab('register')" id="gtab-register">
-        <i class="fa-solid fa-user-plus mr-1"></i> Register
-      </button>
-    </div>
-
-    <div class="auth-body">
-      <div id="auth-alert-gate" class="auth-alert"></div>
-
-      <!-- DEMO TAB -->
-      <div id="gtab-content-demo" class="auth-tab-content active">
-        <p style="font-size:12px;color:rgba(148,163,184,0.6);margin-bottom:12px">
-          1-click switch to evaluate institutional accountability:
-        </p>
-        <div id="gate-demo-list" style="display:flex;flex-direction:column;gap:8px">
-          <!-- populated by JS -->
-          <div class="demo-doc-card" onclick="gateSelectDemo('house')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">GH</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Gregory House, MD</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">Princeton Plainsboro ┬╖ NPI-1999887766</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
+  <!-- Top Navigation & Zero-Cloud Trust Header -->
+  <header class="bg-slate-800 border-b border-slate-700 shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-teal-500/20 p-2.5 rounded-xl border border-teal-500/40 text-teal-400">
+          <i class="fa-solid fa-shield-heart text-2xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
+            <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.1-OFFLINE</span>
           </div>
-          <div class="demo-doc-card" onclick="gateSelectDemo('patel')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">AP</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Anika Patel, MBBS</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">Metro General ┬╖ NPI-2345678901</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
-          </div>
-          <div class="demo-doc-card" onclick="gateSelectDemo('chen')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">RC</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Robert Chen, MD</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">City Medical Center ┬╖ NPI-3456789012</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
-          </div>
+          <p class="text-xs text-slate-400">Zero-Cloud HIPAA & DPDP Clinical Contraindication Reviewer</p>
         </div>
       </div>
 
-      <!-- LOGIN TAB -->
-      <div id="gtab-content-login" class="auth-tab-content">
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <div>
-            <label class="mv-label">Institutional Email</label>
-            <input id="gate-email" type="email" class="mv-input" placeholder="dr.house@princeton.edu" />
-          </div>
-          <div>
-            <label class="mv-label">Password</label>
-            <input id="gate-password" type="password" class="mv-input" placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" />
-          </div>
-          <button class="mv-btn-primary" onclick="handleGateLogin()">
-            <i class="fa-solid fa-lock mr-2"></i> Sign in to Hospital Portal
-          </button>
-          <p style="text-align:center;font-size:11px;color:rgba(148,163,184,0.4);font-family:monospace">
-            Demo password: <span style="color:var(--teal-bright)">HospitalPass123!</span>
-          </p>
+      <!-- Trust Badges -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <div id="ai-status-pill" class="flex items-center space-x-1.5 bg-slate-800 border border-slate-600 text-slate-300 text-xs px-3 py-1.5 rounded-full">
+          <i class="fa-solid fa-microchip text-teal-400 text-[11px]"></i>
+          <span id="ai-status-text">Ollama: Deterministic Active</span>
         </div>
-      </div>
-
-      <!-- REGISTER TAB -->
-      <div id="gtab-content-register" class="auth-tab-content">
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div>
-            <label class="mv-label">Full Legal Name</label>
-            <input id="reg-name" type="text" class="mv-input" placeholder="Dr. Sarah Connor, MD" />
-          </div>
-          <div>
-            <label class="mv-label">Healthcare Institution</label>
-            <select id="reg-hospital" class="mv-input" onchange="onRegHospitalChange()" style="cursor:pointer">
-              <option value="H001">Princeton Plainsboro Teaching Hospital</option>
-              <option value="H002">Metro General Hospital</option>
-              <option value="H003">City Medical Center</option>
-            </select>
-            <div id="reg-domain-hint" style="font-size:10px;color:var(--teal-bright);margin-top:4px;font-family:monospace">
-              Required domain: @princeton.edu
-            </div>
-          </div>
-          <div>
-            <label class="mv-label">Institutional Email</label>
-            <input id="reg-email" type="email" class="mv-input" placeholder="s.connor@princeton.edu" />
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label class="mv-label">Medical License / NPI</label>
-              <input id="reg-license" type="text" class="mv-input" placeholder="NPI-1092837465" />
-            </div>
-            <div>
-              <label class="mv-label">Password</label>
-              <input id="reg-password" type="password" class="mv-input" placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" />
-            </div>
-          </div>
-          <button class="mv-btn-primary" onclick="handleGateRegister()">
-            <i class="fa-solid fa-paper-plane mr-2"></i> Register & Request OTP
-          </button>
+        <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 status-pulse"></span>
+          <span class="font-semibold tracking-wide">AIR-GAPPED: 0 BYTES TRANSMITTED</span>
+          <span class="text-emerald-500 font-mono text-[10px] hidden sm:inline">(127.0.0.1)</span>
         </div>
-      </div>
-
-      <!-- OTP SCREEN -->
-      <div id="otp-screen">
-        <div style="text-align:center;margin-bottom:16px">
-          <div style="width:52px;height:52px;margin:0 auto 10px;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.3);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--teal-bright)">
-            <i class="fa-solid fa-envelope-circle-check"></i>
-          </div>
-          <div style="font-size:15px;font-weight:700;color:white;margin-bottom:4px">Verify Identity</div>
-          <div style="font-size:12px;color:rgba(148,163,184,0.6)">
-            6-digit code for <span id="otp-email-display" style="color:var(--teal-bright);font-family:monospace">ΓÇö</span>
-          </div>
+        <div class="hidden md:flex items-center space-x-1.5 bg-slate-800 border border-slate-600 text-slate-300 text-xs px-3 py-1.5 rounded-full">
+          <i class="fa-solid fa-lock text-teal-400 text-[11px]"></i>
+          <span>HIPAA § 164.312(b) Safe Harbor</span>
         </div>
 
-        <div style="background:rgba(20,184,166,0.05);border:1px solid rgba(20,184,166,0.15);border-radius:12px;padding:12px;margin-bottom:14px;font-family:monospace;font-size:11px;color:rgba(148,163,184,0.7)">
-          <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:8px;margin-bottom:8px">
-            <span><i class="fa-solid fa-server mr-1"></i> Hospital Intranet Mail</span>
-            <span style="color:#6ee7b7;font-size:10px">Air-Gapped</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span>One-Time Code:</span>
-            <strong id="otp-sim-code" style="color:#fcd34d;font-size:18px;letter-spacing:4px;background:rgba(0,0,0,0.3);padding:2px 10px;border-radius:6px">------</strong>
-          </div>
-        </div>
-
-        <input type="text" id="otp-input-gate" maxlength="6" class="otp-input" placeholder="000000" style="margin-bottom:12px" />
-        <button class="mv-btn-primary" style="margin-bottom:8px" onclick="handleGateOtp()">
-          <i class="fa-solid fa-shield-check mr-2"></i> Verify & Activate Account
-        </button>
-        <div style="display:flex;justify-content:space-between;font-size:11px">
-          <button onclick="handleGateResend()" style="background:none;border:none;color:var(--teal-bright);cursor:pointer">Resend Code</button>
-          <button onclick="switchAuthGateTab('login')" style="background:none;border:none;color:rgba(148,163,184,0.5);cursor:pointer">ΓåÉ Back to Sign In</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-     MAIN APPLICATION
-ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
-<div id="main-app">
-
-  <!-- HEADER -->
-  <header class="mv-header">
-    <div class="mv-header-inner">
-      <div class="mv-logo">
-        <div class="mv-logo-icon">
-          <div class="mv-logo-icon-ring"></div>
-          <i class="fa-solid fa-shield-heart shield"></i>
-          <i class="fa-solid fa-plus cross" style="font-size:9px"></i>
-        </div>
-        <div class="mv-logo-text">
-          <div class="name">MediVault <span>Local</span></div>
-          <div class="tag">Sovereign AI ┬╖ HIPAA ┬º 164.514(b)</div>
-        </div>
-      </div>
-
-      <div class="header-pills">
-        <div class="pill pill-airgap">
-          <div class="dot"></div>
-          <span>AIR-GAPPED: 0 BYTES OUT</span>
-        </div>
-        <div class="pill pill-hipaa hidden md:flex">
-          <i class="fa-solid fa-lock" style="color:var(--teal-bright)"></i>
-          <span>HIPAA ┬º 164.312</span>
-        </div>
-        <div class="pill pill-ollama hidden md:flex">
-          <i class="fa-solid fa-microchip" style="color:var(--teal-bright)"></i>
-          <span id="ollama-status-text">Checking AIΓÇª</span>
-        </div>
-        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark / light mode">
-          <i class="fa-solid fa-sun icon-sun"></i>
-          <i class="fa-solid fa-moon icon-moon"></i>
-        </button>
-        <button class="header-doc-btn" onclick="toggleDocCard()">
-          <div class="header-doc-avatar" id="header-doc-initials">GH</div>
-          <span style="font-size:12px;font-weight:600" id="header-doc-name">Dr. Gregory House</span>
-          <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(148,163,184,0.5)"></i>
+        <!-- Doctor Profile Pill & Institution Switcher -->
+        <button id="auth-modal-btn" onclick="openAuthModal()" class="flex items-center space-x-2 bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-200 text-xs px-3.5 py-1.5 rounded-full transition shadow-sm cursor-pointer">
+          <i class="fa-solid fa-user-doctor text-teal-400"></i>
+          <span id="current-doctor-pill" class="font-medium">Dr. Gregory House, MD</span>
+          <span id="current-hospital-badge" class="bg-teal-900/90 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-700 font-mono hidden md:inline">Princeton Plainsboro</span>
+          <span class="text-teal-400 text-[10px]"><i class="fa-solid fa-chevron-down"></i></span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- MAIN GRID -->
-  <main class="mv-main">
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- ΓöÇΓöÇ LEFT: PATIENT INTAKE ΓöÇΓöÇ -->
-    <div style="display:flex;flex-direction:column;gap:18px">
-
-      <!-- Intake Mode Card -->
-      <div class="glass-card enter-anim" style="padding:20px">
-        <div class="glass-card-title" style="margin-bottom:16px">
-          <i class="fa-solid fa-hospital-user"></i> Clinical Record Ingestion
-          <span style="margin-left:auto;font-size:10px;color:rgba(148,163,184,0.4);font-weight:400;text-transform:none;letter-spacing:0">Local SQLite</span>
+    <!-- LEFT COLUMN: Patient Intake & Clinical History (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col space-y-5">
+      
+      <!-- Patient Intake Mode Selector -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 flex items-center">
+            <i class="fa-solid fa-hospital-user mr-2"></i> Clinical Record Ingestion
+          </h2>
+          <span class="text-[11px] text-slate-400 bg-slate-700/60 px-2 py-0.5 rounded">Local SQLite</span>
         </div>
 
-        <div class="intake-tabs">
-          <button class="intake-tab active" id="itab-demo" onclick="switchIntakeMode('demo')">
+        <!-- Mode Toggle Tabs -->
+        <div class="grid grid-cols-2 gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-700 mb-4 text-xs font-medium">
+          <button id="tab-demo" class="py-1.5 rounded-md bg-teal-600 text-white font-semibold transition" onclick="switchIntakeMode('demo')">
             <i class="fa-solid fa-user-check mr-1"></i> Demo Patients
           </button>
-          <button class="intake-tab" id="itab-raw" onclick="switchIntakeMode('raw')">
-            <i class="fa-solid fa-file-arrow-up mr-1"></i> Upload / Paste
+          <button id="tab-raw" class="py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition" onclick="switchIntakeMode('raw')">
+            <i class="fa-solid fa-file-arrow-up mr-1"></i> Upload / Paste Note
           </button>
         </div>
 
-        <!-- Demo Mode -->
-        <div id="section-demo">
-          <label class="mv-label">Select Synthetic Demo Patient:</label>
-          <select id="patient-select" class="mv-input" style="cursor:pointer">
+        <!-- Mode 1: Demo Patient Dropdown -->
+        <div id="demo-patient-section" class="space-y-3">
+          <label class="block text-xs font-medium text-slate-300">Select Synthetic Demo Patient Profile:</label>
+          <select id="patient-select" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 transition">
             <option value="PT-101">PT-101: John Doe (Stage 3 CKD, HTN, T2DM)</option>
             <option value="PT-102">PT-102: Sarah Connor (Moderate Asthma, Rhinitis)</option>
             <option value="PT-103">PT-103: Robert Smith (AFib, Warfarin Therapy)</option>
           </select>
         </div>
 
-        <!-- Upload / Paste Mode -->
-        <div id="section-raw" style="display:none">
-          <div id="file-drop-zone" class="drop-zone" style="margin-bottom:12px">
-            <input type="file" id="file-upload-input" accept=".pdf,.txt" style="display:none" />
-            <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px;color:var(--teal-bright);margin-bottom:6px;display:block"></i>
-            <div style="font-size:12px;font-weight:500;color:rgba(226,232,240,0.8)">Drag &amp; drop PDF or TXT</div>
-            <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-top:2px">or click to browse</div>
+        <!-- Mode 2: Document Upload & Raw Clinical Note -->
+        <div id="raw-note-section" class="space-y-3 hidden">
+          <!-- File Drag-and-Drop Area -->
+          <div id="file-drop-zone" class="border-2 border-dashed border-slate-600 hover:border-teal-500 rounded-lg p-3 text-center cursor-pointer transition bg-slate-900/50">
+            <input type="file" id="file-upload-input" accept=".pdf,.txt" class="hidden" />
+            <i class="fa-solid fa-cloud-arrow-up text-teal-400 text-xl mb-1"></i>
+            <p class="text-xs text-slate-300 font-medium">Drag & drop clinical PDF or TXT</p>
+            <p class="text-[10px] text-slate-500">or click to browse local files</p>
           </div>
 
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <label class="mv-label" style="margin:0">Or Paste Discharge Summary:</label>
-            <button onclick="applySampleDischargeNote()" style="font-size:11px;color:var(--teal-bright);background:none;border:none;cursor:pointer">Insert Sample</button>
+          <div class="flex justify-between items-center pt-1">
+            <label class="block text-xs font-medium text-slate-300">Or Paste Discharge Summary:</label>
+            <button onclick="applySampleDischargeNote()" class="text-[11px] text-teal-400 hover:underline">Insert Sample Note</button>
           </div>
-          <textarea id="raw-note-input" rows="4" class="mv-input" placeholder="64yo male with Stage 3 CKD..."></textarea>
-          <button onclick="triggerRedaction()" class="mv-btn-secondary" style="margin-top:10px">
-            <i class="fa-solid fa-user-secret mr-2"></i> Run PHI Redaction
+          <textarea id="raw-note-input" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500 transition placeholder-slate-500" placeholder="e.g. 64yo male with Stage 3 Chronic Kidney Disease (eGFR 38), hypertension. Meds: Lisinopril 20mg. Allergies: Penicillin..."></textarea>
+          <button onclick="triggerRedaction()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-teal-300 border border-slate-600 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
+            <i class="fa-solid fa-user-secret"></i>
+            <span>Run Safe Harbor PHI Redaction</span>
           </button>
         </div>
       </div>
 
-      <!-- Patient Profile Card -->
-      <div class="glass-card enter-anim" style="padding:20px;animation-delay:0.08s">
-        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(20,184,166,0.1);padding-bottom:14px;margin-bottom:16px">
+      <!-- De-identified Patient Profile Card -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md flex-1 flex flex-col">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
           <div>
-            <div id="display-patient-name" style="font-size:15px;font-weight:700;color:white">John Doe (Renal Profile)</div>
-            <div id="display-patient-meta" style="font-size:11px;color:rgba(148,163,184,0.5);margin-top:2px;font-family:monospace">ID: PT-101 ┬╖ Age: 64 ┬╖ Male</div>
+            <h3 id="display-patient-name" class="font-bold text-base text-white">John Doe (Renal Profile)</h3>
+            <p id="display-patient-meta" class="text-xs text-slate-400 font-mono">ID: PT-101 | Age: 64 | Male</p>
           </div>
-          <span id="display-patient-token" style="font-size:10px;font-family:monospace;background:rgba(20,184,166,0.08);border:1px solid rgba(20,184,166,0.2);color:var(--teal-bright);padding:4px 10px;border-radius:8px">ANON_A9F201</span>
+          <span id="display-patient-token" class="text-[10px] font-mono bg-teal-950 border border-teal-500/40 text-teal-300 px-2.5 py-1 rounded-md">
+            ANON_A9F201
+          </span>
         </div>
 
-        <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:600;color:rgba(148,163,184,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-            <i class="fa-solid fa-stethoscope mr-1.5" style="color:var(--teal-bright)"></i> Diagnosed Conditions
-          </div>
-          <div id="conditions-list" style="display:flex;flex-wrap:wrap;gap:6px">
-            <span class="tag-danger">Stage 3 Chronic Kidney Disease</span>
-            <span class="tag-neutral">Essential Hypertension</span>
-            <span class="tag-neutral">Type 2 Diabetes Mellitus</span>
-          </div>
-        </div>
-
-        <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:600;color:rgba(148,163,184,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-            <i class="fa-solid fa-pills mr-1.5" style="color:var(--teal-bright)"></i> Active Medications
-          </div>
-          <div id="medications-list" style="display:flex;flex-wrap:wrap;gap:6px">
-            <span class="tag-med">Lisinopril 20mg</span>
-            <span class="tag-med">Metformin 500mg BID</span>
-            <span class="tag-med">Amlodipine 5mg</span>
+        <!-- Extracted Diagnoses -->
+        <div class="mb-4">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-stethoscope text-teal-400 mr-1.5"></i> Diagnosed Conditions
+          </span>
+          <div id="conditions-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-red-950/60 border border-red-500/40 text-red-200 rounded-md text-xs font-medium">Stage 3 Chronic Kidney Disease</span>
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Essential Hypertension</span>
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Type 2 Diabetes Mellitus</span>
           </div>
         </div>
 
+        <!-- Active Medications -->
+        <div class="mb-4">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-pills text-teal-400 mr-1.5"></i> Current Active Medications
+          </span>
+          <div id="medications-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Lisinopril 20mg</span>
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Metformin 500mg BID</span>
+            <span class="px-2.5 py-1 bg-slate-700/80 text-slate-200 rounded-md text-xs">Amlodipine 5mg</span>
+          </div>
+        </div>
+
+        <!-- Allergies -->
+        <div class="mb-4">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
+          </span>
+          <div id="allergies-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded-md text-xs">Sulfonamides</span>
+          </div>
+        </div>
+
+        <!-- Quantitative Lab Biomarkers -->
         <div>
-          <div style="font-size:10px;font-weight:600;color:rgba(148,163,184,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-            <i class="fa-solid fa-triangle-exclamation mr-1.5" style="color:#f59e0b"></i> Documented Allergies
-          </div>
-          <div id="allergies-list" style="display:flex;flex-wrap:wrap;gap:6px">
-            <span class="tag-warning">Sulfonamides</span>
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+            <i class="fa-solid fa-vial-virus text-teal-400 mr-1.5"></i> Quantitative Lab Biomarkers
+          </span>
+          <div id="biomarkers-list" class="flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 bg-slate-700/60 text-slate-400 rounded-md text-xs font-mono">No labs loaded</span>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ΓöÇΓöÇ RIGHT: PRESCRIPTION & RESULTS ΓöÇΓöÇ -->
-    <div style="display:flex;flex-direction:column;gap:18px">
+    <!-- RIGHT COLUMN: Prescription Cross-Check & Safety Review (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col space-y-5">
 
-      <!-- Prescription Input -->
-      <div class="glass-card enter-anim" style="padding:20px;animation-delay:0.12s">
-        <div class="glass-card-title" style="margin-bottom:16px">
-          <i class="fa-solid fa-prescription-bottle-medical"></i> Proposed Prescription Cross-Check
-        </div>
+      <!-- Prescription Input Form -->
+      <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 mb-3 flex items-center">
+          <i class="fa-solid fa-prescription-bottle-medical mr-2"></i> Proposed Prescription Cross-Check
+        </h2>
 
-        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:12px">
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1">Medication Name:</label>
+              <input type="text" id="proposed-med-input" value="Ibuprofen" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-semibold" placeholder="e.g. Ibuprofen, Propranolol, Aspirin" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Dosage & Route:</label>
+              <input type="text" id="proposed-dose-input" value="400mg PO TID" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500" />
+            </div>
+          </div>
+
+          <!-- Quick Test Prescription Chips -->
           <div>
-            <label class="mv-label">Medication Name</label>
-            <input type="text" id="proposed-med-input" value="Ibuprofen" class="mv-input" placeholder="e.g. Ibuprofen, Propranolol" />
+            <span class="text-[11px] text-slate-400 mr-2">Quick Prescribe:</span>
+            <div class="inline-flex flex-wrap gap-1.5 mt-1">
+              <button onclick="setProposedMed('Advil', '400mg PO TID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-red-300 border border-red-500/30">Advil (Brand Normalization)</button>
+              <button onclick="setProposedMed('Propranolol', '40mg PO BID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-red-300 border border-red-500/30">Propranolol (Asthma Risk)</button>
+              <button onclick="setProposedMed('Aspirin', '81mg daily')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-amber-300 border border-amber-500/30">Aspirin (Bleeding Risk)</button>
+              <button onclick="setProposedMed('Amoxicillin', '500mg PO TID')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-purple-300 border border-purple-500/30">Amoxicillin (Allergy Check)</button>
+            </div>
           </div>
-          <div>
-            <label class="mv-label">Dosage &amp; Route</label>
-            <input type="text" id="proposed-dose-input" value="400mg PO TID" class="mv-input" style="width:160px" placeholder="e.g. 400mg PO TID" />
-          </div>
-        </div>
 
-        <div style="margin-bottom:14px">
-          <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-bottom:7px">Quick Prescribe:</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <button class="chip chip-red" onclick="setProposedMed('Advil','400mg PO TID')">
-              <i class="fa-solid fa-triangle-exclamation mr-1"></i> Advil (Brand Norm.)
-            </button>
-            <button class="chip chip-red" onclick="setProposedMed('Propranolol','40mg PO BID')">
-              <i class="fa-solid fa-lungs mr-1"></i> Propranolol (Asthma)
-            </button>
-            <button class="chip chip-amber" onclick="setProposedMed('Aspirin','81mg daily')">
-              <i class="fa-solid fa-droplet mr-1"></i> Aspirin (Bleeding)
-            </button>
-            <button class="chip chip-purple" onclick="setProposedMed('Amoxicillin','500mg PO TID')">
-              <i class="fa-solid fa-allergies mr-1"></i> Amoxicillin (Allergy)
-            </button>
-          </div>
+          <!-- Action Button -->
+          <button id="btn-run-review" onclick="runSafetyCheck()" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition mt-2">
+            <i class="fa-solid fa-radar text-base"></i>
+            <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
+          </button>
         </div>
-
-        <button id="btn-run-review" class="run-btn" onclick="runSafetyCheck()">
-          <i class="fa-solid fa-radar"></i>
-          <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
-        </button>
       </div>
 
-      <!-- Review Result Card -->
-      <div class="glass-card enter-anim" style="padding:20px;flex:1;animation-delay:0.18s">
-        <div id="result-idle-hint" style="text-align:center;padding:32px 0;color:rgba(148,163,184,0.3)">
-          <i class="fa-solid fa-radar" style="font-size:32px;display:block;margin-bottom:10px"></i>
-          <div style="font-size:13px">Run a contraindication review to see results</div>
-        </div>
-
-        <div id="result-content" style="display:none">
-          <!-- Status Banner -->
-          <div id="status-banner" class="result-banner idle">
-            <div id="status-icon" style="font-size:22px;margin-top:2px"></div>
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-                <h4 id="status-title" style="font-size:13px;font-weight:800;letter-spacing:0.5px;margin:0;text-transform:uppercase"></h4>
-                <span id="alerts-count-badge" style="font-size:10px;font-family:monospace;padding:2px 8px;border-radius:99px"></span>
+      <!-- Real-Time Clinical Review Result Card -->
+      <div id="review-result-card" class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md flex-1 flex flex-col justify-between">
+        
+        <!-- Result Banner -->
+        <div>
+          <div id="status-banner" class="rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-red-950/70 border-red-500/60 text-red-100">
+            <div id="status-icon" class="text-2xl mt-0.5 text-red-400">
+              <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 id="status-title" class="font-extrabold text-base tracking-wide uppercase text-red-300">
+                  CRITICAL CONTRAINDICATION DETECTED
+                </h4>
+                <span id="alerts-count-badge" class="text-[10px] font-mono bg-red-900 border border-red-500/50 text-red-200 px-2 py-0.5 rounded-full">
+                  1 Conflict Found
+                </span>
               </div>
-              <p id="status-explanation" style="font-size:12px;margin:0;color:rgba(226,232,240,0.8);line-height:1.5"></p>
+              <p id="status-explanation" class="text-xs mt-1 text-slate-200 leading-relaxed">
+                Administration of 'Ibuprofen' carries severe clinical risk due to documented conflict with Stage 3 Chronic Kidney Disease (CKD).
+              </p>
             </div>
           </div>
 
-          <!-- Alert Cards -->
-          <div id="alerts-container" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
+          <div id="polypharmacy-container" class="space-y-2 mb-3 hidden"></div>
 
-          <!-- Audit Stamp -->
-          <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(148,163,184,0.5);font-family:monospace">
-              <i class="fa-solid fa-fingerprint" style="color:var(--teal-bright)"></i>
-              SHA-256: <span id="audit-hash-display" style="color:rgba(226,232,240,0.8)">ΓÇö</span>
+          <!-- Detailed Conflict Cards -->
+          <div id="alerts-container" class="space-y-2.5">
+            <div class="bg-slate-900/90 border border-red-500/30 rounded-lg p-3.5 text-xs">
+              <div class="flex items-center justify-between font-semibold text-red-300 mb-1.5">
+                <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Diagnosed Condition: Stage 3 Chronic Kidney Disease (CKD)</span>
+                <span class="text-[10px] bg-red-950 border border-red-500/40 px-2 py-0.5 rounded uppercase font-mono">Drug-Disease</span>
+              </div>
+              <p class="text-slate-300 mb-2 leading-relaxed">
+                <strong class="text-slate-200">Pathophysiological Mechanism:</strong> Inhibits renal vasodilating prostaglandins (PGE2, PGI2); precipitates acute afferent arteriolar vasoconstriction and acute renal failure in pre-existing CKD.
+              </p>
+              <div class="bg-slate-800/80 p-2 rounded border border-slate-700 text-teal-300 font-mono text-[11px]">
+                <strong class="text-slate-300">Recommendation:</strong> Absolute contraindication. Avoid NSAIDs. Consider Acetaminophen (max 2g/day) or topical analgesics.
+              </div>
             </div>
-            <div style="display:flex;gap:14px;font-size:11px;color:rgba(148,163,184,0.5)">
-              <span>Latency: <strong id="exec-time-display" style="color:rgba(226,232,240,0.8)">ΓÇö</strong></span>
-              <span style="color:#6ee7b7;font-weight:600"><i class="fa-solid fa-check-circle mr-1"></i>Zero-Cloud</span>
-            </div>
+          </div>
+
+          <!-- Clinical Safe Alternatives Section with 1-Click Swap -->
+          <div id="alternatives-container" class="space-y-2 mt-3.5 hidden"></div>
+        </div>
+
+        <!-- Verification & Integrity Stamp -->
+        <div class="border-t border-slate-700/80 pt-3 mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-fingerprint text-teal-400"></i>
+            <span class="font-mono">Audit SHA-256: <span id="audit-hash-display" class="text-slate-300">c9f8a12e4b77...809d</span></span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span>Latency: <strong id="exec-time-display" class="text-slate-200">18.4 ms</strong></span>
+            <span class="text-emerald-400 font-semibold mr-1"><i class="fa-solid fa-check-circle"></i> Zero-Cloud</span>
+            <button id="btn-print-cert" onclick="exportClinicalCertificate()" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[11px] font-semibold flex items-center space-x-1.5 transition shadow">
+              <i class="fa-solid fa-file-shield text-xs"></i>
+              <span>Print Certificate</span>
+            </button>
           </div>
         </div>
+
       </div>
-    </div>
+
+    </section>
+
   </main>
 
-  <!-- AUDIT TRAIL SECTION -->
-  <section class="audit-section">
-    <div class="glass-card">
-      <div class="audit-drawer-header" onclick="toggleAuditDrawer()">
-        <div style="display:flex;align-items:center;gap:10px">
-          <i class="fa-solid fa-database" style="color:var(--teal-bright)"></i>
-          <span style="font-size:13px;font-weight:700;color:white">Local Cryptographic Audit Trail</span>
-          <span style="font-size:10px;color:rgba(148,163,184,0.4);font-family:monospace">HIPAA ┬º 164.312(b)</span>
+  <!-- BOTTOM SECTION: Cryptographic Audit Trail (HIPAA § 164.312(b)) -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
+    <div class="bg-slate-800/90 rounded-xl border border-slate-700/80 p-5 shadow-md">
+      <div class="flex flex-wrap items-center justify-between gap-3 cursor-pointer" onclick="toggleAuditDrawer()">
+        <div class="flex items-center space-x-2.5">
+          <i class="fa-solid fa-database text-teal-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Local Cryptographic Audit Trail (HIPAA § 164.312(b))</h3>
         </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <button onclick="event.stopPropagation();verifyAuditChain()" style="font-size:11px;padding:6px 12px;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);border-radius:8px;color:var(--teal-bright);cursor:pointer;font-weight:500">
-            <i class="fa-solid fa-shield-halved mr-1"></i> Verify Chain
+        <div class="flex items-center space-x-3">
+          <button onclick="event.stopPropagation(); verifyAuditChain();" class="text-xs bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-300 px-3 py-1 rounded-md font-semibold flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Verify Chain Integrity</span>
           </button>
-          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal-bright)">
+          <div class="flex items-center space-x-1 text-xs text-teal-400 font-medium">
             <span id="audit-toggle-text">Show Logs</span>
-            <i id="audit-toggle-icon" class="fa-solid fa-chevron-down" style="transition:transform 0.2s"></i>
+            <i id="audit-toggle-icon" class="fa-solid fa-chevron-down transition"></i>
           </div>
         </div>
       </div>
 
-      <div id="integrity-banner-wrap" style="padding:0 20px"></div>
+      <!-- Verification Banner -->
+      <div id="integrity-banner" class="mt-3 p-2.5 rounded-lg text-xs font-mono hidden"></div>
 
-      <div id="audit-drawer" style="display:none;padding:0 0 16px">
-        <div style="overflow-x:auto;padding:0 20px">
-          <table class="audit-table">
-            <thead>
+      <div id="audit-drawer" class="mt-4 hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <tr>
-                <th>Timestamp</th>
-                <th>Reviewer</th>
-                <th>Event ID</th>
-                <th>Patient Token</th>
-                <th>Prescription</th>
-                <th>Status</th>
-                <th>SHA-256</th>
+                <th class="py-2 px-3">Timestamp (UTC)</th>
+                <th class="py-2 px-3">Reviewer & Hospital</th>
+                <th class="py-2 px-3">Event ID</th>
+                <th class="py-2 px-3">Patient Token</th>
+                <th class="py-2 px-3">Prescription</th>
+                <th class="py-2 px-3">Status</th>
+                <th class="py-2 px-3">SHA-256 Hash</th>
               </tr>
             </thead>
-            <tbody id="audit-table-body">
-              <!-- dynamically populated -->
+            <tbody id="audit-table-body" class="divide-y divide-slate-700/60 font-mono text-[11px]">
+              <!-- Dynamically populated via JS -->
             </tbody>
           </table>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px 0;border-top:1px solid rgba(255,255,255,0.04);margin-top:12px">
-          <span style="font-size:10px;color:rgba(148,163,184,0.4)"><i class="fa-solid fa-shield-halved" style="color:var(--teal-bright);margin-right:4px"></i> HIPAA ┬º 164.312(b) Compliance Export</span>
-          <div style="display:flex;gap:8px">
-            <a href="/api/audit-export?format=csv" download style="font-size:11px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:7px;color:var(--teal-bright);text-decoration:none">
-              <i class="fa-solid fa-file-csv mr-1"></i> CSV
+
+        <!-- Compliance Export Controls -->
+        <div class="flex flex-wrap items-center justify-between pt-3 border-t border-slate-700/60 mt-3 gap-2">
+          <span class="text-[11px] text-slate-400"><i class="fa-solid fa-shield-halved text-teal-400 mr-1"></i> HIPAA Security Rule § 164.312(b) Audit Compliance Export</span>
+          <div class="flex items-center space-x-2">
+            <a href="/api/audit-export?format=csv" download class="text-[11px] bg-slate-700 hover:bg-slate-600 text-teal-300 px-2.5 py-1 rounded border border-slate-600 transition flex items-center space-x-1">
+              <i class="fa-solid fa-file-csv"></i>
+              <span>Export CSV</span>
             </a>
-            <a href="/api/audit-export?format=json" download style="font-size:11px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:7px;color:var(--teal-bright);text-decoration:none">
-              <i class="fa-solid fa-file-code mr-1"></i> JSON
+            <a href="/api/audit-export?format=json" download class="text-[11px] bg-slate-700 hover:bg-slate-600 text-teal-300 px-2.5 py-1 rounded border border-slate-600 transition flex items-center space-x-1">
+              <i class="fa-solid fa-file-code"></i>
+              <span>Export JSON</span>
             </a>
           </div>
         </div>
@@ -1285,492 +350,149 @@
     </div>
   </section>
 
-</div><!-- /main-app -->
-
-<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-     FLOATING DOCTOR CARD
-ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
-<div id="floating-doc-card">
-  <div class="float-card-header">
-    <div class="float-doc-avatar" id="float-doc-initials">GH</div>
-    <div>
-      <div class="float-doc-name" id="float-doc-name">Dr. Gregory House, MD</div>
-      <div class="float-doc-role" id="float-doc-role">Princeton Plainsboro ┬╖ PHYSICIAN</div>
-    </div>
-  </div>
-  <div class="float-card-body">
-    <div class="float-stat-row">
-      <span class="float-stat-label"><i class="fa-solid fa-fingerprint mr-1" style="color:var(--teal-bright)"></i> License</span>
-      <span class="float-stat-value" id="float-doc-license">NPI-1999887766</span>
-    </div>
-    <div class="float-stat-row">
-      <span class="float-stat-label"><i class="fa-solid fa-clock mr-1" style="color:var(--teal-bright)"></i> Session Start</span>
-      <span class="float-stat-value" id="float-session-time">ΓÇö</span>
-    </div>
-    <div class="float-stat-row">
-      <span class="float-stat-label"><i class="fa-solid fa-clipboard-check mr-1" style="color:var(--teal-bright)"></i> Reviews Today</span>
-      <span class="float-stat-value" id="float-review-count">0</span>
-    </div>
-    <div class="float-stat-row">
-      <span class="float-stat-label"><i class="fa-solid fa-wifi-slash mr-1" style="color:#6ee7b7"></i> Network</span>
-      <span class="float-stat-value" style="color:#6ee7b7">127.0.0.1 ONLY</span>
-    </div>
-  </div>
-  <div class="float-card-footer">
-    <button class="float-btn float-btn-change" onclick="showChangeDocModal()">
-      <i class="fa-solid fa-arrows-rotate mr-1"></i> Switch
-    </button>
-    <button class="float-btn float-btn-collapse" onclick="toggleDocCard()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-  </div>
-</div>
-<div id="doc-card-toggle" onclick="toggleDocCard()" title="Doctor Profile">
-  <i class="fa-solid fa-user-doctor" style="color:white;font-size:18px"></i>
-</div>
-
-<!-- Switch Doctor Modal (minimal overlay) -->
-<div id="switch-doc-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center">
-  <div style="background:rgba(13,20,39,0.98);border:1px solid rgba(20,184,166,0.2);border-radius:20px;padding:24px;width:360px;max-width:calc(100vw - 32px);animation:slide-up 0.3s ease">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:white">Switch Reviewer</div>
-      <button onclick="closeChangeDocModal()" style="background:none;border:none;color:rgba(148,163,184,0.5);cursor:pointer;font-size:16px"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="switch-doc-list" style="display:flex;flex-direction:column;gap:8px">
-      <!-- populated by JS -->
-    </div>
-  </div>
-</div>
-
-<script src="/static/app.js"></script>
-<script>
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  THEME TOGGLE (Dark Γåö Light)
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-(function applyStoredTheme() {
-  const stored = localStorage.getItem('mv-theme') || 'dark';
-  if (stored === 'light') document.documentElement.classList.add('light');
-  window._particleLightMode = (stored === 'light');
-})();
-
-function toggleTheme() {
-  const html = document.documentElement;
-  const isLight = html.classList.toggle('light');
-  localStorage.setItem('mv-theme', isLight ? 'light' : 'dark');
-
-  // Ripple feedback on the toggle button
-  const btn = document.querySelector('.theme-toggle-btn');
-  btn.style.transform = 'scale(0.88)';
-  setTimeout(() => { btn.style.transform = ''; }, 160);
-
-  // Particle canvas repaints itself automatically via requestAnimationFrame.
-  // Just update particle alpha for light mode readability.
-  window._particleLightMode = isLight;
-}
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  PARTICLE SYSTEM
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-(function initParticles() {
-  const canvas = document.getElementById('particle-canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  const COLORS = ['rgba(20,184,166,', 'rgba(6,182,212,', 'rgba(45,212,191,'];
-  for (let i = 0; i < 55; i++) {
-    particles.push({
-      x: Math.random() * 1000,
-      y: Math.random() * 1000,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.8 + 0.4,
-      alpha: Math.random() * 0.5 + 0.1,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)]
-    });
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-    const alphaScale = window._particleLightMode ? 0.25 : 1;
-    for (const p of particles) {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = p.color + (p.alpha * alphaScale) + ')';
-      ctx.fill();
-    }
-    // Draw connecting lines between close particles
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 100) {
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(20,184,166,${0.06 * alphaScale * (1 - dist / 100)})`;
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  SPLASH ΓåÆ AUTH GATE ΓåÆ MAIN APP
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    document.getElementById('splash').classList.add('fade-out');
-    setTimeout(() => {
-      document.getElementById('splash').style.display = 'none';
-      document.getElementById('auth-gate').classList.add('visible');
-    }, 800);
-  }, 2800);
-
-  // init app JS if available
-  if (typeof initPatientSelector === 'function') initPatientSelector();
-  const sel = document.getElementById('patient-select');
-  if (sel) sel.addEventListener('change', e => {
-    currentPatientId = e.target.value;
-    if (typeof loadPatientProfile === 'function') loadPatientProfile(currentPatientId);
-  });
-  if (typeof checkAiStatus === 'function') checkAiStatus();
-  if (typeof refreshAuditTrail === 'function') refreshAuditTrail();
-  if (typeof setupFileDropZone === 'function') setupFileDropZone();
-});
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  AUTH GATE LOGIC
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-const DEMO_DOCTORS = [
-  { key: 'house',  initials: 'GH', name: 'Dr. Gregory House, MD',  hospital: 'Princeton Plainsboro', license: 'NPI-1999887766', id: 'PRAC-001' },
-  { key: 'patel',  initials: 'AP', name: 'Dr. Anika Patel, MBBS',  hospital: 'Metro General Hospital', license: 'NPI-2345678901', id: 'PRAC-002' },
-  { key: 'chen',   initials: 'RC', name: 'Dr. Robert Chen, MD',    hospital: 'City Medical Center', license: 'NPI-3456789012', id: 'PRAC-003' },
-];
-let currentDoctor = DEMO_DOCTORS[0];
-let sessionStart = new Date();
-let reviewCount = 0;
-let pendingEmail = '';
-let docCardVisible = false;
-
-const HOSPITAL_DOMAINS = { H001: 'princeton.edu', H002: 'metrogeneral.org', H003: 'citymed.org' };
-
-function onRegHospitalChange() {
-  const sel = document.getElementById('reg-hospital');
-  const hint = document.getElementById('reg-domain-hint');
-  const domain = HOSPITAL_DOMAINS[sel.value] || 'hospital.org';
-  hint.textContent = `Required domain: @${domain}`;
-}
-
-function showGateAlert(msg, type = 'error') {
-  const el = document.getElementById('auth-alert-gate');
-  el.className = 'auth-alert ' + type;
-  el.style.display = 'block';
-  el.innerHTML = msg;
-}
-function hideGateAlert() {
-  const el = document.getElementById('auth-alert-gate');
-  if (el) el.style.display = 'none';
-}
-
-function switchAuthGateTab(tab) {
-  hideGateAlert();
-  ['demo','login','register'].forEach(t => {
-    document.getElementById(`gtab-${t}`).classList.toggle('active', t === tab);
-    document.getElementById(`gtab-content-${t}`).classList.toggle('active', t === tab);
-  });
-  document.getElementById('otp-screen').style.display = 'none';
-}
-
-function gateSelectDemo(key) {
-  const doc = DEMO_DOCTORS.find(d => d.key === key) || DEMO_DOCTORS[0];
-  activateDoctor(doc);
-}
-
-function activateDoctor(doc) {
-  currentDoctor = doc;
-  sessionStart = new Date();
-  reviewCount = 0;
-
-  // Try to hit the backend switch-demo endpoint
-  fetch('/api/auth/switch-demo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ practitioner_id: doc.id || doc.key })
-  }).catch(() => {});  // fail silently, we track locally
-
-  updateDoctorUI(doc);
-  enterApp();
-}
-
-function updateDoctorUI(doc) {
-  const initials = doc.initials || doc.name.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase();
-  document.getElementById('header-doc-initials').textContent = initials;
-  document.getElementById('header-doc-name').textContent = doc.name.replace(', MD','').replace(', MBBS','');
-  document.getElementById('float-doc-initials').textContent = initials;
-  document.getElementById('float-doc-name').textContent = doc.name;
-  document.getElementById('float-doc-role').textContent = `${doc.hospital} ┬╖ PHYSICIAN`;
-  document.getElementById('float-doc-license').textContent = doc.license;
-  document.getElementById('float-session-time').textContent = sessionStart.toLocaleTimeString();
-  document.getElementById('float-review-count').textContent = reviewCount;
-}
-
-function enterApp() {
-  const gate = document.getElementById('auth-gate');
-  gate.classList.add('slide-out');
-  setTimeout(() => {
-    gate.classList.remove('visible', 'slide-out');
-    const app = document.getElementById('main-app');
-    app.classList.add('visible');
-    setTimeout(() => {
-      showDocCard();
-      if (typeof loadPatientProfile === 'function') loadPatientProfile('PT-101');
-      if (typeof loadHospitalsAndDemoDoctors === 'function') loadHospitalsAndDemoDoctors();
-    }, 300);
-  }, 500);
-}
-
-async function handleGateLogin() {
-  hideGateAlert();
-  const email = document.getElementById('gate-email').value.trim();
-  const password = document.getElementById('gate-password').value;
-  if (!email || !password) { showGateAlert('Please enter both email and password.'); return; }
-
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (res.status === 403) {
-      pendingEmail = email;
-      showOtpGateScreen(email, null);
-      showGateAlert(data.detail || 'Email not verified.', 'error');
-      return;
-    }
-    if (!res.ok) { showGateAlert(data.detail || 'Login failed.', 'error'); return; }
-
-    const doc = {
-      key: email, initials: data.practitioner.full_name.split(' ').slice(1,3).map(n=>n[0]).join('').toUpperCase(),
-      name: data.practitioner.full_name, hospital: data.practitioner.hospital_name,
-      license: data.practitioner.medical_license, id: data.practitioner.practitioner_id
-    };
-    activateDoctor(doc);
-  } catch(e) { showGateAlert(e.message, 'error'); }
-}
-
-async function handleGateRegister() {
-  hideGateAlert();
-  const full_name = document.getElementById('reg-name').value.trim();
-  const hospital_id = document.getElementById('reg-hospital').value;
-  const email = document.getElementById('reg-email').value.trim();
-  const medical_license = document.getElementById('reg-license').value.trim();
-  const password = document.getElementById('reg-password').value;
-  if (!full_name || !email || !medical_license || !password) {
-    showGateAlert('All credentials are required.', 'error'); return;
-  }
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name, hospital_id, email, medical_license, password })
-    });
-    const data = await res.json();
-    if (!res.ok) { showGateAlert(data.detail || 'Registration rejected.', 'error'); return; }
-    pendingEmail = email;
-    showOtpGateScreen(email, data.simulated_code);
-  } catch(e) { showGateAlert(e.message, 'error'); }
-}
-
-function showOtpGateScreen(email, code) {
-  ['demo','login','register'].forEach(t => {
-    document.getElementById(`gtab-content-${t}`).classList.remove('active');
-    document.getElementById(`gtab-${t}`).classList.remove('active');
-  });
-  document.getElementById('auth-tabs-bar').style.display = 'none';
-  const screen = document.getElementById('otp-screen');
-  screen.style.display = 'block';
-  document.getElementById('otp-email-display').textContent = email;
-  const codeEl = document.getElementById('otp-sim-code');
-  codeEl.textContent = code ? `${code.substring(0,3)}-${code.substring(3,6)}` : 'DISPATCHED';
-  document.getElementById('otp-input-gate').value = '';
-  document.getElementById('otp-input-gate').focus();
-}
-
-async function handleGateOtp() {
-  hideGateAlert();
-  const code = document.getElementById('otp-input-gate').value.trim();
-  if (!code || code.length !== 6) { showGateAlert('Please enter the complete 6-digit code.'); return; }
-  try {
-    const res = await fetch('/api/auth/verify-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: pendingEmail, verification_code: code })
-    });
-    const data = await res.json();
-    if (!res.ok) { showGateAlert(data.detail || 'Verification failed.'); return; }
-    const doc = {
-      key: pendingEmail, initials: data.practitioner.full_name.split(' ').slice(1,3).map(n=>n[0]).join('').toUpperCase(),
-      name: data.practitioner.full_name, hospital: data.practitioner.hospital_name,
-      license: data.practitioner.medical_license, id: data.practitioner.practitioner_id
-    };
-    activateDoctor(doc);
-  } catch(e) { showGateAlert(e.message); }
-}
-
-async function handleGateResend() {
-  try {
-    const res = await fetch('/api/auth/resend-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: pendingEmail })
-    });
-    const data = await res.json();
-    if (res.ok && data.simulated_code) {
-      const c = data.simulated_code;
-      document.getElementById('otp-sim-code').textContent = `${c.substring(0,3)}-${c.substring(3,6)}`;
-      showGateAlert('<i class="fa-solid fa-check mr-1"></i> New code dispatched.', 'success');
-    }
-  } catch(e) {}
-}
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  FLOATING DOCTOR CARD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-function showDocCard() {
-  docCardVisible = true;
-  document.getElementById('floating-doc-card').classList.add('visible');
-  document.getElementById('doc-card-toggle').classList.remove('visible');
-}
-
-function toggleDocCard() {
-  if (docCardVisible) {
-    document.getElementById('floating-doc-card').classList.remove('visible');
-    document.getElementById('doc-card-toggle').classList.add('visible');
-    docCardVisible = false;
-  } else {
-    document.getElementById('floating-doc-card').classList.add('visible');
-    document.getElementById('doc-card-toggle').classList.remove('visible');
-    docCardVisible = true;
-  }
-}
-
-function showChangeDocModal() {
-  const modal = document.getElementById('switch-doc-modal');
-  const list = document.getElementById('switch-doc-list');
-  list.innerHTML = '';
-  DEMO_DOCTORS.forEach(doc => {
-    const card = document.createElement('div');
-    card.className = 'demo-doc-card';
-    const initials = doc.initials;
-    const isActive = currentDoctor.key === doc.key;
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="doc-avatar">${initials}</div>
-        <div>
-          <div style="font-size:12px;font-weight:600;color:white">${doc.name}</div>
-          <div style="font-size:10px;color:rgba(148,163,184,0.5)">${doc.hospital}</div>
+  <!-- Physician Access & Institutional Verification Modal -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700/80 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-teal-500/20 p-2 rounded-lg text-teal-400 border border-teal-500/30">
+            <i class="fa-solid fa-hospital-user text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Physician & Hospital Access</span>
+              <span class="text-[10px] bg-slate-700 text-teal-300 px-2 py-0.5 rounded font-mono font-normal">HIPAA § 164.312(a)</span>
+            </h3>
+            <p class="text-xs text-slate-400">Institutional Identity Verification & Cryptographic Attribution</p>
+          </div>
         </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-lg transition p-1 cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      ${isActive
-        ? '<span style="font-size:10px;color:#6ee7b7;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:6px">ACTIVE</span>'
-        : '<button class="doc-switch-btn">Switch</button>'}
-    `;
-    if (!isActive) {
-      card.querySelector('.doc-switch-btn').addEventListener('click', () => {
-        activateDoctor(doc);
-        closeChangeDocModal();
-        updateDoctorUI(doc);
-      });
-    }
-    list.appendChild(card);
-  });
-  modal.style.display = 'flex';
-}
 
-function closeChangeDocModal() {
-  document.getElementById('switch-doc-modal').style.display = 'none';
-}
+      <!-- Modal Tabs -->
+      <div id="modal-tabs-header" class="flex border-b border-slate-700 text-xs font-medium text-slate-400 bg-slate-900/50">
+        <button id="tab-btn-demo" onclick="switchAuthTab('demo')" class="flex-1 py-3 px-4 text-center border-b-2 border-teal-400 text-teal-300 font-semibold cursor-pointer">
+          <i class="fa-solid fa-bolt mr-1.5"></i>Demo Staff
+        </button>
+        <button id="tab-btn-login" onclick="switchAuthTab('login')" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent hover:text-slate-200 cursor-pointer">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Sign In
+        </button>
+        <button id="tab-btn-register" onclick="switchAuthTab('register')" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent hover:text-slate-200 cursor-pointer">
+          <i class="fa-solid fa-user-plus mr-1.5"></i>Register
+        </button>
+      </div>
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  INTAKE MODE TOGGLE
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-function switchIntakeMode(mode) {
-  document.getElementById('itab-demo').classList.toggle('active', mode === 'demo');
-  document.getElementById('itab-raw').classList.toggle('active', mode === 'raw');
-  document.getElementById('section-demo').style.display = mode === 'demo' ? 'block' : 'none';
-  document.getElementById('section-raw').style.display = mode === 'raw' ? 'block' : 'none';
-  if (mode === 'demo' && typeof loadPatientProfile === 'function') {
-    loadPatientProfile(document.getElementById('patient-select').value);
-  }
-}
+      <!-- Tab Content Area -->
+      <div class="p-6">
+        
+        <!-- Feedback Banner -->
+        <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg text-xs font-mono"></div>
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  OVERRIDE renderReviewResults to show/hide idle hint
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-const _origRunSafetyCheck = typeof runSafetyCheck !== 'undefined' ? runSafetyCheck : null;
+        <!-- TAB 1: Fast Switch (Demo Doctors) -->
+        <div id="auth-tab-demo" class="space-y-3">
+          <p class="text-xs text-slate-300 mb-2">1-Click switch active reviewer to evaluate institutional accountability:</p>
+          <div id="demo-doctors-list" class="space-y-2.5">
+            <!-- Populated via JS -->
+          </div>
+        </div>
 
-// Patch runSafetyCheck to track review count
-async function runSafetyCheckPatched() {
-  document.getElementById('result-idle-hint').style.display = 'none';
-  document.getElementById('result-content').style.display = 'block';
-  if (typeof runSafetyCheck === 'function') await runSafetyCheck();
-  reviewCount++;
-  document.getElementById('float-review-count').textContent = reviewCount;
-}
+        <!-- TAB 2: Sign In -->
+        <div id="auth-tab-login" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Institutional Email</label>
+            <input type="email" id="login-email" placeholder="dr.house@princeton.edu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+            <input type="password" id="login-password" placeholder="HospitalPass123!" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <button onclick="handleLogin()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-lock"></i>
+            <span>Sign In to Hospital Portal</span>
+          </button>
+          <p class="text-[11px] text-slate-500 text-center font-mono">Default Demo Password: <span class="text-teal-400">HospitalPass123!</span></p>
+        </div>
 
-// Override the button to call our patched version
-document.getElementById('btn-run-review').onclick = runSafetyCheckPatched;
+        <!-- TAB 3: Register Institutional Physician -->
+        <div id="auth-tab-register" class="space-y-3.5 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Full Legal Name</label>
+            <input type="text" id="reg-name" placeholder="Dr. Sarah Connor, MD" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Healthcare Institution</label>
+            <select id="reg-hospital-select" onchange="onHospitalSelectChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500">
+              <!-- Populated via JS -->
+            </select>
+            <p id="reg-domain-hint" class="text-[11px] text-teal-400 mt-1 font-mono">Required email domain: @metrogeneral.org</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Institutional Email</label>
+            <input type="email" id="reg-email" placeholder="s.connor@metrogeneral.org" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Medical License / NPI</label>
+              <input type="text" id="reg-license" placeholder="NPI-1092837465" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Password (min 8 chars)</label>
+              <input type="password" id="reg-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500 font-mono" />
+            </div>
+          </div>
+          <button onclick="handleRegister()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer mt-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Register & Request Verification OTP</span>
+          </button>
+        </div>
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-//  AUDIT DRAWER
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-let auditOpen = false;
-function toggleAuditDrawer() {
-  auditOpen = !auditOpen;
-  const drawer = document.getElementById('audit-drawer');
-  const icon = document.getElementById('audit-toggle-icon');
-  const text = document.getElementById('audit-toggle-text');
-  drawer.style.display = auditOpen ? 'block' : 'none';
-  icon.style.transform = auditOpen ? 'rotate(180deg)' : '';
-  text.textContent = auditOpen ? 'Collapse' : 'Show Logs';
-  if (auditOpen && typeof refreshAuditTrail === 'function') refreshAuditTrail();
-}
+        <!-- SCREEN: 6-Digit Email OTP Verification -->
+        <div id="auth-screen-otp" class="space-y-4 hidden">
+          <div class="text-center">
+            <div class="inline-flex p-3 rounded-full bg-teal-500/20 text-teal-400 mb-2">
+              <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white">Institutional Identity Verification</h4>
+            <p class="text-xs text-slate-400 mt-1">Enter 6-digit code for <span id="otp-target-email" class="text-teal-300 font-mono font-bold">doctor@hospital.org</span></p>
+          </div>
 
-async function verifyAuditChain() {
-  const wrap = document.getElementById('integrity-banner-wrap');
-  wrap.innerHTML = `<div class="integrity-banner visible" style="margin:10px 0;color:var(--teal-bright);background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.2)">
-    <i class="fa-solid fa-spinner fa-spin"></i><span>Verifying SHA-256 chainΓÇª</span></div>`;
-  try {
-    const res = await fetch('/api/audit-verify');
-    const data = await res.json();
-    if (data.valid) {
-      wrap.innerHTML = `<div class="integrity-banner visible ok" style="margin:10px 0;justify-content:space-between">
-        <div><i class="fa-solid fa-check-double mr-1"></i><strong>CRYPTOGRAPHIC PROOF:</strong> All ${data.total_blocks} blocks verified intact.</div>
-        <span style="font-weight:700;font-size:10px">HIPAA ┬º 164.312(b) Certified</span></div>`;
-    } else {
-      wrap.innerHTML = `<div class="integrity-banner visible fail" style="margin:10px 0">
-        <i class="fa-solid fa-triangle-exclamation mr-1"></i><strong>TAMPER DETECTED:</strong> ${data.error}</div>`;
-    }
-  } catch(e) {
-    wrap.innerHTML = `<div class="integrity-banner visible fail" style="margin:10px 0">Verification failed: ${e.message}</div>`;
-  }
-}
-</script>
+          <!-- Simulated Zero-Cloud Hospital Outbox Notification Banner -->
+          <div id="otp-simulated-box" class="bg-slate-900/90 border border-teal-500/40 rounded-xl p-3 text-xs font-mono text-teal-300 space-y-1 shadow-inner">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-1">
+              <span><i class="fa-solid fa-server mr-1"></i> Hospital Intranet Mail Dispatch</span>
+              <span class="text-emerald-400 text-[10px]">Zero-Cloud Air-Gapped</span>
+            </div>
+            <div class="pt-1 flex items-center justify-between">
+              <span class="text-slate-400">One-Time Code:</span>
+              <strong id="simulated-otp-code" class="text-amber-300 text-base tracking-widest bg-slate-950 px-2 py-0.5 rounded border border-amber-500/30">------</strong>
+            </div>
+            <p class="text-[10px] text-slate-500 italic pt-1">Simulated sovereign hospital LAN mail delivery for zero-cloud testing.</p>
+          </div>
+
+          <div>
+            <input type="text" id="otp-input" maxlength="6" placeholder="000000" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 text-center text-2xl tracking-[0.3em] font-mono font-bold text-teal-400 focus:outline-none focus:border-teal-400" />
+          </div>
+
+          <button onclick="handleVerifyOtp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-shield-check"></i>
+            <span>Verify & Activate Institutional Account</span>
+          </button>
+
+          <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <button onclick="handleResendOtp()" class="text-teal-400 hover:underline cursor-pointer">Resend Code</button>
+            <button onclick="switchAuthTab('login')" class="text-slate-400 hover:underline cursor-pointer">Back to Sign In</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- External app script -->
+  <script src="/static/app.js"></script>
 </body>
 </html>
