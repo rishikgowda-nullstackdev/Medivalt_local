@@ -10,6 +10,7 @@ from ai_engine.pharmacology import PharmacologyKnowledge
 from ai_engine.polypharmacy import PolypharmacyEngine
 from ai_engine.lab_evaluator import LabBiomarkerEvaluator
 from ai_engine.alternatives import SafeAlternativeRecommender
+from ai_engine.geriatric_renal import GeriatricRenalEngine, calculate_cockcroft_gault
 
 __all__ = [
     "analyze",
@@ -17,5 +18,7 @@ __all__ = [
     "PharmacologyKnowledge",
     "PolypharmacyEngine",
     "LabBiomarkerEvaluator",
-    "SafeAlternativeRecommender"
+    "SafeAlternativeRecommender",
+    "GeriatricRenalEngine",
+    "calculate_cockcroft_gault"
 ]

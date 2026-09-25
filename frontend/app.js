@@ -165,22 +165,45 @@ async function checkAiStatus() {
 // ---------------------------------------------------------------------------
 function switchIntakeMode(mode) {
     currentIntakeMode = mode;
-    const tabDemo = document.getElementById("tab-demo");
-    const tabRaw = document.getElementById("tab-raw");
-    const demoSec = document.getElementById("demo-patient-section");
-    const rawSec = document.getElementById("raw-note-section");
+    const tabDemo = document.getElementById("itab-demo") || document.getElementById("tab-demo");
+    const tabRaw = document.getElementById("itab-raw") || document.getElementById("tab-raw");
+    const tabFhir = document.getElementById("itab-fhir");
+    const demoSec = document.getElementById("section-demo") || document.getElementById("demo-patient-section");
+    const rawSec = document.getElementById("section-raw") || document.getElementById("raw-note-section");
+    const fhirSec = document.getElementById("section-fhir");
+
+    [tabDemo, tabRaw, tabFhir].forEach(t => {
+        if (t) {
+            t.classList.remove("active");
+            t.className = t.className.replace(/\bactive\b/g, "").trim();
+        }
+    });
+    [demoSec, rawSec, fhirSec].forEach(s => {
+        if (s) {
+            s.style.display = "none";
+            s.classList.add("hidden");
+        }
+    });
 
     if (mode === 'demo') {
-        tabDemo.className = "py-1.5 rounded-md bg-teal-600 text-white font-semibold transition";
-        tabRaw.className = "py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition";
-        demoSec.classList.remove("hidden");
-        rawSec.classList.add("hidden");
+        if (tabDemo) tabDemo.classList.add("active");
+        if (demoSec) {
+            demoSec.style.display = "block";
+            demoSec.classList.remove("hidden");
+        }
         loadPatientProfile(currentPatientId);
-    } else {
-        tabRaw.className = "py-1.5 rounded-md bg-teal-600 text-white font-semibold transition";
-        tabDemo.className = "py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition";
-        rawSec.classList.remove("hidden");
-        demoSec.classList.add("hidden");
+    } else if (mode === 'raw') {
+        if (tabRaw) tabRaw.classList.add("active");
+        if (rawSec) {
+            rawSec.style.display = "block";
+            rawSec.classList.remove("hidden");
+        }
+    } else if (mode === 'fhir') {
+        if (tabFhir) tabFhir.classList.add("active");
+        if (fhirSec) {
+            fhirSec.style.display = "block";
+            fhirSec.classList.remove("hidden");
+        }
     }
 }
 
@@ -493,6 +516,10 @@ function renderReviewResults(data) {
                 badgeColor = 'bg-amber-950 border-amber-500/50 text-amber-300';
             } else if (a.interaction_type === 'LAB_THRESHOLD') {
                 badgeColor = 'bg-cyan-950 border-cyan-500/50 text-cyan-300';
+            } else if (a.interaction_type === 'BEERS_CRITERIA') {
+                badgeColor = 'bg-amber-950 border-yellow-500/60 text-yellow-300';
+            } else if (a.interaction_type === 'RENAL_TITRATION') {
+                badgeColor = 'bg-orange-950 border-orange-500/60 text-orange-300';
             }
 
             const card = document.createElement("div");
@@ -579,6 +606,200 @@ function exportClinicalCertificate() {
         return;
     }
     window.open(`/api/report/clearance?event_id=${encodeURIComponent(currentReviewEventId)}`, '_blank');
+}
+
+// ---------------------------------------------------------------------------
+// Sovereign Optical QR Air-Gap Transfer & FHIR Sandbox Helpers
+// ---------------------------------------------------------------------------
+async function openClearanceQrModal() {
+    if (!currentReviewEventId) {
+        alert("Please run a clinical safety review first to generate an audit event.");
+        return;
+    }
+    const modal = document.getElementById("qr-modal");
+    const container = document.getElementById("qr-image-container");
+    const hashDisplay = document.getElementById("qr-modal-hash");
+
+    if (modal) modal.style.display = "flex";
+    if (container) container.innerHTML = `<div style="color:#0f172a; font-size:11px; padding:90px 0;"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Generating Vector Seal…</div>`;
+
+    try {
+        const res = await fetch(`/api/report/clearance-qr?event_id=${encodeURIComponent(currentReviewEventId)}`);
+        if (!res.ok) throw new Error("Failed to generate QR code");
+        const svgText = await res.text();
+        if (container) {
+            container.innerHTML = svgText;
+            const svgEl = container.querySelector("svg");
+            if (svgEl) {
+                svgEl.setAttribute("width", "200");
+                svgEl.setAttribute("height", "200");
+                svgEl.style.display = "block";
+                svgEl.style.margin = "0 auto";
+            }
+        }
+        if (hashDisplay) {
+            hashDisplay.textContent = `Event: ${currentReviewEventId}`;
+        }
+    } catch (err) {
+        if (container) container.innerHTML = `<div style="color:#ef4444; font-size:11px; padding:80px 0;">Error generating seal</div>`;
+    }
+}
+
+function closeClearanceQrModal() {
+    const modal = document.getElementById("qr-modal");
+    if (modal) modal.style.display = "none";
+}
+
+function loadFhirPreset(type) {
+    if (type === 'geriatric') {
+        const rawNote = `PATIENT CLINICAL DISCHARGE SUMMARY (EHR INGESTION)
+PATIENT: Eleanor Vance (De-identified)
+AGE: 76  GENDER: Female  WEIGHT: 50.0 kg
+DIAGNOSES: Stage 3 Chronic Kidney Disease (CKD), Moderate Osteoarthritis, Essential Hypertension
+ACTIVE MEDICATIONS: Lisinopril 20mg daily, Hydrochlorothiazide 25mg daily
+ALLERGIES: NKDA
+LABORATORY RESULTS:
+Serum Creatinine: 1.8 mg/dL
+eGFR: 24 mL/min/1.73m2
+Potassium: 4.5 mEq/L
+Body Weight: 50.0 kg
+PROPOSED NEW ORDER: Gabapentin 600mg TID and Diphenhydramine 50mg PO at bedtime for sleep`;
+
+        const rawInput = document.getElementById("raw-note-input");
+        if (rawInput) rawInput.value = rawNote;
+
+        const medInput = document.getElementById("proposed-med-input");
+        const doseInput = document.getElementById("proposed-dose-input");
+        if (medInput) medInput.value = "Gabapentin";
+        if (doseInput) doseInput.value = "600mg TID";
+
+        const pName = document.getElementById("display-patient-name");
+        const pMeta = document.getElementById("display-patient-meta");
+        const pToken = document.getElementById("display-patient-token");
+        if (pName) pName.textContent = "Eleanor Vance (Geriatric ER Encounter)";
+        if (pMeta) pMeta.textContent = "ID: EHR-7782 · Age: 76y · Female · Weight: 50kg (CrCl 18.5 mL/min)";
+        if (pToken) pToken.textContent = "ANON_EHR7782";
+
+        runSafetyCheck();
+    } else if (type === 'optical_qr') {
+        const samplePayload = {
+            "patient_id": "OPT-449",
+            "age": 78,
+            "gender": "female",
+            "weight": 48.0,
+            "conditions": ["chronic kidney disease", "insomnia"],
+            "medications": ["lisinopril"],
+            "allergies": [],
+            "labs": {
+                "creatinine": {"value": 1.7, "unit": "mg/dL"},
+                "egfr": {"value": 26.0, "unit": "mL/min"}
+            }
+        };
+        const fhirInput = document.getElementById("fhir-raw-input");
+        if (fhirInput) {
+            fhirInput.value = JSON.stringify(samplePayload, null, 2);
+        }
+        triggerFhirIngestion();
+    }
+}
+
+async function handleFhirFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch("/api/ingest/interop", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Failed to parse interop file");
+        const data = await res.json();
+        applyParsedInteropData(data);
+    } catch (err) {
+        alert("Interop parse error: " + err.message);
+    }
+}
+
+async function triggerFhirIngestion() {
+    const raw = (document.getElementById("fhir-raw-input") || {}).value;
+    if (!raw || !raw.trim()) {
+        alert("Please paste FHIR JSON, HL7 v2, or Optical QR payload.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("raw_payload", raw.trim());
+
+    try {
+        const res = await fetch("/api/ingest/interop", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Failed to parse interop payload");
+        const data = await res.json();
+        applyParsedInteropData(data);
+    } catch (err) {
+        alert("Interop ingestion error: " + err.message);
+    }
+}
+
+function applyParsedInteropData(data) {
+    const pName = document.getElementById("display-patient-name");
+    const pMeta = document.getElementById("display-patient-meta");
+    const pToken = document.getElementById("display-patient-token");
+
+    const demo = data.demographics || {};
+    const ageStr = demo.age ? `${demo.age}y` : "Age Unspecified";
+    const sexStr = demo.gender ? demo.gender : "";
+    const wtStr = demo.weight_kg ? ` · ${demo.weight_kg}kg` : "";
+
+    if (pName) pName.textContent = `Interoperable Patient (${data.format || 'FHIR'})`;
+    if (pMeta) pMeta.textContent = `Format: ${data.format || 'FHIR R4'} · ${ageStr} ${sexStr}${wtStr}`;
+    if (pToken) pToken.textContent = data.patient_token || "ANON_INTEROP";
+
+    // Populate conditions, meds, allergies
+    const entities = data.entities || {};
+    const condList = document.getElementById("conditions-list");
+    if (condList) {
+        condList.innerHTML = "";
+        (entities.diagnosed_conditions || []).forEach(c => {
+            const span = document.createElement("span");
+            span.className = "tag-cond";
+            span.textContent = c;
+            condList.appendChild(span);
+        });
+    }
+
+    const medList = document.getElementById("medications-list");
+    if (medList) {
+        medList.innerHTML = "";
+        (entities.current_medications || []).forEach(m => {
+            const span = document.createElement("span");
+            span.className = "tag-med";
+            span.textContent = m;
+            medList.appendChild(span);
+        });
+    }
+
+    const bioList = document.getElementById("biomarkers-list");
+    if (bioList) {
+        bioList.innerHTML = "";
+        const bios = entities.biomarkers || {};
+        if (Object.keys(bios).length > 0) {
+            Object.entries(bios).forEach(([name, b]) => {
+                const span = document.createElement("span");
+                span.className = "px-2 py-0.5 bg-teal-950/70 border border-teal-500/40 text-teal-300 rounded text-xs font-mono";
+                span.textContent = `${name.toUpperCase()}: ${b.display || b.value}`;
+                bioList.appendChild(span);
+            });
+        }
+    }
+
+    // Set proposed med if available
+    const meds = entities.current_medications || [];
+    if (meds.length > 0) {
+        const medInput = document.getElementById("proposed-med-input");
+        if (medInput) medInput.value = meds[0];
+    }
+
+    runSafetyCheck();
 }
 
 // ---------------------------------------------------------------------------
