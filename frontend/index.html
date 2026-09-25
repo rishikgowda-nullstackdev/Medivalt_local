@@ -9,10 +9,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
-  <!-- Clinical Fonts: Plus Jakarta Sans (Headings) & Inter (UI/Body) -->
+  <!-- Clinical Fonts with Offline System Fallbacks -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
 
   <style>
     /* ═══════════════════════════════════════════════════════════════════
@@ -388,9 +388,24 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 28px;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+      cursor: pointer;
     }
-    #splash.fade-out { opacity: 0; visibility: hidden; }
+    #splash.fade-out {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* ─── AUTH GATE ─── */
+    #auth-gate {
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #auth-gate.dismissed {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
 
     /* ─── SETTINGS SIDEBAR ─── */
     #settings-backdrop {
@@ -428,7 +443,7 @@
 <!-- ═══════════════════════════════════════════
      SPLASH SCREEN (Minimal Sovereign Boot)
 ═══════════════════════════════════════════ -->
-<div id="splash">
+<div id="splash" onclick="dismissSplash()" title="Click to enter workstation immediately">
   <div class="relative w-28 h-28 flex items-center justify-center">
     <div class="absolute inset-0 rounded-full border-2 border-teal-500/30 animate-spin" style="animation-duration: 6s;"></div>
     <div class="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/40 flex items-center justify-center text-teal-400 text-3xl shadow-lg">
@@ -451,14 +466,19 @@
   <div class="w-full max-w-lg clinical-card p-6 border-slate-700 shadow-2xl relative">
     
     <!-- Header -->
-    <div class="flex items-center space-x-3 pb-4 mb-4 border-b border-slate-800">
-      <div class="w-11 h-11 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-xl">
-        <i class="fa-solid fa-shield-halved"></i>
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-xl">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white font-heading">MediVault Local Sovereign Gateway</h2>
+          <p class="text-xs text-slate-400">Institutional Clinical Sign-In &amp; Attestation</p>
+        </div>
       </div>
-      <div>
-        <h2 class="text-base font-bold text-white font-heading">MediVault Local Sovereign Gateway</h2>
-        <p class="text-xs text-slate-400">Institutional Clinical Sign-In &amp; Cryptographic Attestation</p>
-      </div>
+      <button onclick="activateDoctor(DEMO_DOCTORS[0])" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+        <i class="fa-solid fa-arrow-right mr-1"></i> Quick Enter
+      </button>
     </div>
 
     <!-- Mode Tabs -->
@@ -1434,9 +1454,8 @@ function activateDoctor(doc) {
   updateDoctorUI(doc);
   const gate = document.getElementById('auth-gate');
   if (gate) {
-    gate.style.opacity = '0';
-    gate.style.pointerEvents = 'none';
-    setTimeout(() => gate.style.display = 'none', 300);
+    gate.classList.add('dismissed');
+    gate.style.display = 'none';
   }
 }
 
@@ -1499,26 +1518,33 @@ function handleLogout() {
   toggleSettingsSidebar(false);
   const gate = document.getElementById('auth-gate');
   if (gate) {
+    gate.classList.remove('dismissed');
     gate.style.display = 'flex';
-    setTimeout(() => {
-      gate.style.opacity = '1';
-      gate.style.pointerEvents = 'auto';
-    }, 10);
   }
 }
 
 // ═══════════════════════════════════════════
-//  SPLASH SCREEN DISMISSAL
+//  SPLASH SCREEN DISMISSAL (Instant & Fail-Safe)
 // ═══════════════════════════════════════════
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    if (splash) {
-      splash.classList.add('fade-out');
-      setTimeout(() => splash.remove(), 600);
-    }
-  }, 1000);
-});
+function dismissSplash() {
+  const splash = document.getElementById('splash');
+  if (splash && !splash.classList.contains('fade-out')) {
+    splash.classList.add('fade-out');
+    setTimeout(() => {
+      if (splash && splash.parentNode) {
+        splash.parentNode.removeChild(splash);
+      }
+    }, 400);
+  }
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(dismissSplash, 200);
+} else {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(dismissSplash, 300));
+}
+window.addEventListener('load', () => setTimeout(dismissSplash, 100));
+setTimeout(dismissSplash, 700); // 100% Guaranteed fallback timer
 
 // ═══════════════════════════════════════════
 //  INTAKE MODE SWITCHER
