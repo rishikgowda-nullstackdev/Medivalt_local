@@ -43,12 +43,13 @@ def call_person_c_full_safety(
     conditions: List[str],
     medications: List[str],
     allergies: List[str],
-    labs: Optional[Dict[str, Any]] = None
+    labs: Optional[Dict[str, Any]] = None,
+    demographics: Optional[Dict[str, Any]] = None
 ) -> Optional[Tuple[str, List[Dict[str, Any]], str, List[Dict[str, Any]]]]:
     """Dynamically calls Person C's full multi-dimensional clinical safety evaluation."""
     try:
         from ai_engine.engine import evaluate_full_safety
-        return evaluate_full_safety(proposed_med, conditions, medications, allergies, labs)
+        return evaluate_full_safety(proposed_med, conditions, medications, allergies, labs, demographics)
     except (ImportError, AttributeError):
         return None
 
@@ -206,7 +207,8 @@ class ClinicalOrchestrator:
         proposed_med: str,
         patient_id: Optional[str] = None,
         raw_notes: Optional[str] = None,
-        practitioner: Optional[Dict[str, Any]] = None
+        practitioner: Optional[Dict[str, Any]] = None,
+        demographics: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Executes end-to-end clinical safety review and logs cryptographic audit event.
@@ -221,6 +223,7 @@ class ClinicalOrchestrator:
         allergies = []
         labs: Dict[str, Any] = {}
         patient_token = "ANON_DEMO"
+        demo_data = demographics or {}
 
         if patient_id and not raw_notes:
             cursor.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (patient_id,))
@@ -231,6 +234,15 @@ class ClinicalOrchestrator:
 
             cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
             allergies = [r["allergen"] for r in cursor.fetchall()]
+
+            # Preset synthetic demographics for demo patients
+            if not demo_data:
+                if patient_id == "PT-101":
+                    demo_data = {"age": 64, "gender": "male", "weight_kg": 78.0}
+                elif patient_id == "PT-102":
+                    demo_data = {"age": 32, "gender": "female", "weight_kg": 58.0}
+                elif patient_id == "PT-103":
+                    demo_data = {"age": 74, "gender": "male", "weight_kg": 82.0}
 
             # Load quantitative patient labs if present
             try:
@@ -259,11 +271,13 @@ class ClinicalOrchestrator:
             medications = processed["entities"]["current_medications"]
             allergies = processed["entities"]["allergies"]
             labs = processed["entities"].get("biomarkers", {})
+            if not demo_data and "demographics" in processed:
+                demo_data = processed["demographics"]
 
         conn.close()
 
         # Step: Execute comprehensive safety evaluation via Person C's AI Engine
-        full_result = call_person_c_full_safety(proposed_med, conditions, medications, allergies, labs)
+        full_result = call_person_c_full_safety(proposed_med, conditions, medications, allergies, labs, demo_data)
 
         if full_result:
             overall_status, alerts, canonical_drug, recommended_alternatives = full_result
@@ -277,6 +291,8 @@ class ClinicalOrchestrator:
         # Filter dedicated alert categories for frontend widgets
         polypharmacy_alerts = [a for a in alerts if a.get("interaction_type") == "POLYPHARMACY"]
         lab_alerts = [a for a in alerts if a.get("interaction_type") == "LAB_THRESHOLD"]
+        beers_alerts = [a for a in alerts if a.get("interaction_type") == "BEERS_CRITERIA"]
+        renal_alerts = [a for a in alerts if a.get("interaction_type") == "RENAL_TITRATION"]
 
         # Synthesize explanation
         explanation = cls.synthesize_explanation(proposed_med, canonical_drug, overall_status, alerts)
@@ -315,10 +331,17 @@ class ClinicalOrchestrator:
             "alerts": alerts,
             "polypharmacy_alerts": polypharmacy_alerts,
             "lab_alerts": lab_alerts,
+            "beers_alerts": beers_alerts,
+            "renal_alerts": renal_alerts,
             "recommended_alternatives": recommended_alternatives,
             "biomarkers": labs,
+            "demographics": demo_data,
             "explanation": explanation,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
             "execution_time_ms": exec_time_ms
         }
+
+    # Backward compatibility alias
+    run_review = process_review
+

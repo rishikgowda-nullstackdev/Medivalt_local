@@ -14,6 +14,7 @@ from ai_engine.pharmacology import PharmacologyKnowledge
 from ai_engine.polypharmacy import PolypharmacyEngine
 from ai_engine.lab_evaluator import LabBiomarkerEvaluator
 from ai_engine.alternatives import SafeAlternativeRecommender
+from ai_engine.geriatric_renal import GeriatricRenalEngine, calculate_cockcroft_gault
 from backend.ai_bridge import ai_bridge
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,7 +33,8 @@ def evaluate_full_safety(
     conditions: List[str],
     medications: List[str],
     allergies: List[str],
-    labs: Optional[Dict[str, Any]] = None
+    labs: Optional[Dict[str, Any]] = None,
+    demographics: Optional[Dict[str, Any]] = None
 ) -> Tuple[str, List[Dict[str, Any]], str, List[Dict[str, Any]]]:
     """
     Comprehensive multi-dimensional clinical safety evaluation:
@@ -83,6 +85,41 @@ def evaluate_full_safety(
         elif pa["severity"] == "WARNING" and overall_status != "CRITICAL":
             overall_status = "WARNING"
         alerts.append(pa)
+
+    # Step 3b: Dynamic Renal Dosing & Cockcroft-Gault CrCl Titration
+    if demographics and labs:
+        age = demographics.get("age")
+        weight = demographics.get("weight_kg")
+        # Check weight in labs if not in demographics
+        if weight is None and "weight" in labs:
+            weight = labs["weight"].get("value")
+        
+        scr = None
+        if "creatinine" in labs:
+            scr = labs["creatinine"].get("value")
+
+        is_female = str(demographics.get("gender", "")).lower().startswith("f")
+        crcl = calculate_cockcroft_gault(age, weight, scr, is_female)
+        if crcl is not None:
+            renal_alerts = GeriatricRenalEngine.evaluate_renal_titration(canonical_drug, crcl)
+            for ra in renal_alerts:
+                if ra["severity"] == "CRITICAL":
+                    overall_status = "CRITICAL"
+                elif ra["severity"] == "WARNING" and overall_status != "CRITICAL":
+                    overall_status = "WARNING"
+                alerts.append(ra)
+
+    # Step 3c: 2023 AGS Beers Criteria (Geriatric Inappropriate Medications)
+    if demographics and demographics.get("age") is not None:
+        age_val = demographics.get("age")
+        if age_val >= 65:
+            beers_alerts = GeriatricRenalEngine.evaluate_beers_criteria(canonical_drug, age_val, conditions)
+            for ba in beers_alerts:
+                if ba["severity"] == "CRITICAL":
+                    overall_status = "CRITICAL"
+                elif ba["severity"] == "WARNING" and overall_status != "CRITICAL":
+                    overall_status = "WARNING"
+                alerts.append(ba)
 
     # Step 4: Drug <-> Disease Contraindications
     for cond in conditions:

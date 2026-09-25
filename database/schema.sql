@@ -284,4 +284,111 @@ INSERT OR IGNORE INTO safe_alternatives (blocked_drug, clinical_condition, sugge
 ('metformin', 'chronic kidney disease', 'Linagliptin', '5mg PO once daily', 'DPP-4 inhibitor with primary biliary and fecal elimination; 100% safe without dose adjustment even in severe renal failure (eGFR < 30).'),
 ('warfarin', 'peptic ulcer', 'Apixaban', '5mg PO BID (reduce to 2.5mg if age >=80, wt <=60kg, or Cr >=1.5)', 'Direct oral factor Xa inhibitor with significantly lower incidence of major intracranial hemorrhage compared to warfarin.');
 
+-- =========================================================================
+-- HOSPITAL INTEROPERABILITY, ONTOLOGY CROSSWALK & GERIATRIC-RENAL TABLES
+-- =========================================================================
+
+-- 13. Medical Ontology Crosswalk (RxNorm, ICD-10-CM, LOINC)
+CREATE TABLE IF NOT EXISTS ontology_crosswalk (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_system TEXT NOT NULL CHECK(code_system IN ('RXNORM', 'ICD10', 'LOINC')),
+    code TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    canonical_entity TEXT NOT NULL, -- normalized generic name, disease, or lab
+    category TEXT NOT NULL CHECK(category IN ('DRUG', 'DISEASE', 'LAB')),
+    UNIQUE(code_system, code)
+);
+
+-- 14. 2023 AGS Beers Criteria Rules (Geriatric Medication Safety)
+CREATE TABLE IF NOT EXISTS beers_criteria_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    drug_name TEXT NOT NULL COLLATE NOCASE,
+    drug_class TEXT NOT NULL,
+    min_age INTEGER NOT NULL DEFAULT 65,
+    severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING')),
+    clinical_rationale TEXT NOT NULL,
+    adverse_consequence TEXT NOT NULL,
+    safe_alternative TEXT NOT NULL,
+    UNIQUE(drug_name, min_age)
+);
+
+-- 15. Dynamic Renal Dosing & Titration Rules (Cockcroft-Gault CrCl)
+CREATE TABLE IF NOT EXISTS renal_dosing_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    drug_name TEXT NOT NULL COLLATE NOCASE,
+    crcl_threshold REAL NOT NULL, -- mL/min
+    operator TEXT NOT NULL CHECK(operator IN ('<', '<=')),
+    severity TEXT NOT NULL CHECK(severity IN ('CRITICAL', 'WARNING')),
+    titration_instruction TEXT NOT NULL,
+    mechanism TEXT NOT NULL,
+    UNIQUE(drug_name, crcl_threshold, operator)
+);
+
+-- Seed Medical Ontology Crosswalk (Top High-Hazard Hospital Codes)
+INSERT OR IGNORE INTO ontology_crosswalk (code_system, code, display_name, canonical_entity, category) VALUES
+-- RxNorm Drugs
+('RXNORM', '5640', 'Ibuprofen', 'ibuprofen', 'DRUG'),
+('RXNORM', '7242', 'Naproxen', 'naproxen', 'DRUG'),
+('RXNORM', '6809', 'Metformin', 'metformin', 'DRUG'),
+('RXNORM', '29046', 'Lisinopril', 'lisinopril', 'DRUG'),
+('RXNORM', '11289', 'Warfarin', 'warfarin', 'DRUG'),
+('RXNORM', '161', 'Acetaminophen', 'acetaminophen', 'DRUG'),
+('RXNORM', '7052', 'Morphine', 'morphine', 'DRUG'),
+('RXNORM', '10640', 'Tramadol', 'tramadol', 'DRUG'),
+('RXNORM', '25480', 'Gabapentin', 'gabapentin', 'DRUG'),
+('RXNORM', '36567', 'Diphenhydramine', 'diphenhydramine', 'DRUG'),
+('RXNORM', '11149', 'Zolpidem', 'zolpidem', 'DRUG'),
+('RXNORM', '3322', 'Diazepam', 'diazepam', 'DRUG'),
+('RXNORM', '6470', 'Lorazepam', 'lorazepam', 'DRUG'),
+('RXNORM', '11124', 'Vancomycin', 'vancomycin', 'DRUG'),
+('RXNORM', '67108', 'Enoxaparin', 'enoxaparin', 'DRUG'),
+('RXNORM', '1364430', 'Apixaban', 'apixaban', 'DRUG'),
+('RXNORM', '26225', 'Colchicine', 'colchicine', 'DRUG'),
+('RXNORM', '3407', 'Digoxin', 'digoxin', 'DRUG'),
+('RXNORM', '448', 'Amoxicillin', 'amoxicillin', 'DRUG'),
+('RXNORM', '18631', 'Clarithromycin', 'clarithromycin', 'DRUG'),
+-- ICD-10 Conditions
+('ICD10', 'N18.3', 'Chronic kidney disease, stage 3', 'chronic kidney disease', 'DISEASE'),
+('ICD10', 'N18.4', 'Chronic kidney disease, stage 4', 'chronic kidney disease', 'DISEASE'),
+('ICD10', 'N18.5', 'Chronic kidney disease, stage 5', 'chronic kidney disease', 'DISEASE'),
+('ICD10', 'N18.9', 'Chronic kidney disease, unspecified', 'chronic kidney disease', 'DISEASE'),
+('ICD10', 'J45.40', 'Moderate persistent asthma, uncomplicated', 'asthma', 'DISEASE'),
+('ICD10', 'J45.909', 'Unspecified asthma, uncomplicated', 'asthma', 'DISEASE'),
+('ICD10', 'I10', 'Essential (primary) hypertension', 'hypertension', 'DISEASE'),
+('ICD10', 'E11.9', 'Type 2 diabetes mellitus without complications', 'diabetes mellitus', 'DISEASE'),
+('ICD10', 'I48.0', 'Paroxysmal atrial fibrillation', 'atrial fibrillation', 'DISEASE'),
+('ICD10', 'K25.9', 'Gastric ulcer, unspecified as acute or chronic', 'peptic ulcer disease', 'DISEASE'),
+('ICD10', 'I50.9', 'Heart failure, unspecified', 'heart failure', 'DISEASE'),
+-- LOINC Labs & Vitals
+('LOINC', '33914-3', 'Glomerular filtration rate/1.73 sq M.predicted', 'egfr', 'LAB'),
+('LOINC', '2823-3', 'Potassium [Moles/volume] in Serum or Plasma', 'potassium', 'LAB'),
+('LOINC', '2160-0', 'Creatinine [Mass/volume] in Serum or Plasma', 'creatinine', 'LAB'),
+('LOINC', '6301-6', 'INR in Platelet poor plasma by Coagulation assay', 'inr', 'LAB'),
+('LOINC', '777-3', 'Platelets [#/volume] in Blood by Automated count', 'platelets', 'LAB'),
+('LOINC', '29463-7', 'Body weight', 'weight', 'LAB'),
+('LOINC', '8480-6', 'Systolic blood pressure', 'systolic_bp', 'LAB'),
+('LOINC', '8462-4', 'Diastolic blood pressure', 'diastolic_bp', 'LAB');
+
+-- Seed 2023 AGS Beers Criteria (Geriatric Inappropriate Medications)
+INSERT OR IGNORE INTO beers_criteria_rules (drug_name, drug_class, min_age, severity, clinical_rationale, adverse_consequence, safe_alternative) VALUES
+('diphenhydramine', 'First-generation Antihistamine', 65, 'CRITICAL', 'Potent central and peripheral anticholinergic antagonism in aging blood-brain barrier.', 'Acute Delirium, Cognitive Decline, Severe Urinary Retention, Severe Sedation', 'Melatonin 3mg PO at bedtime or saline nasal spray'),
+('hydroxyzine', 'First-generation Antihistamine', 65, 'CRITICAL', 'Strong anticholinergic clearance reduction in older adults.', 'Confusion, Acute Glaucoma Exacerbation, Dry Mouth, Lethargy', 'Cetirizine or Fexofenadine (non-sedating peripheral antihistamines)'),
+('zolpidem', 'Non-benzodiazepine Z-drug Sedative', 65, 'CRITICAL', 'GABA-A receptor positive modulation impairs postural stability and psychomotor vigilance.', 'Severe Ataxia, Nighttime Fall Hazard, Hip Fractures, Complex Sleep Behaviors', 'Sleep hygiene protocol, Melatonin 3mg, or low-dose Trazodone'),
+('diazepam', 'Long-acting Benzodiazepine', 65, 'CRITICAL', 'Extremely prolonged half-life (up to 100 hours in elderly) leads to severe drug accumulation.', 'Excessive Daytime Sedation, Major Motor Vehicle Accidents, Motor Ataxia', 'Buspirone or Non-pharmacologic CBT-I'),
+('alprazolam', 'Short/Intermediate Benzodiazepine', 65, 'CRITICAL', 'High risk of paradoxical agitation, physical dependence, and gait instability.', 'Cognitive Impairment, Falls, Delirium Tremens Risk upon Discontinuation', 'SSRI (Escitalopram) or Buspirone for chronic anxiety'),
+('amitriptyline', 'Tricyclic Antidepressant', 65, 'CRITICAL', 'Highly anticholinergic, strongly sedating, and causes severe orthostatic hypotension.', 'Cardiac Arrhythmias, Syncope, Fatal Falls, Acute Confusion', 'Sertraline or Duloxetine'),
+('indomethacin', 'Potent Non-selective NSAID', 65, 'CRITICAL', 'Highest adverse central nervous system (CNS) effects among all NSAIDs and severe GI toxicity.', 'Acute Psychosis/Headache, Peptic Ulcer Perforation, Acute Renal Shutdown', 'Acetaminophen 500mg or Topical Diclofenac/Lidocaine Patch'),
+('ketorolac', 'Systemic NSAID', 65, 'CRITICAL', 'Profound non-selective COX-1 inhibition with extremely high risk of silent gastrointestinal bleeding.', 'Fatal Upper GI Hemorrhage, Acute Tubular Necrosis', 'Acetaminophen or low-dose opioid (short term)');
+
+-- Seed Dynamic Renal Dosing Rules (Cockcroft-Gault CrCl Titration)
+INSERT OR IGNORE INTO renal_dosing_rules (drug_name, crcl_threshold, operator, severity, titration_instruction, mechanism) VALUES
+('gabapentin', 30.0, '<', 'CRITICAL', 'Reduce dose: 200mg to 300mg PO once daily (or 100mg TID). Avoid standard 600mg-900mg TID.', 'Gabapentin is 100% eliminated unchanged by kidneys; CrCl < 30 causes severe accumulation leading to neurotoxicity, profound sedation, and myoclonic seizures.'),
+('gabapentin', 60.0, '<=', 'WARNING', 'Titrate dose: Maximum 300mg PO BID (600mg/day total). Monitor renal function every 3-6 months.', 'Moderate clearance reduction causes gradual accumulation and next-day somnolence.'),
+('vancomycin', 50.0, '<', 'CRITICAL', 'Extend dosing interval: 15-20 mg/kg IV every 24-48 hours with compulsory trough level monitoring (target 10-15 mcg/mL).', 'Renal clearance failure causes toxic accumulation, triggering direct proximal tubule necrosis (ATN) and ototoxicity.'),
+('enoxaparin', 30.0, '<', 'CRITICAL', 'Dose reduction: Adjust from 1 mg/kg BID to 1 mg/kg ONCE daily. Monitor anti-Factor Xa levels.', 'LMWH bioaccumulation significantly multiplies fatal retroperitoneal and intracranial hemorrhage risk in CrCl < 30.'),
+('apixaban', 15.0, '<', 'CRITICAL', 'Absolute contraindication. Avoid DOAC in end-stage renal disease / CrCl < 15 mL/min.', 'Elimination impairment leads to unpredictable plasma peak levels and uncontrollable bleeding without reliable reversal.'),
+('colchicine', 30.0, '<', 'CRITICAL', 'Reduce acute gout flare dose by 50% (0.3mg daily max) and do not repeat course within 14 days.', 'Accumulation leads to fatal multi-organ toxicity, rhabdomyolysis, and bone marrow aplasia.'),
+('metformin', 30.0, '<', 'CRITICAL', 'Discontinue metformin immediately. CrCl < 30 precipitates severe lactic acidosis.', 'Reduced renal excretion of metformin leads to lethal mitochondrial complex I inhibition and lactic acidosis.');
+
+
 
