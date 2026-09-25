@@ -341,3 +341,7 @@ class ClinicalOrchestrator:
             "audit_hash": log_entry["audit_hash"],
             "execution_time_ms": exec_time_ms
         }
+
+    # Backward compatibility alias
+    run_review = process_review
+

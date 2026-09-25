@@ -1086,7 +1086,7 @@ async def get_clearance_qr(event_id: str = Query(..., description="Audit Event U
     qr_data = {
         "doc": "MediVault Clearance Seal",
         "event_id": log["event_id"],
-        "token": log["patient_token"],
+        "token": log.get("patient_token") or log.get("patient_hash", "ANON"),
         "status": log["overall_status"],
         "rx": log["proposed_medication"],
         "hash": log["audit_hash"][:16] + "...",
@@ -1200,7 +1200,7 @@ async def export_fhir_bundle(event_id: str = Query(..., description="Audit event
                     "status": "final",
                     "title": "MediVault Local Sovereign Clinical Safety Clearance",
                     "date": log["timestamp"],
-                    "subject": {"reference": f"Patient/{log['patient_token']}"},
+                    "subject": {"reference": f"Patient/{log.get('patient_token') or log.get('patient_hash', 'ANON')}"},
                     "author": [
                         {
                             "display": log.get("practitioner_name", "Dr. Gregory House, MD"),
