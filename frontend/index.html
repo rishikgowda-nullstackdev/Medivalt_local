@@ -532,6 +532,7 @@
 <body>
 
 <!-- ═══════════════════════════════════════════
+<!-- ═══════════════════════════════════════════
      AUTHENTICATION GATE (Institutional Sign-In)
 ═══════════════════════════════════════════ -->
 <div id="auth-gate" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
@@ -548,95 +549,62 @@
           <p class="text-xs text-slate-400">Institutional Clinical Sign-In &amp; Attestation</p>
         </div>
       </div>
-      <button onclick="activateDoctor(DEMO_DOCTORS[0])" class="btn-clinical-secondary py-1 px-2.5 text-xs">
-        <i class="fa-solid fa-arrow-right mr-1"></i> Quick Enter
+      <button type="button" onclick="closeAuthModal()" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+        <i class="fa-solid fa-xmark mr-1"></i> Close
       </button>
     </div>
 
     <!-- Mode Tabs -->
-    <div class="flex border-b border-slate-800 mb-4 bg-slate-900/50 p-1 rounded-lg">
-      <button class="flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30" onclick="switchAuthGateTab('demo')" id="gtab-demo">
+    <div id="modal-tabs-header" class="flex border-b border-slate-800 mb-4 bg-slate-900/50 p-1 rounded-lg">
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30" onclick="switchAuthTab('demo')" id="tab-btn-demo">
         <i class="fa-solid fa-user-doctor mr-1"></i> Demo Staff
       </button>
-      <button class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthGateTab('login')" id="gtab-login">
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthTab('login')" id="tab-btn-login">
         <i class="fa-solid fa-key mr-1"></i> Sign In
       </button>
-      <button class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthGateTab('register')" id="gtab-register">
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthTab('register')" id="tab-btn-register">
         <i class="fa-solid fa-user-plus mr-1"></i> Register
       </button>
     </div>
 
-    <div id="auth-alert-gate" class="hidden mb-4 p-3 rounded-lg text-xs font-mono"></div>
+    <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg text-xs font-mono"></div>
 
     <!-- Demo Staff Tab -->
-    <div id="gtab-content-demo">
-      <p class="text-xs text-slate-400 mb-3">Select an authenticated clinical staff profile to verify institutional accountability:</p>
-      <div class="space-y-2.5">
-        <div class="p-3 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-teal-500/50 rounded-lg flex items-center justify-between transition cursor-pointer" onclick="gateSelectDemo('house')">
-          <div class="flex items-center space-x-3">
-            <div class="doc-avatar">GH</div>
-            <div>
-              <div class="text-xs font-bold text-white">Dr. Gregory House, MD</div>
-              <div class="text-[11px] text-slate-400">Princeton Plainsboro · NPI-1999887766</div>
-            </div>
-          </div>
-          <button class="btn-clinical-secondary text-xs">Enter Workstation</button>
-        </div>
-
-        <div class="p-3 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-teal-500/50 rounded-lg flex items-center justify-between transition cursor-pointer" onclick="gateSelectDemo('patel')">
-          <div class="flex items-center space-x-3">
-            <div class="doc-avatar">AP</div>
-            <div>
-              <div class="text-xs font-bold text-white">Dr. Anika Patel, MBBS</div>
-              <div class="text-[11px] text-slate-400">Metro General · NPI-2345678901</div>
-            </div>
-          </div>
-          <button class="btn-clinical-secondary text-xs">Enter Workstation</button>
-        </div>
-
-        <div class="p-3 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-teal-500/50 rounded-lg flex items-center justify-between transition cursor-pointer" onclick="gateSelectDemo('chen')">
-          <div class="flex items-center space-x-3">
-            <div class="doc-avatar">RC</div>
-            <div>
-              <div class="text-xs font-bold text-white">Dr. Robert Chen, MD</div>
-              <div class="text-[11px] text-slate-400">City Medical Center · NPI-3456789012</div>
-            </div>
-          </div>
-          <button class="btn-clinical-secondary text-xs">Enter Workstation</button>
-        </div>
+    <div id="auth-tab-demo" class="space-y-2.5">
+      <p class="text-xs text-slate-400 mb-2">Select an accredited medical staff member to authenticate institutional oversight:</p>
+      <div id="demo-doctors-list" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+        <!-- Dynamically populated from /api/auth/practitioners -->
       </div>
     </div>
 
     <!-- Login Tab -->
-    <div id="gtab-content-login" class="hidden space-y-3.5">
+    <div id="auth-tab-login" class="hidden space-y-3.5">
       <div>
         <label class="clinical-label">Institutional Email</label>
-        <input id="gate-email" type="email" class="clinical-input" placeholder="dr.house@princeton.edu" />
+        <input id="login-email" type="email" class="clinical-input" placeholder="dr.house@princeton.edu" />
       </div>
       <div>
         <label class="clinical-label">Password</label>
-        <input id="gate-password" type="password" class="clinical-input" placeholder="••••••••" />
+        <input id="login-password" type="password" class="clinical-input" placeholder="••••••••" />
       </div>
-      <button class="btn-clinical-primary w-full" onclick="handleGateLogin()">
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleLogin()">
         <i class="fa-solid fa-lock mr-2"></i> Sign In to Hospital Portal
       </button>
       <p class="text-center text-[11px] text-slate-500 font-mono">Demo password: <span class="text-teal-400">HospitalPass123!</span></p>
     </div>
 
     <!-- Register Tab -->
-    <div id="gtab-content-register" class="hidden space-y-3">
+    <div id="auth-tab-register" class="hidden space-y-3">
       <div>
         <label class="clinical-label">Full Legal Practitioner Name</label>
         <input id="reg-name" type="text" class="clinical-input" placeholder="Dr. Sarah Connor, MD" />
       </div>
       <div>
         <label class="clinical-label">Healthcare Institution</label>
-        <select id="reg-hospital" class="clinical-input cursor-pointer" onchange="onRegHospitalChange()">
-          <option value="H001">Princeton Plainsboro Teaching Hospital</option>
-          <option value="H002">Metro General Hospital</option>
-          <option value="H003">City Medical Center</option>
+        <select id="reg-hospital-select" class="clinical-input cursor-pointer" onchange="onHospitalSelectChange()">
+          <!-- Populated from /api/auth/hospitals -->
         </select>
-        <div id="reg-domain-hint" class="text-[10px] text-teal-400 font-mono mt-1">Domain: @princeton.edu</div>
+        <div id="reg-domain-hint" class="text-[10px] text-teal-400 font-mono mt-1">Required domain: @princeton.edu</div>
       </div>
       <div>
         <label class="clinical-label">Hospital Email</label>
@@ -652,26 +620,32 @@
           <input id="reg-password" type="password" class="clinical-input" placeholder="Min 8 chars" />
         </div>
       </div>
-      <button class="btn-clinical-primary w-full" onclick="handleGateRegister()">
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleRegister()">
         <i class="fa-solid fa-envelope-circle-check mr-2"></i> Register Credentials &amp; Issue OTP
       </button>
     </div>
 
-    <!-- OTP Screen -->
-    <div id="otp-screen" class="hidden space-y-3 mt-4">
+    <!-- OTP Simulation Screen -->
+    <div id="auth-screen-otp" class="hidden space-y-3 mt-4">
       <div class="p-3 bg-slate-950/80 border border-teal-500/30 rounded-lg text-xs font-mono text-slate-300">
         <div class="flex justify-between border-b border-slate-800 pb-1.5 mb-2">
-          <span><i class="fa-solid fa-server mr-1 text-teal-400"></i> Air-Gapped Intranet Mail</span>
-          <span class="text-emerald-400 text-[10px]">Zero Cloud</span>
+          <span><i class="fa-solid fa-server mr-1 text-teal-400"></i> Air-Gapped Intranet Dispatch</span>
+          <span class="text-emerald-400 text-[10px]">Zero Cloud Egress</span>
         </div>
         <div class="flex justify-between items-center">
-          <span>One-Time Passcode:</span>
-          <strong id="otp-sim-code" class="text-amber-300 text-lg tracking-widest bg-slate-900 px-2 py-0.5 rounded">------</strong>
+          <div>
+            <div class="text-[10px] text-slate-400">Target Address:</div>
+            <div id="otp-target-email" class="font-bold text-white">doctor@hospital.org</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400">Simulated Code:</div>
+            <strong id="simulated-otp-code" class="text-amber-300 text-base tracking-widest bg-slate-900 px-2 py-0.5 rounded border border-slate-800">------</strong>
+          </div>
         </div>
       </div>
-      <input type="text" id="otp-input-gate" maxlength="6" class="clinical-input text-center text-lg font-mono tracking-widest" placeholder="000000" />
-      <button class="btn-clinical-primary w-full" onclick="handleGateOtp()">Verify Institutional Identity</button>
-      <button onclick="handleGateResend()" class="w-full text-center text-[11px] text-slate-500 hover:text-slate-300 bg-transparent border-0 cursor-pointer">
+      <input type="text" id="otp-input" maxlength="6" class="clinical-input text-center text-lg font-mono tracking-widest" placeholder="000000" />
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleVerifyOtp()">Verify Institutional Identity</button>
+      <button type="button" onclick="handleResendOtp()" class="w-full text-center text-[11px] text-slate-500 hover:text-slate-300 bg-transparent border-0 cursor-pointer">
         Resend Code
       </button>
     </div>
@@ -711,8 +685,14 @@
       <!-- Air-Gap Status Badge -->
       <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="font-semibold tracking-wide">100% OFFLINE</span>
-        <span class="text-emerald-400 text-[10px] hidden sm:inline">0 BYTES EGRESS (127.0.0.1)</span>
+        <span id="network-status-badge" class="font-semibold tracking-wide">100% OFFLINE</span>
+        <span id="egress-telemetry-text" class="text-emerald-400 text-[10px] hidden sm:inline">0 BYTES EGRESS (127.0.0.1)</span>
+      </div>
+
+      <!-- Local AI Model Telemetry Pill -->
+      <div class="flex items-center space-x-1.5 bg-slate-900 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
+        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+        <span id="ai-status-text">Ollama SLM: Checking...</span>
       </div>
 
       <!-- Active Physician Pill Button -->
@@ -994,6 +974,10 @@
                   <i class="fa-solid fa-file-shield"></i>
                   <span>Certificate</span>
                 </button>
+                <button id="btn-export-fhir" onclick="exportFhirBundle()" class="btn-clinical-secondary py-1 px-2 text-xs" title="Export FHIR R4 Bundle JSON">
+                  <i class="fa-solid fa-fire text-amber-400"></i>
+                  <span>FHIR R4</span>
+                </button>
               </div>
             </div>
 
@@ -1078,7 +1062,7 @@
               <i class="fa-solid fa-shield-virus text-emerald-400"></i>
               <span>De-Identified Clinical Entity Stream</span>
             </span>
-            <span class="text-[10px] text-teal-400 font-mono">RAM Buffer</span>
+            <span id="redacted-summary-badge" class="text-[10px] text-teal-400 font-mono">RAM Buffer</span>
           </div>
 
           <p class="text-xs text-slate-400 leading-relaxed">
@@ -1086,13 +1070,21 @@
           </p>
 
           <div class="p-3 bg-slate-950 rounded border border-slate-800 font-mono text-xs text-slate-300 space-y-1.5">
-            <div class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Redaction Status:</div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Redaction Status:</span>
+              <span id="redacted-count-val" class="text-emerald-400 font-bold">0 PHI Tokens Stripped</span>
+            </div>
             <div>Direct Identifiers Replaced: <span class="text-amber-300">[REDACTED_NAME], [REDACTED_PHONE], [REDACTED_SSN]</span></div>
-            <div>Cryptographic Token: <span class="text-emerald-300">ANON_INGEST_READY</span></div>
+            <div>Cryptographic Token: <span id="redacted-token-val" class="text-emerald-300">ANON_INGEST_READY</span></div>
+          </div>
+
+          <div>
+            <label class="clinical-label">Safe Harbor Redacted Text Preview:</label>
+            <textarea id="redacted-output-text" rows="5" class="clinical-input font-mono text-xs leading-relaxed" readonly placeholder="De-identified text will appear here after redaction..."></textarea>
           </div>
 
           <!-- Pipeline Transfer Action Button -->
-          <button onclick="switchMainTab('review')" class="btn-clinical-primary w-full py-2.5 mt-2">
+          <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5 mt-2">
             <span>Transfer De-Identified Profile to CDSS Review Engine</span>
             <i class="fa-solid fa-arrow-right ml-2"></i>
           </button>
@@ -1188,22 +1180,22 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
         <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
           <div class="text-[10px] text-slate-400">Sealed Audit Blocks</div>
-          <div class="text-base font-bold text-white font-mono mt-0.5">Live Chained</div>
+          <div id="stat-sealed-blocks" class="text-base font-bold text-white font-mono mt-0.5">Live Chained</div>
           <span class="text-[9px] text-teal-400 font-mono">SQLite WAL Mode</span>
         </div>
         <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
           <div class="text-[10px] text-slate-400">Chain Integrity</div>
-          <div class="text-base font-bold text-emerald-400 font-mono mt-0.5">SHA-256 Verified</div>
+          <div id="stat-chain-integrity" class="text-base font-bold text-emerald-400 font-mono mt-0.5">SHA-256 Verified</div>
           <span class="text-[9px] text-emerald-300 font-mono">Zero Tamper Risk</span>
         </div>
         <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
           <div class="text-[10px] text-slate-400">Current Reviewer</div>
-          <div class="text-sm font-bold text-slate-200 truncate mt-0.5">Dr. G. House</div>
+          <div id="stat-current-reviewer" class="text-sm font-bold text-slate-200 truncate mt-0.5">Dr. G. House</div>
           <span class="text-[9px] text-slate-400 font-mono">NPI-1999887766</span>
         </div>
         <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
           <div class="text-[10px] text-slate-400">Egress Telemetry</div>
-          <div class="text-base font-bold text-emerald-400 font-mono mt-0.5">0 Bytes</div>
+          <div id="audit-egress-val" class="text-base font-bold text-emerald-400 font-mono mt-0.5">0 Bytes</div>
           <span class="text-[9px] text-emerald-300 font-mono">Air-Gapped</span>
         </div>
       </div>
@@ -1424,28 +1416,6 @@
   </div>
 </div>
 
-<!-- Backward compatibility invisible elements for app.js -->
-<div id="auth-modal" style="display:none">
-  <button id="auth-modal-btn" style="display:none"></button>
-  <div id="auth-screen-otp" style="display:none"></div>
-  <div id="auth-alert" style="display:none"></div>
-  <input id="login-email" type="hidden" />
-  <input id="login-password" type="hidden" />
-  <select id="reg-hospital-select" style="display:none"></select>
-  <input id="otp-target-email" type="hidden" />
-  <span id="simulated-otp-code" style="display:none"></span>
-  <input id="otp-input" type="hidden" />
-  <div id="demo-doctors-list" style="display:none"></div>
-  <div id="modal-tabs-header" style="display:none"></div>
-  <div id="audit-drawer" style="display:none"></div>
-  <i id="audit-toggle-icon" style="display:none"></i>
-  <span id="audit-toggle-text" style="display:none"></span>
-  <div id="tab-demo" style="display:none"></div>
-  <div id="tab-raw" style="display:none"></div>
-  <div id="demo-patient-section" style="display:none"></div>
-  <div id="raw-note-section" style="display:none"></div>
-  <span id="ai-status-text" style="display:none"></span>
-</div>
 
 <!-- Application Controller Script -->
 <script src="/static/app.js"></script>

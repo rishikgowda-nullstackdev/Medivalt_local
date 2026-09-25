@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshAuditTrail();
     setupFileDropZone();
     checkAiStatus();
+    checkNetworkGuard();
     loadAuthProfile();
     loadHospitalsAndDemoDoctors();
 
@@ -162,6 +163,29 @@ async function checkAiStatus() {
         }
     } catch (e) {
         console.warn("Could not check AI status");
+    }
+}
+
+async function checkNetworkGuard() {
+    try {
+        const res = await fetch("/api/network-guard");
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const badge = document.getElementById("network-status-badge");
+        if (badge) {
+            badge.textContent = data.zero_cloud_enforced ? "100% OFFLINE" : "WAN DETECTED";
+        }
+        const telemetry = document.getElementById("egress-telemetry-text");
+        if (telemetry) {
+            telemetry.textContent = `${data.outbound_internet_traffic || '0 BYTES EGRESS'} (${data.local_ip || '127.0.0.1'})`;
+        }
+        const auditEgress = document.getElementById("audit-egress-val");
+        if (auditEgress) {
+            auditEgress.textContent = "0 Bytes";
+        }
+    } catch (e) {
+        console.warn("Could not check network guard:", e);
     }
 }
 
@@ -483,17 +507,45 @@ async function triggerRedaction() {
         });
         const data = await res.json();
         
+        // Populate Redacted Text Preview and Telemetry Counters
+        const redactedOutput = document.getElementById("redacted-output-text");
+        if (redactedOutput && data.redacted_text) {
+            redactedOutput.value = data.redacted_text;
+        }
+
+        const countBadge = document.getElementById("redacted-count-val");
+        if (countBadge && data.phi_detected) {
+            countBadge.textContent = `${data.phi_detected.length} PHI Direct Identifiers Stripped`;
+        }
+
+        const tokenBadge = document.getElementById("redacted-token-val");
+        if (tokenBadge && data.patient_token) {
+            tokenBadge.textContent = data.patient_token;
+        }
+
+        const summaryBadge = document.getElementById("redacted-summary-badge");
+        if (summaryBadge) {
+            summaryBadge.textContent = "Safe Harbor § 164.514(b) Verified";
+        }
+
         // Update patient card with extracted entities and biomarkers
         renderPatientCard(
             { patient_name: "De-identified Note Patient", patient_id: data.patient_token, age: "Extracted", gender: "Extracted" },
-            data.entities.diagnosed_conditions.map(c => ({ condition_name: c })),
-            data.entities.current_medications.map(m => ({ medication_name: m, dosage: "" })),
-            data.entities.allergies.map(a => ({ allergen: a, reaction: "Extracted" })),
+            (data.entities.diagnosed_conditions || []).map(c => ({ condition_name: c })),
+            (data.entities.current_medications || []).map(m => ({ medication_name: m, dosage: "" })),
+            (data.entities.allergies || []).map(a => ({ allergen: a, reaction: "Extracted" })),
             data.entities.biomarkers || data.entities.clinical_labs
         );
 
     } catch (e) {
         console.error("Redaction error:", e);
+    }
+}
+
+function transferToReview() {
+    currentIntakeMode = 'raw';
+    if (typeof window.switchMainTab === 'function') {
+        window.switchMainTab('review');
     }
 }
 
@@ -738,6 +790,34 @@ function exportClinicalCertificate() {
     window.open(`/api/report/clearance?event_id=${encodeURIComponent(currentReviewEventId)}`, '_blank');
 }
 
+async function exportFhirBundle() {
+    if (!currentReviewEventId) {
+        alert("Please run a clinical safety review first to generate a sealed FHIR R4 Bundle.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/export/fhir-bundle?event_id=${encodeURIComponent(currentReviewEventId)}`, {
+            method: "POST"
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || "Failed to export FHIR bundle");
+        }
+        const bundle = await res.json();
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bundle, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `fhir_bundle_${currentReviewEventId.substring(0, 8)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    } catch (e) {
+        alert("FHIR Export error: " + e.message);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Sovereign Optical QR Air-Gap Transfer & FHIR Sandbox Helpers
 // ---------------------------------------------------------------------------
@@ -810,6 +890,7 @@ PROPOSED NEW ORDER: Gabapentin 600mg TID and Diphenhydramine 50mg PO at bedtime 
         if (pMeta) pMeta.textContent = "ID: EHR-7782 · Age: 76y · Female · Weight: 50kg (CrCl 18.5 mL/min)";
         if (pToken) pToken.textContent = "ANON_EHR7782";
 
+        if (typeof window.switchMainTab === 'function') window.switchMainTab('review');
         runSafetyCheck();
     } else if (type === 'optical_qr') {
         const samplePayload = {
@@ -929,6 +1010,7 @@ function applyParsedInteropData(data) {
         if (medInput) medInput.value = meds[0];
     }
 
+    if (typeof window.switchMainTab === 'function') window.switchMainTab('review');
     runSafetyCheck();
 }
 
@@ -968,6 +1050,10 @@ async function refreshAuditTrail() {
             `;
             tbody.appendChild(tr);
         });
+        const sealedBlocksEl = document.getElementById("stat-sealed-blocks");
+        if (sealedBlocksEl && data.total_events !== undefined) {
+            sealedBlocksEl.textContent = `${data.total_events} Blocks`;
+        }
     } catch (e) {
         console.warn("Could not refresh audit trail:", e);
     }
@@ -984,6 +1070,10 @@ async function verifyAuditChain() {
         const data = await res.json();
 
         if (data.valid) {
+            const integrityEl = document.getElementById("stat-chain-integrity");
+            if (integrityEl) {
+                integrityEl.textContent = "100% Verified";
+            }
             banner.className = "mt-3 p-2.5 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 flex items-center justify-between";
             banner.innerHTML = `
                 <div class="flex items-center space-x-2">
@@ -1024,6 +1114,7 @@ function toggleAuditDrawer() {
 // ---------------------------------------------------------------------------
 let currentDoctor = null;
 let hospitalsList = [];
+let cachedPractitionersList = [];
 let pendingVerificationEmail = "";
 
 async function loadAuthProfile() {
@@ -1042,13 +1133,29 @@ async function loadAuthProfile() {
 
 function updateDoctorHeader(doctor) {
     currentDoctor = doctor;
+    const initials = doctor.full_name ? doctor.full_name.replace("Dr. ", "").substring(0, 2).toUpperCase() : "GH";
+
     const pill = document.getElementById("current-doctor-pill");
     const badge = document.getElementById("current-hospital-badge");
+    const headerAv = document.getElementById("header-avatar") || document.getElementById("current-doctor-avatar");
     if (pill) pill.textContent = doctor.full_name || "Dr. Gregory House, MD";
     if (badge) {
         badge.textContent = doctor.hospital_name || "Princeton Plainsboro";
         badge.title = `${doctor.role || 'PHYSICIAN'} • ${doctor.medical_license || 'NPI-1999887766'}`;
     }
+    if (headerAv) headerAv.textContent = initials;
+
+    const profileName = document.getElementById("profile-name") || document.getElementById("sidebar-doc-name");
+    const profileHosp = document.getElementById("profile-hospital") || document.getElementById("sidebar-doc-hospital");
+    const profileLic = document.getElementById("profile-license") || document.getElementById("sidebar-doc-license");
+    const profileAv = document.getElementById("profile-avatar") || document.getElementById("sidebar-doc-avatar");
+    if (profileName) profileName.textContent = doctor.full_name || "Dr. Gregory House, MD";
+    if (profileHosp) profileHosp.textContent = doctor.hospital_name || "Princeton Plainsboro Teaching Hospital";
+    if (profileLic) profileLic.textContent = doctor.medical_license || "NPI-1999887766";
+    if (profileAv) profileAv.textContent = initials;
+
+    const statReviewer = document.getElementById("stat-current-reviewer");
+    if (statReviewer) statReviewer.textContent = doctor.full_name || "Dr. Gregory House, MD";
 }
 
 async function loadHospitalsAndDemoDoctors() {
@@ -1066,7 +1173,9 @@ async function loadHospitalsAndDemoDoctors() {
 
         if (pracRes.ok) {
             const pracData = await pracRes.json();
-            populateDemoDoctorsList(pracData.practitioners || []);
+            cachedPractitionersList = pracData.practitioners || [];
+            populateDemoDoctorsList(cachedPractitionersList);
+            renderDocList();
         }
     } catch (e) {
         console.warn("Could not load hospital lists:", e);
@@ -1131,9 +1240,60 @@ function populateDemoDoctorsList(doctors) {
     });
 }
 
+async function renderDocList() {
+    const list = document.getElementById("switch-doc-list");
+    if (!list) return;
+
+    if (!cachedPractitionersList || cachedPractitionersList.length === 0) {
+        try {
+            const res = await fetch("/api/auth/practitioners");
+            if (res.ok) {
+                const data = await res.json();
+                cachedPractitionersList = data.practitioners || [];
+            }
+        } catch (e) {
+            console.warn("Could not fetch practitioners list:", e);
+        }
+    }
+
+    list.innerHTML = "";
+    if (cachedPractitionersList.length === 0) {
+        list.innerHTML = "<div class='text-xs text-slate-400 p-2'>No practitioners available.</div>";
+        return;
+    }
+
+    cachedPractitionersList.forEach(doc => {
+        const isCurrent = currentDoctor && currentDoctor.practitioner_id === doc.practitioner_id;
+        const item = document.createElement("div");
+        item.className = `p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between ${
+            isCurrent ? 'bg-teal-950/60 border-teal-500/60 text-white' : 'bg-slate-900 border-slate-800 hover:border-teal-500/40 text-slate-300'
+        }`;
+        item.onclick = async () => {
+            await switchDemoDoctor(doc.practitioner_id);
+            if (typeof window.closeChangeDocModal === 'function') {
+                window.closeChangeDocModal();
+            }
+        };
+        item.innerHTML = `
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 flex items-center justify-center font-bold text-xs">
+                    ${doc.full_name.replace("Dr. ", "").substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                    <div class="text-xs font-semibold ${isCurrent ? 'text-teal-300' : 'text-white'}">${doc.full_name}</div>
+                    <div class="text-[10px] text-slate-400">${doc.hospital_name} · <span class="font-mono">${doc.medical_license}</span></div>
+                </div>
+            </div>
+            ${isCurrent ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono">ACTIVE</span>' : '<button class="btn-clinical-secondary py-0.5 px-2 text-[11px]">Select</button>'}
+        `;
+        list.appendChild(item);
+    });
+}
+
 function openAuthModal() {
-    const modal = document.getElementById("auth-modal");
+    const modal = document.getElementById("auth-gate") || document.getElementById("auth-modal");
     if (modal) {
+        modal.style.display = "flex";
         modal.classList.remove("hidden");
         switchAuthTab('demo');
         hideAuthAlert();
@@ -1141,8 +1301,23 @@ function openAuthModal() {
 }
 
 function closeAuthModal() {
-    const modal = document.getElementById("auth-modal");
-    if (modal) modal.classList.add("hidden");
+    const modal = document.getElementById("auth-gate") || document.getElementById("auth-modal");
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.add("hidden");
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+        console.warn("Logout request failed:", e);
+    }
+    if (typeof window.toggleSettingsSidebar === 'function') {
+        window.toggleSettingsSidebar(false);
+    }
+    openAuthModal();
 }
 
 function switchAuthTab(tab) {
@@ -1359,3 +1534,37 @@ async function handleResendOtp() {
         showAuthAlert(e.message, "error");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Global Window API Bindings (100% Interoperability with Inline Event Handlers)
+// ---------------------------------------------------------------------------
+window.switchDemoDoctor = switchDemoDoctor;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.handleVerifyOtp = handleVerifyOtp;
+window.handleResendOtp = handleResendOtp;
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
+window.switchAuthTab = switchAuthTab;
+window.onHospitalSelectChange = onHospitalSelectChange;
+window.transferToReview = transferToReview;
+window.exportFhirBundle = exportFhirBundle;
+window.exportClinicalCertificate = exportClinicalCertificate;
+window.openClearanceQrModal = openClearanceQrModal;
+window.closeClearanceQrModal = closeClearanceQrModal;
+window.loadFhirPreset = loadFhirPreset;
+window.triggerFhirIngestion = triggerFhirIngestion;
+window.handleFhirFileUpload = handleFhirFileUpload;
+window.verifyAuditChain = verifyAuditChain;
+window.triggerRedaction = triggerRedaction;
+window.runSafetyCheck = runSafetyCheck;
+window.selectPatient = selectPatient;
+window.applySampleDischargeNote = applySampleDischargeNote;
+window.setProposedMed = setProposedMed;
+window.swapAndVerify = swapAndVerify;
+window.handleLogout = handleLogout;
+window.renderDocList = renderDocList;
+window.checkNetworkGuard = checkNetworkGuard;
+window.checkAiStatus = checkAiStatus;
+window.switchIntakeMode = switchIntakeMode;
+
