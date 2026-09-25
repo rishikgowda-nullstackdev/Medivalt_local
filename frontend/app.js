@@ -319,22 +319,35 @@ function renderPatientCard(patient, conditions, medications, allergies, biomarke
         bioContainer.innerHTML = "";
         if (biomarkers && Object.keys(biomarkers).length > 0) {
             Object.entries(biomarkers).forEach(([bioName, bioData]) => {
-                const span = document.createElement("span");
+                const span = document.createElement("div");
                 const label = bioName.toUpperCase();
                 let dispVal = typeof bioData === "object" && bioData.display ? bioData.display : (typeof bioData === "object" && bioData.value ? `${bioData.value} ${bioData.unit || ''}` : String(bioData));
                 let status = typeof bioData === "object" && bioData.status ? bioData.status : "NORMAL";
 
-                let badgeColor = "bg-slate-700/60 text-slate-300 border-slate-600";
-                if (status.includes("CRITICAL")) {
-                    badgeColor = "bg-red-950/80 border-red-500/60 text-red-200 font-semibold";
+                let borderLeft = "border-l-slate-600";
+                let textValColor = "text-slate-200";
+                let statusBadge = "text-slate-400";
+
+                if (status.includes("CRITICAL") || status.includes("STAGE 3") || status.includes("SEVERE")) {
+                    borderLeft = "border-l-red-500";
+                    textValColor = "text-red-400";
+                    statusBadge = "text-red-300";
                 } else if (status.includes("WARNING") || status.includes("ELEVATED") || status === "HIGH" || status.includes("STAGE")) {
-                    badgeColor = "bg-amber-950/80 border-amber-500/60 text-amber-200 font-semibold";
-                } else if (status === "NORMAL") {
-                    badgeColor = "bg-emerald-950/40 border-emerald-500/30 text-emerald-300";
+                    borderLeft = "border-l-amber-500";
+                    textValColor = "text-amber-400";
+                    statusBadge = "text-amber-300";
+                } else if (status === "NORMAL" || status.includes("OPTIMAL") || status.includes("SAFE") || status.includes("NORM")) {
+                    borderLeft = "border-l-emerald-500";
+                    textValColor = "text-emerald-400";
+                    statusBadge = "text-emerald-300";
                 }
 
-                span.className = `px-2.5 py-1 ${badgeColor} border rounded-md text-xs font-mono flex items-center space-x-1`;
-                span.innerHTML = `<span class="opacity-75">${label}:</span><strong>${dispVal}</strong>`;
+                span.className = `bg-slate-900 p-2.5 rounded-lg border-l-2 ${borderLeft} border border-slate-800 flex flex-col justify-between`;
+                span.innerHTML = `
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider">${label}</div>
+                    <div class="text-sm font-bold ${textValColor} font-mono mt-0.5">${dispVal}</div>
+                    <span class="text-[9px] ${statusBadge} font-mono mt-0.5">${status}</span>
+                `;
                 bioContainer.appendChild(span);
             });
         } else {
@@ -422,6 +435,11 @@ async function runSafetyCheck() {
 
 function renderReviewResults(data) {
     currentReviewEventId = data.event_id;
+    const idleHint = document.getElementById("result-idle-hint");
+    const resContent = document.getElementById("result-content");
+    if (idleHint) idleHint.style.display = "none";
+    if (resContent) resContent.style.display = "block";
+
     const banner = document.getElementById("status-banner");
     const icon = document.getElementById("status-icon");
     const title = document.getElementById("status-title");
@@ -478,28 +496,28 @@ function renderReviewResults(data) {
 
     // 2. Status Banner
     if (data.overall_status === "CRITICAL") {
-        banner.className = "rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-red-950/70 border-red-500/60 text-red-100";
+        banner.className = "triage-banner danger";
         icon.className = "text-2xl mt-0.5 text-red-400";
         icon.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i>`;
-        title.className = "font-extrabold text-base tracking-wide uppercase text-red-300";
+        title.className = "font-extrabold text-xs tracking-wide uppercase text-red-200 font-heading";
         title.textContent = "CRITICAL CONTRAINDICATION DETECTED";
-        countBadge.className = "text-[10px] font-mono bg-red-900 border border-red-500/50 text-red-200 px-2 py-0.5 rounded-full";
+        countBadge.className = "text-[10px] font-mono bg-red-950 border border-red-500/50 text-red-200 px-2 py-0.5 rounded-full font-bold";
         countBadge.textContent = `${data.total_alerts} Risk Alert${data.total_alerts > 1 ? 's' : ''}`;
     } else if (data.overall_status === "WARNING") {
-        banner.className = "rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-amber-950/70 border-amber-500/60 text-amber-100";
+        banner.className = "triage-banner warning";
         icon.className = "text-2xl mt-0.5 text-amber-400";
         icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
-        title.className = "font-extrabold text-base tracking-wide uppercase text-amber-300";
+        title.className = "font-extrabold text-xs tracking-wide uppercase text-amber-200 font-heading";
         title.textContent = "CLINICAL CAUTION / RELATIVE CONTRAINDICATION";
-        countBadge.className = "text-[10px] font-mono bg-amber-900 border border-amber-500/50 text-amber-200 px-2 py-0.5 rounded-full";
+        countBadge.className = "text-[10px] font-mono bg-amber-950 border border-amber-500/50 text-amber-200 px-2 py-0.5 rounded-full font-bold";
         countBadge.textContent = `${data.total_alerts} Warning${data.total_alerts > 1 ? 's' : ''}`;
     } else {
-        banner.className = "rounded-xl p-4 mb-4 border flex items-start space-x-3.5 bg-emerald-950/70 border-emerald-500/60 text-emerald-100";
+        banner.className = "triage-banner safe";
         icon.className = "text-2xl mt-0.5 text-emerald-400";
         icon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
-        title.className = "font-extrabold text-base tracking-wide uppercase text-emerald-300";
+        title.className = "font-extrabold text-xs tracking-wide uppercase text-emerald-200 font-heading";
         title.textContent = "PRESCRIPTION CLEARED (SAFE)";
-        countBadge.className = "text-[10px] font-mono bg-emerald-900 border border-emerald-500/50 text-emerald-200 px-2 py-0.5 rounded-full";
+        countBadge.className = "text-[10px] font-mono bg-emerald-950 border border-emerald-500/50 text-emerald-200 px-2 py-0.5 rounded-full font-bold";
         countBadge.textContent = "0 Contraindications";
     }
 
@@ -523,24 +541,24 @@ function renderReviewResults(data) {
             }
 
             const card = document.createElement("div");
-            card.className = "bg-slate-900/90 border border-slate-700/80 rounded-lg p-3.5 text-xs shadow-inner";
+            card.className = "bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs";
             card.innerHTML = `
                 <div class="flex items-center justify-between font-semibold text-slate-100 mb-1.5">
-                    <span><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> ${a.conflicting_factor}</span>
-                    <span class="text-[10px] ${badgeColor} border px-2 py-0.5 rounded uppercase font-mono">${a.interaction_type}</span>
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <span>${a.conflicting_factor}</span></span>
+                    <span class="text-[10px] ${badgeColor} border px-2 py-0.5 rounded uppercase font-mono font-semibold">${a.interaction_type}</span>
                 </div>
-                <p class="text-slate-300 mb-2 leading-relaxed">
-                    <strong class="text-slate-200">Mechanism:</strong> ${a.clinical_mechanism}
+                <p class="text-slate-300 mb-2 leading-relaxed text-[11.5px]">
+                    <strong class="text-slate-200">Pathophysiology:</strong> ${a.clinical_mechanism}
                 </p>
-                <div class="bg-slate-800/80 p-2 rounded border border-slate-700 text-teal-300 font-mono text-[11px]">
-                    <strong class="text-slate-300">Recommendation:</strong> ${a.recommendation}
+                <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-teal-300 font-mono text-[11px] leading-relaxed">
+                    <strong class="text-slate-300 font-sans">Recommendation:</strong> ${a.recommendation}
                 </div>
             `;
             alertsContainer.appendChild(card);
         });
     } else if (!data.polypharmacy_alerts || data.polypharmacy_alerts.length === 0) {
         const safeCard = document.createElement("div");
-        safeCard.className = "bg-slate-900/70 border border-emerald-500/20 rounded-lg p-3 text-xs text-slate-300 text-center";
+        safeCard.className = "bg-slate-900 border border-emerald-500/30 rounded-lg p-3 text-xs text-slate-300 text-center";
         safeCard.innerHTML = `<i class="fa-solid fa-shield-check text-emerald-400 mr-1.5"></i> Verified against 30+ high-severity contraindication rules, quantitative lab thresholds, and polypharmacy matrices. No adverse drug interactions identified.`;
         alertsContainer.appendChild(safeCard);
     }
@@ -557,7 +575,7 @@ function renderReviewResults(data) {
                     <i class="fa-solid fa-pills text-teal-400"></i>
                     <span>Formulary Safe Alternatives (Non-Contraindicated)</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">1-Click Swap & Re-Verify</span>
+                <span class="text-[10px] text-slate-400 font-mono">1-Click Swap &amp; Re-Verify</span>
             `;
             altContainer.appendChild(header);
 
@@ -566,7 +584,7 @@ function renderReviewResults(data) {
 
             data.recommended_alternatives.forEach(alt => {
                 const altCard = document.createElement("div");
-                altCard.className = "p-3 bg-slate-900/90 border border-teal-500/30 hover:border-teal-400/70 rounded-lg text-xs flex flex-col justify-between transition group";
+                altCard.className = "p-3 bg-slate-900 border border-teal-500/30 hover:border-teal-400/60 rounded-lg text-xs flex flex-col justify-between transition group";
                 altCard.innerHTML = `
                     <div>
                         <div class="flex items-center justify-between mb-1">
@@ -576,9 +594,9 @@ function renderReviewResults(data) {
                         <div class="text-[10px] text-slate-300 font-mono mb-1.5">${alt.dosage_guide}</div>
                         <p class="text-[11px] text-slate-400 leading-snug mb-2">${alt.rationale}</p>
                     </div>
-                    <button onclick="swapAndVerify('${alt.alternative_drug}', '${alt.dosage_guide}')" class="w-full py-1.5 bg-teal-950 hover:bg-teal-700 text-teal-300 hover:text-white border border-teal-500/50 rounded text-[11px] font-semibold flex items-center justify-center space-x-1.5 transition">
+                    <button onclick="swapAndVerify('${alt.alternative_drug}', '${alt.dosage_guide}')" class="btn-clinical-secondary w-full py-1.5 text-xs font-semibold flex items-center justify-center space-x-1.5">
                         <i class="fa-solid fa-repeat"></i>
-                        <span>Swap to ${alt.alternative_drug} & Verify</span>
+                        <span>Swap to ${alt.alternative_drug} &amp; Verify</span>
                     </button>
                 `;
                 grid.appendChild(altCard);
@@ -816,23 +834,25 @@ async function refreshAuditTrail() {
         tbody.innerHTML = "";
         data.audit_trail.forEach(log => {
             const tr = document.createElement("tr");
-            tr.className = "hover:bg-slate-750 transition";
+            tr.className = "hover:bg-slate-800/50 transition";
             const statusClass = log.overall_status === 'CRITICAL' ? 'text-red-400 font-bold' :
                                (log.overall_status === 'WARNING' ? 'text-amber-400' : 'text-emerald-400');
             const doctorName = log.practitioner_name || "Dr. Gregory House, MD";
             const hospitalName = log.hospital_name || "Princeton Plainsboro";
 
             tr.innerHTML = `
-                <td class="py-2 px-3 text-slate-400">${log.timestamp.substring(11, 19)}</td>
-                <td class="py-2 px-3">
-                    <div class="font-medium text-teal-300">${doctorName}</div>
-                    <div class="text-[10px] text-slate-500 font-sans truncate max-w-[140px]">${hospitalName}</div>
+                <td class="py-2.5 px-3.5 text-slate-400 font-mono text-[11px]">${log.timestamp.substring(11, 19)}</td>
+                <td class="py-2.5 px-3.5">
+                    <div class="font-medium text-teal-300 text-xs">${doctorName}</div>
+                    <div class="text-[10px] text-slate-400 font-sans truncate max-w-[140px]">${hospitalName}</div>
                 </td>
-                <td class="py-2 px-3 text-teal-400 font-mono text-[10px]">${log.event_id}</td>
-                <td class="py-2 px-3 text-slate-300 font-mono">${log.patient_hash}</td>
-                <td class="py-2 px-3 text-slate-100 font-medium">${log.proposed_medication}</td>
-                <td class="py-2 px-3 ${statusClass}">${log.overall_status}</td>
-                <td class="py-2 px-3 text-slate-500 truncate max-w-[120px]" title="${log.audit_hash}">${log.audit_hash.substring(0, 16)}...</td>
+                <td class="py-2.5 px-3.5 text-teal-400 font-mono text-[11px] font-semibold">${log.event_id}</td>
+                <td class="py-2.5 px-3.5 text-slate-300 font-mono text-[11px]">${log.patient_hash}</td>
+                <td class="py-2.5 px-3.5 text-slate-100 font-medium text-xs">${log.proposed_medication}</td>
+                <td class="py-2.5 px-3.5 ${statusClass} text-xs uppercase font-mono font-bold">${log.overall_status}</td>
+                <td class="py-2.5 px-3.5 text-slate-400 font-mono text-[10.5px] truncate max-w-[120px]" title="${log.audit_hash}">
+                  <span class="hover:text-teal-300 cursor-pointer" onclick="navigator.clipboard.writeText('${log.audit_hash}')">${log.audit_hash.substring(0, 16)}...</span>
+                </td>
             `;
             tbody.appendChild(tr);
         });
