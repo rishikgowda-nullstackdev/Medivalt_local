@@ -43,12 +43,17 @@ document.addEventListener("DOMContentLoaded", () => {
     loadAuthProfile();
     loadHospitalsAndDemoDoctors();
 
-    // Listen to patient dropdown change
+    // Listen to patient dropdown changes (both Screen 1 header & Screen 2 intake tab)
     const selectEl = document.getElementById("patient-select");
     if (selectEl) {
         selectEl.addEventListener("change", (e) => {
-            currentPatientId = e.target.value;
-            loadPatientProfile(currentPatientId);
+            selectPatient(e.target.value);
+        });
+    }
+    const selectHeaderEl = document.getElementById("patient-select-header");
+    if (selectHeaderEl) {
+        selectHeaderEl.addEventListener("change", (e) => {
+            selectPatient(e.target.value);
         });
     }
 });
@@ -227,26 +232,133 @@ function setProposedMed(drug, dose) {
 // ---------------------------------------------------------------------------
 // API Calls: Patient Profile & Redaction
 // ---------------------------------------------------------------------------
+let cachedPatientsList = [];
+
 async function initPatientSelector() {
     try {
         const res = await fetch("/api/patients");
         if (!res.ok) return;
         const data = await res.json();
-        const select = document.getElementById("patient-select");
-        if (select && data.patients && data.patients.length > 0) {
-            select.innerHTML = "";
-            data.patients.forEach(p => {
-                const opt = document.createElement("option");
-                opt.value = p.patient_id;
-                opt.textContent = `${p.patient_id}: ${p.patient_name} (${p.age}y, ${p.gender})`;
-                select.appendChild(opt);
-            });
-            select.value = currentPatientId;
-        }
+        cachedPatientsList = data.patients || [];
+        
+        ['patient-select', 'patient-select-header'].forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select && cachedPatientsList.length > 0) {
+                select.innerHTML = "";
+                cachedPatientsList.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p.patient_id;
+                    opt.textContent = `${p.patient_id}: ${p.patient_name} (${p.age}y, ${p.gender})`;
+                    select.appendChild(opt);
+                });
+                select.value = currentPatientId;
+            }
+        });
+
+        renderPatientModalList(cachedPatientsList);
     } catch (e) {
         console.warn("Using default patient options (offline fallback)");
     }
 }
+
+function selectPatient(patientId) {
+    if (!patientId) return;
+    currentPatientId = patientId;
+    loadPatientProfile(patientId);
+
+    // Synchronize both dropdowns
+    const selTab = document.getElementById("patient-select");
+    if (selTab) selTab.value = patientId;
+    const selHeader = document.getElementById("patient-select-header");
+    if (selHeader) selHeader.value = patientId;
+
+    // Refresh modal card active badge and close modal
+    if (typeof renderPatientModalList === 'function' && cachedPatientsList.length > 0) {
+        renderPatientModalList(cachedPatientsList);
+    }
+    if (typeof closePatientModal === 'function') {
+        closePatientModal();
+    }
+}
+window.selectPatient = selectPatient;
+
+function renderPatientModalList(patients) {
+    const list = document.getElementById("switch-patient-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    const patientDetails = {
+        'PT-101': {
+            badge: 'Stage 3a CKD · High Renal Risk',
+            badgeClass: 'bg-red-950/80 border-red-500/50 text-red-300',
+            labs: 'eGFR 42 mL/min · Cr 1.9 mg/dL · K+ 4.4 mEq/L',
+            desc: 'Hypertension, T2DM. Severe contraindication with NSAIDs (Advil, Naproxen, Celebrex).'
+        },
+        'PT-102': {
+            badge: 'Asthma · Severe Bronchospasm Risk',
+            badgeClass: 'bg-amber-950/80 border-amber-500/50 text-amber-300',
+            labs: 'eGFR 92 mL/min · K+ 4.1 mEq/L · Wheezing PRN',
+            desc: 'Allergic Rhinitis, Moderate Asthma. Severe allergy to Aspirin; contraindication with Beta Blockers (Propranolol).'
+        },
+        'PT-103': {
+            badge: 'AFib · Warfarin Bleeding Risk',
+            badgeClass: 'bg-purple-950/80 border-purple-500/50 text-purple-300',
+            labs: 'INR 2.4 (Anticoagulated) · Digoxin therapy',
+            desc: 'Deep Vein Thrombosis. Major hemorrhage risk if paired with NSAIDs or antiplatelet agents.'
+        }
+    };
+
+    patients.forEach(p => {
+        const isActive = p.patient_id === currentPatientId;
+        const meta = patientDetails[p.patient_id] || {
+            badge: 'Standard Cohort Profile',
+            badgeClass: 'bg-slate-800 border-slate-700 text-slate-300',
+            labs: 'Vitals in local memory',
+            desc: 'De-identified clinical history.'
+        };
+
+        const card = document.createElement("div");
+        card.className = `p-3.5 rounded-xl border transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+            isActive ? 'bg-teal-950/40 border-teal-500/60 shadow-lg' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+        }`;
+        
+        card.innerHTML = `
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="font-bold text-white text-xs">${p.patient_name}</span>
+                    <span class="text-[10px] font-mono text-teal-400 bg-teal-950 border border-teal-500/30 px-1.5 py-0.5 rounded">${p.patient_id}</span>
+                    <span class="text-[10px] font-mono border px-2 py-0.5 rounded ${meta.badgeClass}">${meta.badge}</span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">${p.age} years old · ${p.gender} · ${meta.labs}</div>
+                <div class="text-[11px] text-slate-300">${meta.desc}</div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                ${isActive ? 
+                    '<span class="text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-3 py-1.5 rounded-lg flex items-center"><i class="fa-solid fa-circle-check mr-1.5"></i> ACTIVE</span>' : 
+                    `<button type="button" onclick="selectPatient('${p.patient_id}')" class="btn-clinical-primary text-xs py-1.5 px-3">Select Patient</button>`
+                }
+            </div>
+        `;
+
+        if (!isActive) {
+            card.onclick = (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    selectPatient(p.patient_id);
+                }
+            };
+        }
+
+        list.appendChild(card);
+    });
+}
+window.renderPatientModalList = renderPatientModalList;
+window.refreshPatientModalCards = () => {
+    if (cachedPatientsList.length > 0) {
+        renderPatientModalList(cachedPatientsList);
+    } else {
+        initPatientSelector();
+    }
+};
 
 async function loadPatientProfile(patientId) {
     try {
