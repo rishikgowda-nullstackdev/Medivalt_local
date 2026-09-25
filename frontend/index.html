@@ -18,6 +18,840 @@
       border-color: #14b8a6 !important;
       background-color: rgba(20, 184, 166, 0.1) !important;
     }
+
+    /* ── PARTICLE CANVAS ── */
+    #particle-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── SPLASH SCREEN ── */
+    #splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--navy);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 32px;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    #splash.fade-out { opacity: 0; visibility: hidden; }
+
+    .splash-logo-ring {
+      position: relative;
+      width: 140px; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .splash-ring-outer {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(20,184,166,0.3);
+      animation: spin-slow 8s linear infinite;
+    }
+    .splash-ring-outer::before {
+      content: '';
+      position: absolute; top: -3px; left: 50%; width: 6px; height: 6px;
+      background: var(--teal-bright);
+      border-radius: 50%;
+      box-shadow: 0 0 12px 4px var(--teal-bright);
+      transform: translateX(-50%);
+    }
+    .splash-ring-inner {
+      position: absolute; inset: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(6,182,212,0.25);
+      animation: spin-slow 5s linear infinite reverse;
+    }
+    .splash-ring-inner::before {
+      content: '';
+      position: absolute; bottom: -3px; left: 50%; width: 5px; height: 5px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px 3px var(--cyan);
+      transform: translateX(-50%);
+    }
+    .splash-shield-wrap {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      width: 80px; height: 80px;
+      background: radial-gradient(circle, rgba(20,184,166,0.15) 0%, transparent 70%);
+    }
+    .splash-shield {
+      font-size: 54px;
+      color: var(--teal-bright);
+      filter: drop-shadow(0 0 20px rgba(45,212,191,0.8)) drop-shadow(0 0 40px rgba(20,184,166,0.4));
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    .splash-cross {
+      position: absolute;
+      font-size: 22px;
+      color: white;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    .splash-title {
+      font-size: 32px; font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--teal-bright) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: fade-up 0.6s ease 0.3s both;
+    }
+    .splash-subtitle {
+      font-size: 13px; color: rgba(148,163,184,0.8);
+      letter-spacing: 3px; text-transform: uppercase;
+      animation: fade-up 0.6s ease 0.5s both;
+    }
+    .splash-progress {
+      width: 200px; height: 2px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden;
+      animation: fade-up 0.6s ease 0.7s both;
+    }
+    .splash-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--cyan));
+      border-radius: 99px;
+      box-shadow: 0 0 8px var(--teal);
+      animation: load-bar 2.2s cubic-bezier(0.4,0,0.2,1) 0.4s forwards;
+    }
+
+    /* ── AUTH GATE ── */
+    #auth-gate {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #auth-gate.visible { opacity: 1; visibility: visible; }
+    #auth-gate.slide-out {
+      opacity: 0; transform: scale(1.04);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .auth-backdrop {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 30%,
+        rgba(20,184,166,0.08) 0%, transparent 60%),
+        var(--auth-backdrop);
+      transition: background 0.35s ease;
+    }
+    .auth-card {
+      position: relative; z-index: 1;
+      width: 420px; max-width: calc(100vw - 32px);
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border-card);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(20,184,166,0.08),
+        0 25px 60px rgba(0,0,0,0.35),
+        0 0 80px rgba(20,184,166,0.06);
+      animation: slide-up 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+      transition: background 0.35s ease, border-color 0.35s ease;
+    }
+    .auth-header-strip {
+      padding: 28px 28px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      text-align: center;
+    }
+    .auth-logo-mini {
+      width: 56px; height: 56px;
+      background: radial-gradient(circle, rgba(20,184,166,0.2) 0%, transparent 70%);
+      border: 1px solid rgba(20,184,166,0.3);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: var(--teal-bright);
+      box-shadow: 0 0 20px rgba(20,184,166,0.2);
+    }
+    .auth-title {
+      font-size: 22px; font-weight: 700; color: var(--text-primary);
+    }
+    .auth-subtitle {
+      font-size: 12px; color: var(--text-muted);
+    }
+    .auth-tabs {
+      display: flex; margin: 20px 28px 0;
+      background: var(--bg-tab-bar);
+      border: 1px solid var(--border-input);
+      border-radius: 12px; padding: 4px; gap: 2px;
+    }
+    .auth-tab-btn {
+      flex: 1; padding: 8px 12px;
+      border-radius: 9px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+    .auth-tab-btn.active {
+      background: var(--bg-tab-active);
+      color: var(--teal-bright);
+      border: 1px solid rgba(20,184,166,0.25);
+    }
+    .auth-body { padding: 20px 28px 28px; }
+    .auth-tab-content { display: none; }
+    .auth-tab-content.active { display: block; animation: fade-in 0.25s ease; }
+
+    /* ── INPUT STYLE ── */
+    .mv-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px; color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.35s;
+    }
+    .mv-input:focus {
+      border-color: rgba(20,184,166,0.5);
+      box-shadow: 0 0 0 3px rgba(20,184,166,0.1);
+    }
+    .mv-input::placeholder { color: var(--text-faint); }
+    .mv-label {
+      display: block; font-size: 11px; font-weight: 500;
+      color: var(--text-muted); margin-bottom: 5px;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .mv-btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #0d9488, #0891b2);
+      color: white; font-weight: 600; font-size: 14px;
+      padding: 12px; border: none; border-radius: 12px;
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(13,148,136,0.3);
+    }
+    .mv-btn-primary:hover {
+      background: linear-gradient(135deg, #14b8a6, #06b6d4);
+      box-shadow: 0 6px 24px rgba(20,184,166,0.4);
+      transform: translateY(-1px);
+    }
+    .mv-btn-secondary {
+      width: 100%;
+      background: var(--bg-input);
+      color: var(--text-muted); font-weight: 500; font-size: 13px;
+      padding: 10px; border: 1px solid var(--border-input);
+      border-radius: 10px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .mv-btn-secondary:hover {
+      background: rgba(20,184,166,0.08);
+      border-color: rgba(20,184,166,0.3);
+      color: var(--teal-bright);
+    }
+
+    /* ── DEMO DOCTOR CARDS ── */
+    .demo-doc-card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: 12px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .demo-doc-card:hover {
+      background: rgba(20,184,166,0.07);
+      border-color: rgba(20,184,166,0.2);
+    }
+    .doc-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(20,184,166,0.3), rgba(6,182,212,0.2));
+      border: 1px solid rgba(20,184,166,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--teal-bright);
+    }
+    .doc-switch-btn {
+      font-size: 11px; padding: 5px 12px;
+      background: rgba(20,184,166,0.1);
+      border: 1px solid rgba(20,184,166,0.25);
+      border-radius: 8px; color: var(--teal-bright);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .doc-switch-btn:hover { background: rgba(20,184,166,0.2); }
+
+    /* ── OTP SCREEN ── */
+    #otp-screen { display: none; }
+    #otp-screen.active { display: block; animation: fade-in 0.25s ease; }
+
+    /* ── MAIN APP ── */
+    #main-app {
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #main-app.visible { opacity: 1; visibility: visible; }
+
+    /* ── HEADER ── */
+    .mv-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg-header);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-main);
+      box-shadow: 0 1px 0 rgba(20,184,166,0.05), 0 4px 20px rgba(0,0,0,0.15);
+      transition: background 0.35s ease, border-color 0.35s ease;
+    }
+    .mv-header-inner {
+      max-width: 1400px; margin: 0 auto;
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .mv-logo { display: flex; align-items: center; gap: 10px; }
+    .mv-logo-icon {
+      position: relative; width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mv-logo-icon-ring {
+      position: absolute; inset: 0; border-radius: 12px;
+      border: 1px solid rgba(20,184,166,0.35);
+      animation: shimmer-border 3s ease infinite;
+    }
+    .mv-logo-icon i.shield {
+      font-size: 22px; color: var(--teal-bright);
+      filter: drop-shadow(0 0 8px rgba(45,212,191,0.6));
+    }
+    .mv-logo-icon i.cross { position: absolute; font-size: 9px; color: white; }
+    .mv-logo-text { line-height: 1; }
+    .mv-logo-text .name {
+      font-size: 17px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px;
+    }
+    .mv-logo-text .name span { color: var(--teal-bright); }
+    .mv-logo-text .tag {
+      font-size: 9px; color: var(--text-faint);
+      letter-spacing: 2px; text-transform: uppercase; margin-top: 1px;
+    }
+
+    .header-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 500; border: 1px solid;
+    }
+    .pill-airgap {
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.25); color: #059669;
+    }
+    html:not(.light) .pill-airgap { color: #6ee7b7; }
+    .pill-airgap .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 6px #10b981;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .pill-hipaa {
+      background: var(--bg-pill);
+      border-color: rgba(20,184,166,0.2); color: var(--text-muted);
+    }
+    .pill-ollama {
+      background: var(--bg-pill);
+      border-color: rgba(20,184,166,0.2); color: var(--text-muted);
+    }
+    .header-doc-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px 6px 8px;
+      background: rgba(20,184,166,0.08);
+      border: 1px solid rgba(20,184,166,0.2);
+      border-radius: 99px; cursor: pointer;
+      transition: all 0.2s ease; color: var(--text-primary);
+    }
+    .header-doc-btn:hover {
+      background: rgba(20,184,166,0.14);
+      border-color: rgba(20,184,166,0.4);
+    }
+    .header-doc-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: white;
+    }
+
+    /* ── TOP MULTI-PAGE NAVIGATION ── */
+    .nav-bar-container {
+      max-width: 1400px;
+      margin: 14px auto 0;
+      padding: 0 24px;
+    }
+    .mv-nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+    .nav-tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(20,184,166,0.06);
+    }
+    .nav-tab-btn.active {
+      background: linear-gradient(135deg, rgba(20,184,166,0.2), rgba(6,182,212,0.15));
+      border-color: rgba(20,184,166,0.35);
+      color: var(--teal-bright);
+      box-shadow: 0 4px 12px rgba(20,184,166,0.15);
+    }
+    .nav-shortcut-badge {
+      font-size: 10px;
+      font-family: monospace;
+      opacity: 0.6;
+      background: rgba(0,0,0,0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── PAGE VIEW CONTAINER & TRANSITIONS ── */
+    .page-view {
+      display: none;
+      animation: view-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .page-view.active {
+      display: block;
+    }
+    @keyframes view-enter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SETTINGS SIDEBAR ── */
+    #sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1500;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #sidebar-backdrop.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #settings-sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1501;
+      width: 380px;
+      max-width: 90vw;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-card);
+      backdrop-filter: blur(24px);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    #settings-sidebar.visible {
+      transform: translateX(0);
+    }
+    .sidebar-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.15);
+    }
+    .sidebar-body {
+      padding: 20px 22px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--teal-bright);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .mv-main {
+      max-width: 1400px; margin: 0 auto;
+      padding: 24px 24px 100px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .mv-main { grid-template-columns: 1fr; } }
+
+    /* ── GLASS CARD ── */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.04);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.35s ease;
+    }
+    .glass-card:hover { border-color: rgba(20,184,166,0.2); }
+    .glass-card-header { padding: 16px 20px 0; display: flex; align-items: center; }
+    .glass-card-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--teal-bright);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 7px;
+    }
+
+    /* ── INTAKE TABS ── */
+    .intake-tabs {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px; padding: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px; margin-bottom: 16px;
+    }
+    .intake-tab {
+      padding: 9px; text-align: center;
+      border-radius: 9px; cursor: pointer;
+      font-size: 12px; font-weight: 500;
+      color: rgba(148,163,184,0.6);
+      border: none; background: transparent;
+      transition: all 0.2s ease;
+    }
+    .intake-tab.active {
+      background: rgba(20,184,166,0.15);
+      color: var(--teal-bright);
+      border: 1px solid rgba(20,184,166,0.2);
+    }
+
+    /* ── CONDITION TAGS ── */
+    .tag-danger {
+      padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 500;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #fca5a5;
+    }
+    .tag-neutral {
+      padding: 4px 10px; border-radius: 8px; font-size: 11px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(226,232,240,0.8);
+    }
+    .tag-warning {
+      padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 500;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.25);
+      color: #fcd34d;
+    }
+    .tag-med {
+      padding: 4px 10px; border-radius: 8px; font-size: 11px;
+      background: rgba(20,184,166,0.08);
+      border: 1px solid rgba(20,184,166,0.18);
+      color: var(--teal-bright);
+    }
+
+    /* ── RESULT BANNER ── */
+    .result-banner {
+      border-radius: 16px; padding: 16px;
+      margin-bottom: 16px;
+      display: flex; gap: 14px; align-items: flex-start;
+      border: 1px solid;
+      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .result-banner.critical {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.3);
+      box-shadow: 0 0 30px rgba(239,68,68,0.12), inset 0 1px 0 rgba(239,68,68,0.15);
+    }
+    .result-banner.warning {
+      background: rgba(245,158,11,0.08);
+      border-color: rgba(245,158,11,0.3);
+      box-shadow: 0 0 30px rgba(245,158,11,0.1);
+    }
+    .result-banner.safe {
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.3);
+      box-shadow: 0 0 30px rgba(16,185,129,0.1);
+    }
+    .result-banner.idle {
+      background: rgba(255,255,255,0.02);
+      border-color: rgba(255,255,255,0.06);
+    }
+
+    /* ── ALERT CARD ── */
+    .alert-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 14px;
+      font-size: 12px;
+      animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .alert-card.critical { border-left: 3px solid #ef4444; }
+    .alert-card.warning { border-left: 3px solid #f59e0b; }
+    .recommendation-box {
+      margin-top: 10px; padding: 10px 12px;
+      background: rgba(20,184,166,0.06);
+      border: 1px solid rgba(20,184,166,0.15);
+      border-radius: 10px; font-size: 11px;
+      color: rgba(148,163,184,0.9); font-family: monospace;
+    }
+
+    /* ── QUICK CHIPS ── */
+    .chip {
+      font-size: 11px; padding: 5px 11px;
+      border-radius: 8px; cursor: pointer;
+      border: 1px solid; font-weight: 500;
+      transition: all 0.15s ease; white-space: nowrap;
+    }
+    .chip-red {
+      background: rgba(239,68,68,0.07);
+      border-color: rgba(239,68,68,0.25);
+      color: #fca5a5;
+    }
+    .chip-red:hover { background: rgba(239,68,68,0.15); }
+    .chip-amber {
+      background: rgba(245,158,11,0.07);
+      border-color: rgba(245,158,11,0.25);
+      color: #fcd34d;
+    }
+    .chip-amber:hover { background: rgba(245,158,11,0.15); }
+    .chip-purple {
+      background: rgba(168,85,247,0.07);
+      border-color: rgba(168,85,247,0.25);
+      color: #d8b4fe;
+    }
+    .chip-purple:hover { background: rgba(168,85,247,0.15); }
+
+    /* ── RUN BUTTON ── */
+    .run-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+      color: white; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+      padding: 14px; border: none; border-radius: 14px;
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(13,148,136,0.35);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      position: relative; overflow: hidden;
+    }
+    .run-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+    .run-btn:hover::before { transform: translateX(100%); }
+    .run-btn:hover {
+      background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+      box-shadow: 0 6px 30px rgba(20,184,166,0.45);
+      transform: translateY(-2px);
+    }
+    .run-btn:disabled {
+      opacity: 0.6; cursor: not-allowed; transform: none;
+    }
+
+    /* ── AUDIT SECTION ── */
+    .audit-section {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 24px 40px;
+    }
+    .audit-drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; cursor: pointer;
+      border-bottom: 1px solid rgba(20,184,166,0.08);
+    }
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .audit-table th {
+      padding: 10px 14px; text-align: left;
+      color: rgba(148,163,184,0.5);
+      font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .audit-table td {
+      padding: 11px 14px; font-family: monospace;
+      color: rgba(226,232,240,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .audit-table tr:hover td { background: rgba(20,184,166,0.03); }
+
+    /* ── FLOATING DOCTOR CARD ── */
+    #floating-doc-card {
+      position: fixed; bottom: 24px; right: 24px; z-index: 200;
+      width: 280px;
+      background: rgba(13,20,39,0.95);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(20,184,166,0.2);
+      border-radius: 20px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(20,184,166,0.05);
+      overflow: hidden;
+      opacity: 0; visibility: hidden;
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #floating-doc-card.visible {
+      opacity: 1; visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    .float-card-header {
+      padding: 14px 16px;
+      background: linear-gradient(135deg, rgba(20,184,166,0.12), rgba(6,182,212,0.06));
+      border-bottom: 1px solid rgba(20,184,166,0.12);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .float-doc-avatar {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--teal), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: white;
+      box-shadow: 0 4px 12px rgba(20,184,166,0.3);
+    }
+    .float-doc-name { font-size: 13px; font-weight: 700; color: white; }
+    .float-doc-role { font-size: 10px; color: rgba(148,163,184,0.6); margin-top: 1px; }
+    .float-card-body { padding: 12px 16px; }
+    .float-stat-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 11px;
+    }
+    .float-stat-row:last-child { border-bottom: none; }
+    .float-stat-label { color: rgba(148,163,184,0.5); }
+    .float-stat-value { color: rgba(226,232,240,0.9); font-weight: 500; font-family: monospace; }
+    .float-card-footer {
+      padding: 10px 16px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      display: flex; gap: 6px;
+    }
+    .float-btn {
+      flex: 1; padding: 7px; border-radius: 8px; cursor: pointer;
+      font-size: 11px; font-weight: 500; border: 1px solid; transition: all 0.2s;
+    }
+    .float-btn-change {
+      background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.25);
+      color: var(--teal-bright);
+    }
+    .float-btn-change:hover { background: rgba(20,184,166,0.2); }
+    .float-btn-collapse {
+      background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);
+      color: rgba(148,163,184,0.6);
+    }
+    .float-btn-collapse:hover { background: rgba(255,255,255,0.06); }
+    #doc-card-toggle {
+      position: fixed; bottom: 24px; right: 24px; z-index: 199;
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--teal), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 4px 16px rgba(20,184,166,0.4);
+      transition: all 0.2s ease;
+      opacity: 0; visibility: hidden;
+    }
+    #doc-card-toggle.visible { opacity: 1; visibility: visible; }
+    #doc-card-toggle:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(20,184,166,0.5); }
+
+    /* ── DROP ZONE ── */
+    .drop-zone {
+      border: 2px dashed rgba(20,184,166,0.2);
+      border-radius: 12px; padding: 24px;
+      text-align: center; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: rgba(20,184,166,0.5);
+      background: rgba(20,184,166,0.04);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(45,212,191,0.8)) drop-shadow(0 0 40px rgba(20,184,166,0.4)); }
+      50% { filter: drop-shadow(0 0 30px rgba(45,212,191,1)) drop-shadow(0 0 60px rgba(20,184,166,0.6)); }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 6px #10b981; }
+      50% { opacity: 0.7; box-shadow: 0 0 12px #10b981; }
+    }
+    @keyframes load-bar {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes shimmer-border {
+      0%, 100% { border-color: rgba(20,184,166,0.35); box-shadow: 0 0 8px rgba(20,184,166,0.1); }
+      50% { border-color: rgba(20,184,166,0.6); box-shadow: 0 0 16px rgba(20,184,166,0.25); }
+    }
+    @keyframes enter-card {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .enter-anim { animation: enter-card 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+    /* ── AUTH ALERT ── */
+    .auth-alert {
+      padding: 10px 14px; border-radius: 10px; font-size: 12px;
+      margin-bottom: 14px; display: none;
+    }
+    .auth-alert.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+    .auth-alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.2); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(20,184,166,0.35); }
+
+    /* ── OTP INPUT ── */
+    .otp-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(20,184,166,0.3);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      font-size: 28px; font-weight: 700; letter-spacing: 10px;
+      color: var(--teal-bright); font-family: monospace;
+      outline: none;
+    }
+    .otp-input:focus { border-color: rgba(20,184,166,0.6); box-shadow: 0 0 0 3px rgba(20,184,166,0.1); }
+
+    /* ── INTEGRITY BANNER ── */
+    .integrity-banner {
+      padding: 10px 14px; border-radius: 10px; font-size: 11px;
+      font-family: monospace; display: none;
+    }
+    .integrity-banner.visible { display: flex; align-items: center; gap: 8px; }
+    .integrity-banner.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+    .integrity-banner.fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+
+    .separator { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 12px 0; }
+>>>>>>> Stashed changes
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
@@ -54,17 +888,88 @@
           <span>HIPAA § 164.312(b) Safe Harbor</span>
         </div>
 
+<<<<<<< Updated upstream
         <!-- Doctor Profile Pill & Institution Switcher -->
         <button id="auth-modal-btn" onclick="openAuthModal()" class="flex items-center space-x-2 bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-200 text-xs px-3.5 py-1.5 rounded-full transition shadow-sm cursor-pointer">
           <i class="fa-solid fa-user-doctor text-teal-400"></i>
           <span id="current-doctor-pill" class="font-medium">Dr. Gregory House, MD</span>
           <span id="current-hospital-badge" class="bg-teal-900/90 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-700 font-mono hidden md:inline">Princeton Plainsboro</span>
           <span class="text-teal-400 text-[10px]"><i class="fa-solid fa-chevron-down"></i></span>
+=======
+        <div style="background:rgba(20,184,166,0.05);border:1px solid rgba(20,184,166,0.15);border-radius:12px;padding:12px;margin-bottom:14px;font-family:monospace;font-size:11px;color:rgba(148,163,184,0.7)">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:8px;margin-bottom:8px">
+            <span><i class="fa-solid fa-server mr-1"></i> Hospital Intranet Mail</span>
+            <span style="color:#6ee7b7;font-size:10px">Air-Gapped</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span>One-Time Code:</span>
+            <strong id="otp-sim-code" style="color:#fcd34d;font-size:18px;letter-spacing:4px;background:rgba(0,0,0,0.3);padding:2px 10px;border-radius:6px">------</strong>
+          </div>
+        </div>
+
+        <input type="text" id="otp-input-gate" maxlength="6" class="otp-input" placeholder="000000" style="margin-bottom:12px" />
+        <button class="mv-btn-primary" style="margin-bottom:8px" onclick="handleGateOtp()">
+          <i class="fa-solid fa-shield-check mr-2"></i> Verify & Activate Account
+        </button>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <button onclick="handleGateResend()" style="background:none;border:none;color:var(--teal-bright);cursor:pointer">Resend Code</button>
+          <button onclick="switchAuthGateTab('login')" style="background:none;border:none;color:rgba(148,163,184,0.5);cursor:pointer">← Back to Sign In</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APPLICATION
+═══════════════════════════════════════════ -->
+<div id="main-app">
+
+  <!-- HEADER -->
+  <header class="mv-header">
+    <div class="mv-header-inner">
+      <div class="mv-logo">
+        <div class="mv-logo-icon">
+          <div class="mv-logo-icon-ring"></div>
+          <i class="fa-solid fa-shield-heart shield"></i>
+          <i class="fa-solid fa-plus cross" style="font-size:9px"></i>
+        </div>
+        <div class="mv-logo-text">
+          <div class="name">MediVault <span>Local</span></div>
+          <div class="tag">Sovereign AI · HIPAA § 164.514(b)</div>
+        </div>
+      </div>
+
+      <div class="header-pills">
+        <div class="pill pill-airgap">
+          <div class="dot"></div>
+          <span>AIR-GAPPED: 0 BYTES OUT</span>
+        </div>
+        <div class="pill pill-hipaa hidden md:flex">
+          <i class="fa-solid fa-lock" style="color:var(--teal-bright)"></i>
+          <span>HIPAA § 164.312</span>
+        </div>
+        <div class="pill pill-ollama hidden md:flex">
+          <i class="fa-solid fa-microchip" style="color:var(--teal-bright)"></i>
+          <span id="ollama-status-text">Checking AI…</span>
+        </div>
+        <!-- Profile Avatar Trigger -->
+        <button class="header-doc-btn" onclick="toggleSettingsSidebar(true)" title="Physician Profile & Settings">
+          <div class="header-doc-avatar" id="header-doc-initials">GH</div>
+          <span style="font-size:12px;font-weight:600" id="header-doc-name">Dr. Gregory House</span>
+          <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(148,163,184,0.5)"></i>
+>>>>>>> Stashed changes
+        </button>
+        <!-- Settings Gear Button -->
+        <button class="theme-toggle-btn" onclick="toggleSettingsSidebar(true)" title="Settings">
+          <i class="fa-solid fa-gear" style="font-size:14px;color:var(--teal-bright)"></i>
         </button>
       </div>
     </div>
   </header>
 
+<<<<<<< Updated upstream
   <!-- Main Content Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -78,6 +983,39 @@
             <i class="fa-solid fa-hospital-user mr-2"></i> Clinical Record Ingestion
           </h2>
           <span class="text-[11px] text-slate-400 bg-slate-700/60 px-2 py-0.5 rounded">Local SQLite</span>
+=======
+  <!-- TOP MULTI-PAGE NAVIGATION BAR -->
+  <div class="nav-bar-container">
+    <nav class="mv-nav-bar">
+      <button id="main-nav-btn-1" onclick="switchMainView(1)" class="nav-tab-btn active">
+        <i class="fa-solid fa-hospital-user text-sm"></i>
+        <span>1. Patient Intake &amp; EMR</span>
+        <span class="nav-shortcut-badge hidden md:inline">[1]</span>
+      </button>
+      <button id="main-nav-btn-2" onclick="switchMainView(2)" class="nav-tab-btn">
+        <i class="fa-solid fa-prescription-bottle-medical text-sm"></i>
+        <span>2. Clinical Triage &amp; CDSS</span>
+        <span class="nav-shortcut-badge hidden md:inline">[2]</span>
+      </button>
+      <button id="main-nav-btn-3" onclick="switchMainView(3)" class="nav-tab-btn">
+        <i class="fa-solid fa-timeline text-sm"></i>
+        <span>3. Audit Trail &amp; Certificates</span>
+        <span class="nav-shortcut-badge hidden md:inline">[3]</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VIEW 1: PATIENT INTAKE & DE-IDENTIFICATION               -->
+  <!-- ======================================================== -->
+  <div id="main-view-1" class="page-view active">
+    <main class="mv-main">
+      <!-- Intake Mode Card -->
+      <div class="glass-card enter-anim" style="padding:20px">
+        <div class="glass-card-title" style="margin-bottom:16px">
+          <i class="fa-solid fa-hospital-user"></i> Clinical Record Ingestion
+          <span style="margin-left:auto;font-size:10px;color:rgba(148,163,184,0.4);font-weight:400;text-transform:none;letter-spacing:0">Local SQLite</span>
+>>>>>>> Stashed changes
         </div>
 
         <!-- Mode Toggle Tabs -->
@@ -90,6 +1028,7 @@
           </button>
         </div>
 
+<<<<<<< Updated upstream
         <!-- Mode 1: Demo Patient Dropdown -->
         <div id="demo-patient-section" class="space-y-3">
           <label class="block text-xs font-medium text-slate-300">Select Synthetic Demo Patient Profile:</label>
@@ -97,6 +1036,15 @@
             <option value="PT-101">PT-101: John Doe (Stage 3 CKD, HTN, T2DM)</option>
             <option value="PT-102">PT-102: Sarah Connor (Moderate Asthma, Rhinitis)</option>
             <option value="PT-103">PT-103: Robert Smith (AFib, Warfarin Therapy)</option>
+=======
+        <!-- Demo Mode -->
+        <div id="section-demo">
+          <label class="mv-label">Select Synthetic Demo Patient:</label>
+          <select id="patient-select" class="mv-input" style="cursor:pointer">
+            <option value="PT-101">PT-101: John Doe (Stage 3 CKD, HTN, T2DM) · Renal Panel</option>
+            <option value="PT-102">PT-102: Sarah Connor (Moderate Asthma, Rhinitis) · Resp Panel</option>
+            <option value="PT-103">PT-103: Robert Smith (AFib, Warfarin Therapy) · Coag Panel</option>
+>>>>>>> Stashed changes
           </select>
         </div>
 
@@ -120,6 +1068,13 @@
             <span>Run Safe Harbor PHI Redaction</span>
           </button>
         </div>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)">
+          <button onclick="switchMainView(2)" class="mv-btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px">
+            <span>Proceed to Clinical Triage</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
       </div>
 
       <!-- De-identified Patient Profile Card -->
@@ -134,6 +1089,7 @@
           </span>
         </div>
 
+<<<<<<< Updated upstream
         <!-- Extracted Diagnoses -->
         <div class="mb-4">
           <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider block mb-2">
@@ -143,6 +1099,41 @@
             <span class="px-2.5 py-1 bg-red-950/60 border border-red-500/40 text-red-200 rounded-md text-xs font-medium">Stage 3 Chronic Kidney Disease</span>
             <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Essential Hypertension</span>
             <span class="px-2.5 py-1 bg-slate-700/60 text-slate-200 rounded-md text-xs">Type 2 Diabetes Mellitus</span>
+=======
+        <!-- Quantitative Biomarkers Indicator Row -->
+        <div id="patient-biomarker-bar" style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:600;color:var(--teal-bright);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+            <span><i class="fa-solid fa-flask-vial mr-1.5"></i> Quantitative Lab Biomarkers</span>
+            <span style="font-size:9px;color:rgba(148,163,184,0.4);font-family:monospace">LOINC Canonical</span>
+          </div>
+          <div id="biomarkers-container" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px">
+            <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(20,184,166,0.2);border-radius:10px;padding:8px 10px">
+              <div style="font-size:10px;color:rgba(148,163,184,0.6)">eGFR</div>
+              <div style="font-size:13px;font-weight:700;color:#fcd34d;font-family:monospace">42 mL/min</div>
+              <div style="font-size:9px;color:#fcd34d">Stage 3 Impaired</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(20,184,166,0.2);border-radius:10px;padding:8px 10px">
+              <div style="font-size:10px;color:rgba(148,163,184,0.6)">Creatinine</div>
+              <div style="font-size:13px;font-weight:700;color:#f87171;font-family:monospace">1.8 mg/dL</div>
+              <div style="font-size:9px;color:#f87171">High Hazard</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(20,184,166,0.2);border-radius:10px;padding:8px 10px">
+              <div style="font-size:10px;color:rgba(148,163,184,0.6)">BUN</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);font-family:monospace">28 mg/dL</div>
+              <div style="font-size:9px;color:rgba(148,163,184,0.6)">Borderline</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:600;color:rgba(148,163,184,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
+            <i class="fa-solid fa-stethoscope mr-1.5" style="color:var(--teal-bright)"></i> Diagnosed Conditions
+          </div>
+          <div id="conditions-list" style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="tag-danger">Stage 3 Chronic Kidney Disease</span>
+            <span class="tag-neutral">Essential Hypertension</span>
+            <span class="tag-neutral">Type 2 Diabetes Mellitus</span>
+>>>>>>> Stashed changes
           </div>
         </div>
 
@@ -178,6 +1169,7 @@
           </div>
         </div>
       </div>
+<<<<<<< Updated upstream
     </section>
 
     <!-- RIGHT COLUMN: Prescription Cross-Check & Safety Review (7 cols) -->
@@ -188,6 +1180,22 @@
         <h2 class="text-sm font-semibold uppercase tracking-wider text-teal-400 mb-3 flex items-center">
           <i class="fa-solid fa-prescription-bottle-medical mr-2"></i> Proposed Prescription Cross-Check
         </h2>
+=======
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VIEW 2: CLINICAL CONTRAINDICATION TRIAGE & CDSS          -->
+  <!-- ======================================================== -->
+  <div id="main-view-2" class="page-view">
+    <main class="mv-main">
+      <!-- Prescription Input -->
+      <div class="glass-card enter-anim" style="padding:20px;animation-delay:0.12s">
+        <div class="glass-card-title" style="margin-bottom:16px">
+          <i class="fa-solid fa-prescription-bottle-medical"></i> Proposed Prescription Cross-Check
+          <span style="margin-left:auto;font-size:10px;color:var(--teal-bright);font-weight:400;text-transform:none">Deterministic + SLM</span>
+        </div>
+>>>>>>> Stashed changes
 
         <div class="space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -212,11 +1220,33 @@
             </div>
           </div>
 
+<<<<<<< Updated upstream
           <!-- Action Button -->
           <button id="btn-run-review" onclick="runSafetyCheck()" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition mt-2">
             <i class="fa-solid fa-radar text-base"></i>
             <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
           </button>
+=======
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:rgba(148,163,184,0.4);margin-bottom:7px">Quick Prescribe:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="chip chip-red" onclick="setProposedMed('Advil','400mg PO TID')">
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i> Advil (Brand Norm.)
+            </button>
+            <button class="chip chip-red" onclick="setProposedMed('Propranolol','40mg PO BID')">
+              <i class="fa-solid fa-lungs mr-1"></i> Propranolol (Asthma)
+            </button>
+            <button class="chip chip-amber" onclick="setProposedMed('Aspirin','81mg daily')">
+              <i class="fa-solid fa-droplet mr-1"></i> Aspirin (Bleeding)
+            </button>
+            <button class="chip chip-purple" onclick="setProposedMed('Diphenhydramine','50mg PO QHS')">
+              <i class="fa-solid fa-person-cane mr-1"></i> Diphenhydramine (Beers)
+            </button>
+            <button class="chip chip-purple" onclick="setProposedMed('Amoxicillin','500mg PO TID')">
+              <i class="fa-solid fa-allergies mr-1"></i> Amoxicillin (Allergy)
+            </button>
+          </div>
+>>>>>>> Stashed changes
         </div>
       </div>
 
@@ -244,8 +1274,13 @@
             </div>
           </div>
 
+<<<<<<< Updated upstream
           <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
           <div id="polypharmacy-container" class="space-y-2 mb-3 hidden"></div>
+=======
+          <!-- Cumulative Polypharmacy Alert Section -->
+          <div id="polypharmacy-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+>>>>>>> Stashed changes
 
           <!-- Detailed Conflict Cards -->
           <div id="alerts-container" class="space-y-2.5">
@@ -284,6 +1319,7 @@
         </div>
 
       </div>
+<<<<<<< Updated upstream
 
     </section>
 
@@ -305,10 +1341,33 @@
           <div class="flex items-center space-x-1 text-xs text-teal-400 font-medium">
             <span id="audit-toggle-text">Show Logs</span>
             <i id="audit-toggle-icon" class="fa-solid fa-chevron-down transition"></i>
+=======
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- VIEW 3: CRYPTOGRAPHIC AUDIT TRAIL & CERTIFICATES         -->
+  <!-- ======================================================== -->
+  <div id="main-view-3" class="page-view">
+    <section class="audit-section" style="padding-top:24px">
+      <div class="glass-card" style="padding:22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-card);padding-bottom:16px;margin-bottom:18px">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fa-solid fa-timeline text-lg" style="color:var(--teal-bright)"></i>
+              <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0">Cryptographic Audit Trail Ledger</h2>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin:3px 0 0">Immutable SHA-256 hash-chained logs complying with HIPAA Security Rule § 164.312(b)</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="verifyAuditChain()" class="mv-btn-secondary" style="width:auto;padding:7px 14px;font-size:11px">
+              <i class="fa-solid fa-shield-halved mr-1"></i> Verify Chain Integrity
+            </button>
+>>>>>>> Stashed changes
           </div>
         </div>
-      </div>
 
+<<<<<<< Updated upstream
       <!-- Verification Banner -->
       <div id="integrity-banner" class="mt-3 p-2.5 rounded-lg text-xs font-mono hidden"></div>
 
@@ -324,6 +1383,21 @@
                 <th class="py-2 px-3">Prescription</th>
                 <th class="py-2 px-3">Status</th>
                 <th class="py-2 px-3">SHA-256 Hash</th>
+=======
+        <div id="integrity-banner-wrap"></div>
+
+        <div style="overflow-x:auto;margin-top:14px">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Reviewer</th>
+                <th>Event ID</th>
+                <th>Patient Token</th>
+                <th>Prescription</th>
+                <th>Status</th>
+                <th>SHA-256 Block Seal</th>
+>>>>>>> Stashed changes
               </tr>
             </thead>
             <tbody id="audit-table-body" class="divide-y divide-slate-700/60 font-mono text-[11px]">
@@ -332,6 +1406,7 @@
           </table>
         </div>
 
+<<<<<<< Updated upstream
         <!-- Compliance Export Controls -->
         <div class="flex flex-wrap items-center justify-between pt-3 border-t border-slate-700/60 mt-3 gap-2">
           <span class="text-[11px] text-slate-400"><i class="fa-solid fa-shield-halved text-teal-400 mr-1"></i> HIPAA Security Rule § 164.312(b) Audit Compliance Export</span>
@@ -343,13 +1418,26 @@
             <a href="/api/audit-export?format=json" download class="text-[11px] bg-slate-700 hover:bg-slate-600 text-teal-300 px-2.5 py-1 rounded border border-slate-600 transition flex items-center space-x-1">
               <i class="fa-solid fa-file-code"></i>
               <span>Export JSON</span>
+=======
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;border-top:1px solid rgba(255,255,255,0.04);margin-top:16px">
+          <span style="font-size:11px;color:var(--text-muted)">
+            <i class="fa-solid fa-lock mr-1" style="color:var(--teal-bright)"></i> HIPAA § 164.312(b) Compliance Exports
+          </span>
+          <div style="display:flex;gap:8px">
+            <a href="/api/audit-export?format=csv" download class="mv-btn-secondary" style="width:auto;padding:6px 12px;font-size:11px;text-decoration:none">
+              <i class="fa-solid fa-file-csv mr-1"></i> Export CSV
+            </a>
+            <a href="/api/audit-export?format=json" download class="mv-btn-secondary" style="width:auto;padding:6px 12px;font-size:11px;text-decoration:none">
+              <i class="fa-solid fa-file-code mr-1"></i> Export JSON
+>>>>>>> Stashed changes
             </a>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 
+<<<<<<< Updated upstream
   <!-- Physician Access & Institutional Verification Modal -->
   <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
@@ -367,6 +1455,509 @@
             </h3>
             <p class="text-xs text-slate-400">Institutional Identity Verification & Cryptographic Attribution</p>
           </div>
+=======
+</div><!-- /main-app -->
+
+<!-- ═══════════════════════════════════════════
+     SETTINGS & PROFILE RIGHT SIDEBAR DRAWER
+═══════════════════════════════════════════ -->
+<div id="sidebar-backdrop" onclick="toggleSettingsSidebar(false)"></div>
+
+<div id="settings-sidebar">
+  <!-- Sidebar Header -->
+  <div class="sidebar-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);display:flex;align-items:center;justify-content:center;color:var(--teal-bright)">
+        <i class="fa-solid fa-sliders"></i>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text-primary)">Settings &amp; Profile</div>
+        <div style="font-size:10px;color:var(--text-muted)">Institutional Control Panel</div>
+      </div>
+    </div>
+    <button onclick="toggleSettingsSidebar(false)" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px">&times;</button>
+  </div>
+
+  <!-- Sidebar Body -->
+  <div class="sidebar-body">
+    <!-- Active Doctor Card -->
+    <div>
+      <div class="sidebar-section-title">
+        <i class="fa-solid fa-id-card-clip"></i> Authenticated Physician
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="sidebar-doc-avatar" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg, var(--teal), var(--cyan));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;box-shadow:0 4px 12px rgba(20,184,166,0.3);flex-shrink:0">
+            GH
+          </div>
+          <div style="overflow:hidden">
+            <div id="sidebar-doc-name" style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Dr. Gregory House, MD</div>
+            <div id="sidebar-doc-hospital" style="font-size:11px;color:var(--text-muted);margin-top:1px">Princeton Plainsboro Teaching Hospital</div>
+            <div id="sidebar-doc-license" style="font-size:10px;font-family:monospace;color:var(--teal-bright);margin-top:2px">NPI-1999887766 · Nephrology</div>
+          </div>
+        </div>
+
+        <button onclick="showChangeDocModal()" class="mv-btn-secondary" style="font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;gap:6px">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Switch Institutional Reviewer</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Appearance Mode -->
+    <div>
+      <div class="sidebar-section-title">
+        <i class="fa-solid fa-circle-half-stroke"></i> Display Theme
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div id="sidebar-theme-text" style="font-size:12px;font-weight:600;color:var(--text-primary)">Dark Mode</div>
+          <div style="font-size:10px;color:var(--text-muted)">Toggle high contrast palette</div>
+        </div>
+        <button onclick="toggleTheme()" class="theme-toggle-btn" title="Toggle theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Reasoning Streaming Speed -->
+    <div>
+      <div class="sidebar-section-title">
+        <i class="fa-solid fa-microchip"></i> AI Reasoning Speed
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--text-muted)">Typewriter Streaming:</span>
+          <span id="speed-label" style="font-family:monospace;color:var(--teal-bright);font-weight:700">Normal (12ms)</span>
+        </div>
+        <input type="range" id="setting-speed-slider" min="2" max="30" value="12" oninput="updateSpeedLabel(this.value)" style="accent-color:var(--teal-bright);cursor:pointer" />
+      </div>
+    </div>
+
+    <!-- Session & Sign Out Actions -->
+    <div>
+      <div class="sidebar-section-title" style="color:#f87171">
+        <i class="fa-solid fa-shield-halved"></i> Security &amp; Session
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+          <span style="color:var(--text-muted)">Local Binding:</span>
+          <span style="font-family:monospace;color:#6ee7b7;font-weight:700">127.0.0.1 ONLY</span>
+        </div>
+        <button onclick="handleLogout()" class="mv-btn-danger" style="margin-top:4px">
+          <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Lock Session &amp; Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Footer -->
+  <div style="padding:14px 22px;border-top:1px solid var(--border-card);display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text-faint);font-family:monospace;background:rgba(0,0,0,0.15)">
+    <span>MediVault v1.4-OFFLINE</span>
+    <span>0 Bytes Egress</span>
+  </div>
+</div>
+
+<!-- Switch Doctor Modal (minimal overlay) -->
+<div id="switch-doc-modal" style="display:none;position:fixed;inset:0;z-index:1600;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+  <div style="background:rgba(13,20,39,0.98);border:1px solid rgba(20,184,166,0.2);border-radius:20px;padding:24px;width:360px;max-width:calc(100vw - 32px);animation:slide-up 0.3s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:white">Switch Reviewer</div>
+      <button onclick="closeChangeDocModal()" style="background:none;border:none;color:rgba(148,163,184,0.5);cursor:pointer;font-size:16px"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="switch-doc-list" style="display:flex;flex-direction:column;gap:8px">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+// ═══════════════════════════════════════════
+//  MULTI-PAGE VIEW NAVIGATION (Views 1, 2, 3)
+// ═══════════════════════════════════════════
+let currentMainView = 1;
+
+function switchMainView(viewNum) {
+  currentMainView = viewNum;
+  for (let i = 1; i <= 3; i++) {
+    const viewEl = document.getElementById(`main-view-${i}`);
+    const btnEl = document.getElementById(`main-nav-btn-${i}`);
+    if (viewEl) viewEl.classList.toggle('active', i === viewNum);
+    if (btnEl) btnEl.classList.toggle('active', i === viewNum);
+  }
+  if (viewNum === 3 && typeof refreshAuditTrail === 'function') {
+    refreshAuditTrail();
+  }
+}
+
+// Keyboard shortcuts (1, 2, 3)
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === '1') switchMainView(1);
+  if (e.key === '2') switchMainView(2);
+  if (e.key === '3') switchMainView(3);
+});
+
+// ═══════════════════════════════════════════
+//  SETTINGS SIDEBAR CONTROLS
+// ═══════════════════════════════════════════
+function toggleSettingsSidebar(open) {
+  const sidebar = document.getElementById('settings-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (open) {
+    sidebar.classList.add('visible');
+    backdrop.classList.add('visible');
+  } else {
+    sidebar.classList.remove('visible');
+    backdrop.classList.remove('visible');
+  }
+}
+
+function handleLogout() {
+  toggleSettingsSidebar(false);
+  fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  const app = document.getElementById('main-app');
+  app.classList.remove('visible');
+  const gate = document.getElementById('auth-gate');
+  gate.classList.remove('slide-out');
+  gate.classList.add('visible');
+}
+
+let typingSpeed = 12;
+function updateSpeedLabel(val) {
+  typingSpeed = parseInt(val);
+  const label = document.getElementById('speed-label');
+  if (typingSpeed <= 5) label.textContent = `Fast (${typingSpeed}ms)`;
+  else if (typingSpeed <= 15) label.textContent = `Normal (${typingSpeed}ms)`;
+  else label.textContent = `Deliberate (${typingSpeed}ms)`;
+}
+
+// ═══════════════════════════════════════════
+//  THEME TOGGLE (Dark ↔ Light)
+// ═══════════════════════════════════════════
+(function applyStoredTheme() {
+  const stored = localStorage.getItem('mv-theme') || 'dark';
+  if (stored === 'light') document.documentElement.classList.add('light');
+  window._particleLightMode = (stored === 'light');
+})();
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.classList.toggle('light');
+  localStorage.setItem('mv-theme', isLight ? 'light' : 'dark');
+  window._particleLightMode = isLight;
+  const themeText = document.getElementById('sidebar-theme-text');
+  if (themeText) themeText.textContent = isLight ? 'Light Mode' : 'Dark Mode';
+}
+
+// ═══════════════════════════════════════════
+//  PARTICLE SYSTEM
+// ═══════════════════════════════════════════
+(function initParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const COLORS = ['rgba(20,184,166,', 'rgba(6,182,212,', 'rgba(45,212,191,'];
+  for (let i = 0; i < 55; i++) {
+    particles.push({
+      x: Math.random() * 1000,
+      y: Math.random() * 1000,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.8 + 0.4,
+      alpha: Math.random() * 0.5 + 0.1,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const alphaScale = window._particleLightMode ? 0.25 : 1;
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + (p.alpha * alphaScale) + ')';
+      ctx.fill();
+    }
+    // Draw connecting lines between close particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(20,184,166,${0.06 * alphaScale * (1 - dist / 100)})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ═══════════════════════════════════════════
+//  SPLASH → AUTH GATE → MAIN APP
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('fade-out');
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('auth-gate').classList.add('visible');
+    }, 800);
+  }, 2800);
+
+  // init app JS if available
+  if (typeof initPatientSelector === 'function') initPatientSelector();
+  const sel = document.getElementById('patient-select');
+  if (sel) sel.addEventListener('change', e => {
+    currentPatientId = e.target.value;
+    if (typeof loadPatientProfile === 'function') loadPatientProfile(currentPatientId);
+  });
+  if (typeof checkAiStatus === 'function') checkAiStatus();
+  if (typeof refreshAuditTrail === 'function') refreshAuditTrail();
+  if (typeof setupFileDropZone === 'function') setupFileDropZone();
+});
+
+// ═══════════════════════════════════════════
+//  AUTH GATE LOGIC
+// ═══════════════════════════════════════════
+const DEMO_DOCTORS = [
+  { key: 'house',  initials: 'GH', name: 'Dr. Gregory House, MD',  hospital: 'Princeton Plainsboro', license: 'NPI-1999887766', id: 'PRAC-001' },
+  { key: 'patel',  initials: 'AP', name: 'Dr. Anika Patel, MBBS',  hospital: 'Metro General Hospital', license: 'NPI-2345678901', id: 'PRAC-002' },
+  { key: 'chen',   initials: 'RC', name: 'Dr. Robert Chen, MD',    hospital: 'City Medical Center', license: 'NPI-3456789012', id: 'PRAC-003' },
+];
+let currentDoctor = DEMO_DOCTORS[0];
+let sessionStart = new Date();
+let reviewCount = 0;
+let pendingEmail = '';
+let docCardVisible = false;
+
+const HOSPITAL_DOMAINS = { H001: 'princeton.edu', H002: 'metrogeneral.org', H003: 'citymed.org' };
+
+function onRegHospitalChange() {
+  const sel = document.getElementById('reg-hospital');
+  const hint = document.getElementById('reg-domain-hint');
+  const domain = HOSPITAL_DOMAINS[sel.value] || 'hospital.org';
+  hint.textContent = `Required domain: @${domain}`;
+}
+
+function showGateAlert(msg, type = 'error') {
+  const el = document.getElementById('auth-alert-gate');
+  el.className = 'auth-alert ' + type;
+  el.style.display = 'block';
+  el.innerHTML = msg;
+}
+function hideGateAlert() {
+  const el = document.getElementById('auth-alert-gate');
+  if (el) el.style.display = 'none';
+}
+
+function switchAuthGateTab(tab) {
+  hideGateAlert();
+  ['demo','login','register'].forEach(t => {
+    document.getElementById(`gtab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`gtab-content-${t}`).classList.toggle('active', t === tab);
+  });
+  document.getElementById('otp-screen').style.display = 'none';
+}
+
+function gateSelectDemo(key) {
+  const doc = DEMO_DOCTORS.find(d => d.key === key) || DEMO_DOCTORS[0];
+  activateDoctor(doc);
+}
+
+function activateDoctor(doc) {
+  currentDoctor = doc;
+  sessionStart = new Date();
+  reviewCount = 0;
+
+  // Try to hit the backend switch-demo endpoint
+  fetch('/api/auth/switch-demo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ practitioner_id: doc.id || doc.key })
+  }).catch(() => {});  // fail silently, we track locally
+
+  updateDoctorUI(doc);
+  enterApp();
+}
+
+function updateDoctorUI(doc) {
+  const initials = doc.initials || doc.name.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase();
+  const headerInitials = document.getElementById('header-doc-initials');
+  if (headerInitials) headerInitials.textContent = initials;
+  const headerName = document.getElementById('header-doc-name');
+  if (headerName) headerName.textContent = doc.name.replace(', MD','').replace(', MBBS','');
+
+  // Sidebar profile bindings
+  const sideAvatar = document.getElementById('sidebar-doc-avatar');
+  if (sideAvatar) sideAvatar.textContent = initials;
+  const sideName = document.getElementById('sidebar-doc-name');
+  if (sideName) sideName.textContent = doc.name;
+  const sideHosp = document.getElementById('sidebar-doc-hospital');
+  if (sideHosp) sideHosp.textContent = doc.hospital;
+  const sideLic = document.getElementById('sidebar-doc-license');
+  if (sideLic) sideLic.textContent = `${doc.license} · Sovereign Node`;
+}
+
+function enterApp() {
+  const gate = document.getElementById('auth-gate');
+  gate.classList.add('slide-out');
+  setTimeout(() => {
+    gate.classList.remove('visible', 'slide-out');
+    const app = document.getElementById('main-app');
+    app.classList.add('visible');
+    setTimeout(() => {
+      if (typeof loadPatientProfile === 'function') loadPatientProfile('PT-101');
+      if (typeof loadHospitalsAndDemoDoctors === 'function') loadHospitalsAndDemoDoctors();
+    }, 300);
+  }, 500);
+}
+
+async function handleGateLogin() {
+  hideGateAlert();
+  const email = document.getElementById('gate-email').value.trim();
+  const password = document.getElementById('gate-password').value;
+  if (!email || !password) { showGateAlert('Please enter both email and password.'); return; }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (res.status === 403) {
+      pendingEmail = email;
+      showOtpGateScreen(email, null);
+      showGateAlert(data.detail || 'Email not verified.', 'error');
+      return;
+    }
+    if (!res.ok) { showGateAlert(data.detail || 'Login failed.', 'error'); return; }
+
+    const doc = {
+      key: email, initials: data.practitioner.full_name.split(' ').slice(1,3).map(n=>n[0]).join('').toUpperCase(),
+      name: data.practitioner.full_name, hospital: data.practitioner.hospital_name,
+      license: data.practitioner.medical_license, id: data.practitioner.practitioner_id
+    };
+    activateDoctor(doc);
+  } catch(e) { showGateAlert(e.message, 'error'); }
+}
+
+async function handleGateRegister() {
+  hideGateAlert();
+  const full_name = document.getElementById('reg-name').value.trim();
+  const hospital_id = document.getElementById('reg-hospital').value;
+  const email = document.getElementById('reg-email').value.trim();
+  const medical_license = document.getElementById('reg-license').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!full_name || !email || !medical_license || !password) {
+    showGateAlert('All credentials are required.', 'error'); return;
+  }
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, hospital_id, email, medical_license, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showGateAlert(data.detail || 'Registration rejected.', 'error'); return; }
+    pendingEmail = email;
+    showOtpGateScreen(email, data.simulated_code);
+  } catch(e) { showGateAlert(e.message, 'error'); }
+}
+
+function showOtpGateScreen(email, code) {
+  ['demo','login','register'].forEach(t => {
+    document.getElementById(`gtab-content-${t}`).classList.remove('active');
+    document.getElementById(`gtab-${t}`).classList.remove('active');
+  });
+  document.getElementById('auth-tabs-bar').style.display = 'none';
+  const screen = document.getElementById('otp-screen');
+  screen.style.display = 'block';
+  document.getElementById('otp-email-display').textContent = email;
+  const codeEl = document.getElementById('otp-sim-code');
+  codeEl.textContent = code ? `${code.substring(0,3)}-${code.substring(3,6)}` : 'DISPATCHED';
+  document.getElementById('otp-input-gate').value = '';
+  document.getElementById('otp-input-gate').focus();
+}
+
+async function handleGateOtp() {
+  hideGateAlert();
+  const code = document.getElementById('otp-input-gate').value.trim();
+  if (!code || code.length !== 6) { showGateAlert('Please enter the complete 6-digit code.'); return; }
+  try {
+    const res = await fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: pendingEmail, verification_code: code })
+    });
+    const data = await res.json();
+    if (!res.ok) { showGateAlert(data.detail || 'Verification failed.'); return; }
+    const doc = {
+      key: pendingEmail, initials: data.practitioner.full_name.split(' ').slice(1,3).map(n=>n[0]).join('').toUpperCase(),
+      name: data.practitioner.full_name, hospital: data.practitioner.hospital_name,
+      license: data.practitioner.medical_license, id: data.practitioner.practitioner_id
+    };
+    activateDoctor(doc);
+  } catch(e) { showGateAlert(e.message); }
+}
+
+async function handleGateResend() {
+  try {
+    const res = await fetch('/api/auth/resend-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: pendingEmail })
+    });
+    const data = await res.json();
+    if (res.ok && data.simulated_code) {
+      const c = data.simulated_code;
+      document.getElementById('otp-sim-code').textContent = `${c.substring(0,3)}-${c.substring(3,6)}`;
+      showGateAlert('<i class="fa-solid fa-check mr-1"></i> New code dispatched.', 'success');
+    }
+  } catch(e) {}
+}
+
+function toggleDocCard() {
+  toggleSettingsSidebar(true);
+}
+
+function showChangeDocModal() {
+  const modal = document.getElementById('switch-doc-modal');
+  const list = document.getElementById('switch-doc-list');
+  list.innerHTML = '';
+  DEMO_DOCTORS.forEach(doc => {
+    const card = document.createElement('div');
+    card.className = 'demo-doc-card';
+    const initials = doc.initials;
+    const isActive = currentDoctor.key === doc.key;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="doc-avatar">${initials}</div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:white">${doc.name}</div>
+          <div style="font-size:10px;color:rgba(148,163,184,0.5)">${doc.hospital}</div>
+>>>>>>> Stashed changes
         </div>
         <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-lg transition p-1 cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
