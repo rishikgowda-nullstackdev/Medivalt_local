@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>MediVault Local — Sovereign Clinical Decision Support System</title>
   
   <!-- Tailwind CSS & Icons -->
@@ -381,20 +384,9 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ─── SPLASH SCREEN ─── */
+    /* ─── SPLASH OVERLAY DISABLED ─── */
     #splash {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--bg-canvas);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 28px;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
-      cursor: pointer;
-    }
-    #splash.fade-out {
-      opacity: 0 !important;
-      visibility: hidden !important;
-      pointer-events: none !important;
+      display: none !important;
     }
 
     /* ─── AUTH GATE ─── */
@@ -441,28 +433,9 @@
 <body>
 
 <!-- ═══════════════════════════════════════════
-     SPLASH SCREEN (Minimal Sovereign Boot)
-═══════════════════════════════════════════ -->
-<div id="splash" onclick="dismissSplash()" title="Click to enter workstation immediately">
-  <div class="relative w-28 h-28 flex items-center justify-center">
-    <div class="absolute inset-0 rounded-full border-2 border-teal-500/30 animate-spin" style="animation-duration: 6s;"></div>
-    <div class="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/40 flex items-center justify-center text-teal-400 text-3xl shadow-lg">
-      <i class="fa-solid fa-shield-heart"></i>
-    </div>
-  </div>
-  <div class="text-center">
-    <div class="text-2xl font-bold font-heading text-white tracking-tight">MediVault <span class="text-teal-400 font-extrabold">Local</span></div>
-    <div class="text-xs text-slate-400 tracking-widest uppercase font-mono mt-1">Sovereign CDSS · Zero Cloud · 127.0.0.1</div>
-  </div>
-  <div class="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
-    <div class="h-full bg-gradient-to-r from-teal-500 to-cyan-400 animate-pulse"></div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
      AUTHENTICATION GATE (Institutional Sign-In)
 ═══════════════════════════════════════════ -->
-<div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+<div id="auth-gate" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
   <div class="w-full max-w-lg clinical-card p-6 border-slate-700 shadow-2xl relative">
     
     <!-- Header -->
@@ -1523,28 +1496,6 @@ function handleLogout() {
   }
 }
 
-// ═══════════════════════════════════════════
-//  SPLASH SCREEN DISMISSAL (Instant & Fail-Safe)
-// ═══════════════════════════════════════════
-function dismissSplash() {
-  const splash = document.getElementById('splash');
-  if (splash && !splash.classList.contains('fade-out')) {
-    splash.classList.add('fade-out');
-    setTimeout(() => {
-      if (splash && splash.parentNode) {
-        splash.parentNode.removeChild(splash);
-      }
-    }, 400);
-  }
-}
-
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(dismissSplash, 200);
-} else {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(dismissSplash, 300));
-}
-window.addEventListener('load', () => setTimeout(dismissSplash, 100));
-setTimeout(dismissSplash, 700); // 100% Guaranteed fallback timer
 
 // ═══════════════════════════════════════════
 //  INTAKE MODE SWITCHER
