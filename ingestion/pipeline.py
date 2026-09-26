@@ -342,11 +342,13 @@ def extract_entities(text: str) -> Dict[str, Any]:
                 if allergen_name and len(allergen_name) < 50:
                     extracted_allergies.append(allergen_name.title())
 
-    # Fallback keyword scan for common allergy triggers under allergic context
-    if "allerg" in text_lower:
-        for term in ["penicillin", "sulfa", "sulfonamides", "aspirin", "codeine", "cephalosporin"]:
-            if re.search(r"(?i)\b" + re.escape(term) + r"\b", text_lower):
-                extracted_allergies.append(term.title())
+    # Fallback keyword scan only if no allergies extracted yet and allergic context exists
+    if not extracted_allergies and "allerg" in text_lower:
+        allergy_contexts = re.findall(r"(?i)(?:allergic\s+to|allergy\s*:\s*|allergies\s*:\s*)([^.\n;]+)", text)
+        for ctx in allergy_contexts:
+            for term in ["penicillin", "sulfa", "sulfonamides", "aspirin", "codeine", "cephalosporin"]:
+                if re.search(r"(?i)\b" + re.escape(term) + r"\b", ctx):
+                    extracted_allergies.append(term.title())
 
     # 4. Lab Biomarkers (rich & legacy map)
     biomarkers = extract_lab_biomarkers(text)

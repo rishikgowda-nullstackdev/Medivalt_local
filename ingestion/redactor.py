@@ -12,9 +12,9 @@ from typing import List, Tuple
 REDACTED = "[REDACTED]"
 
 # Value delimiters for labeled fields:
-# Preserve trailing whitespace before separators like |, newline, or semicolon
+# Preserve trailing whitespace before separators like |, newline, semicolon, or adjacent labeled fields
 _VAL_NO_COMMA = r"[^|,\n;]*[^|,\s;]"
-_VAL_WITH_COMMA = r"[^|\n;]*[^|\s;]"
+_VAL_WITH_COMMA = r"(?:[^|\n;.]|(?!\.\s*(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s*:|phone|tel|cell|dob|ssn|mrn|patient|dr|doctor|attending|history|current|allergies|considering)\b)\.)*[^|\s;.]"
 
 # Legacy Day-3 labeled patterns (replace with [REDACTED])
 LABELED_PATTERNS_PII = [
@@ -112,12 +112,13 @@ PHI_PATTERNS = [
     (r"(?i)\b(?:DOB|Date of Birth|Born)\s*[:#]?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", "[REDACTED_DOB]"),
     (r"(?i)\b(?:DOB|Date of Birth|Born)\s*[:#]?\s*\d{4}-\d{2}-\d{2}\b", "[REDACTED_DOB]"),
 
-    # Street Addresses & ZIP codes
-    (r"\b\d{5}(?:-\d{4})?\b", "[REDACTED_ZIP]"),
+    # Street Addresses & ZIP codes (Context-aware: requires ZIP/Postal prefix or state abbreviation)
+    (r"(?i)\b(?:zip|postal(?:\s+code)?|code)\s*[:#]?\s*(\d{5}(?:-\d{4})?)\b", r"[REDACTED_ZIP]"),
+    (r"\b(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}(?:-\d{4})?\b", "[REDACTED_ZIP]"),
     (r"(?i)\b\d{1,5}\s+[A-Za-z0-9\s.,]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way)\b", "[REDACTED_ADDRESS]"),
 
-    # Explicit Doctor/Patient names with titles
-    (r"(?i)\b(Dr\.|Doctor|Physician|Patient|Pt\.?)\s+(?!name\b|id\b|mrn\b|dob\b)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", r"\1 [REDACTED_NAME]"),
+    # Explicit Doctor/Patient names with titles (Case-sensitive, excluding clinical action verbs)
+    (r"\b(Dr\.|Doctor|Physician|Patient|Pt\.?)\s+(?!(?:has|takes|reports|presented|is|was|prescribed|admitted|denies|diagnosed|exhibits|with|name\b|id\b|mrn\b|dob\b))[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", r"\1 [REDACTED_NAME]"),
 
     # IP Addresses
     (r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[REDACTED_IP]"),

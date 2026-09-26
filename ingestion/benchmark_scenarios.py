@@ -93,41 +93,41 @@ def run_benchmark():
         # Check conditions
         for cond in sc.get("expected_conditions", []):
             if cond not in entities["diagnosed_conditions"]:
-                print(f"  ❌ Missing expected condition: {cond}")
+                print(f"  [FAIL] Missing expected condition: {cond}")
                 all_passed = False
             else:
-                print(f"  ✅ Condition identified: {cond}")
+                print(f"  [PASS] Condition identified: {cond}")
 
         # Check medications
         for med in sc.get("expected_medications", []):
             if not any(med.lower() in m.lower() for m in entities["current_medications"]):
-                print(f"  ❌ Missing expected medication: {med}")
+                print(f"  [FAIL] Missing expected medication: {med}")
                 all_passed = False
             else:
-                print(f"  ✅ Medication identified: {med}")
+                print(f"  [PASS] Medication identified: {med}")
 
         # Check allergies
         for allergy in sc.get("expected_allergies", []):
             if not any(allergy.lower() in a.lower() for a in entities["allergies"]):
-                print(f"  ❌ Missing expected allergy: {allergy}")
+                print(f"  [FAIL] Missing expected allergy: {allergy}")
                 all_passed = False
             else:
-                print(f"  ✅ Allergy identified: {allergy}")
+                print(f"  [PASS] Allergy identified: {allergy}")
 
         # Check biomarkers
         for bio, status in sc.get("expected_lab_biomarkers", {}).items():
             actual = entities["biomarkers"].get(bio, {}).get("status")
             if actual != status:
-                print(f"  ❌ Biomarker {bio} status mismatch: expected {status}, got {actual}")
+                print(f"  [FAIL] Biomarker {bio} status mismatch: expected {status}, got {actual}")
                 all_passed = False
             else:
-                print(f"  ✅ Biomarker {bio} evaluated correctly: {status}")
+                print(f"  [PASS] Biomarker {bio} evaluated correctly: {status}")
 
     print("\n" + "=" * 70)
     if all_passed:
-        print("ALL 5 CLINICAL BENCHMARK SCENARIOS: ✅ PASS")
+        print("ALL 5 CLINICAL BENCHMARK SCENARIOS: [PASS]")
     else:
-        print("SOME BENCHMARK SCENARIOS: ❌ FAIL")
+        print("SOME BENCHMARK SCENARIOS: [FAIL]")
     print("=" * 70)
     return all_passed
 

@@ -89,10 +89,8 @@ def extract_text(file_source: Union[str, bytes, Path], filename: Optional[str] =
             # Check if it was intended as a filename / path or raw string
             # If it has a file extension or looks like a file path:
             ext = path.suffix.lower()
-            if ext in (".txt", ".pdf", ".docx", ".doc", ".png", ".jpg", ".csv") or (
-                "\n" not in str(file_source) and len(str(file_source)) < 512 and ("/" in str(file_source) or "\\" in str(file_source) or "." in str(file_source))
-            ):
-                if ext not in (".txt", ".pdf") and ext:
+            if ext in (".txt", ".pdf", ".docx", ".doc", ".png", ".jpg", ".csv") and ("\n" not in str(file_source) and len(str(file_source)) < 260 and not any(w in str(file_source).lower() for w in ["patient", "doctor", "dr.", "rx", "diagnosis", "prescribe"])):
+                if ext not in (".txt", ".pdf"):
                     raise ValueError(f"Unsupported file type '{ext}'. Only .txt and .pdf are allowed.")
                 raise FileNotFoundError(f"File not found: {path}")
 
