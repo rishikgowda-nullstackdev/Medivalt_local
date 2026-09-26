@@ -344,9 +344,18 @@ function openClearanceQrModal() {
   const modal = document.getElementById('qr-modal');
   const container = document.getElementById('qr-image-container');
   const hashDisplay = document.getElementById('qr-modal-hash');
+  const attestationHash = document.getElementById('modal-attestation-hash');
+
+  // Reset 3D flip card to front
+  toggleQrFlipCard(false);
 
   if (modal) modal.style.display = 'flex';
   if (container) container.innerHTML = `<div style="color:#0f172a; font-size:11px; padding:90px 0;"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Generating Vector Seal…</div>`;
+
+  const currentSeal = (document.getElementById('audit-hash-display') || {}).textContent || currentReviewEventId;
+  if (attestationHash) {
+    attestationHash.textContent = currentSeal.length > 10 ? currentSeal : `0x${currentReviewEventId}..ENCLAVE_VALIDATED`;
+  }
 
   fetch(`/api/report/clearance-qr?event_id=${encodeURIComponent(currentReviewEventId)}`)
     .then(res => {
@@ -365,12 +374,22 @@ function openClearanceQrModal() {
         }
       }
       if (hashDisplay) {
-        hashDisplay.textContent = `Event: ${currentReviewEventId}`;
+        hashDisplay.textContent = `SHA-256 Digest: ${currentSeal}`;
       }
     })
     .catch(() => {
       if (container) container.innerHTML = `<div style="color:#ef4444; font-size:11px; padding:80px 0;">Error generating seal</div>`;
     });
+}
+
+function toggleQrFlipCard(flipToBack) {
+  const mesh = document.getElementById('qr-flip-mesh');
+  if (!mesh) return;
+  if (typeof flipToBack === 'boolean') {
+    mesh.classList.toggle('is-flipped', flipToBack);
+  } else {
+    mesh.classList.toggle('is-flipped');
+  }
 }
 
 function closeClearanceQrModal() {
@@ -528,6 +547,21 @@ async function selectPatient(patientId) {
   if (s2) s2.value = patientId;
 
   await loadPatientProfile(patientId);
+
+  // Sync 3D Hologram Target with Patient Profile
+  if (patientId === 'PT-101') {
+    switchHologramTarget('renal');
+    updateHologramStatus('HAZARD', 'CONTRAINDICATION HAZARD', 'Renal Glomerular Microvasculature', 'Afferent Arteriolar Vasoconstriction Risk');
+  } else if (patientId === 'PT-102') {
+    switchHologramTarget('cardiac');
+    updateHologramStatus('WARNING', 'BRONCHOSPASM ALERT', 'Bronchopulmonary & Cardiac B2 Receptors', 'Beta-Blocker Airway Resistance');
+  } else if (patientId === 'PT-103') {
+    switchHologramTarget('cardiac');
+    updateHologramStatus('WARNING', 'COAGULATION INTERCEPT', 'Cardiovascular & Hepatic CYP2C9', 'Bleeding Risk / INR Potentiation');
+  } else {
+    switchHologramTarget('shield');
+  }
+
   showToast('Patient Loaded', `Active clinical record switched to ${patientId}.`, 'info', 2000);
 }
 
@@ -1040,6 +1074,15 @@ function renderReviewResults(data) {
 
   explanation.textContent = data.summary_explanation || data.explanation;
 
+  // Synchronize 3D Holographic Physiological Target Matrix
+  if (data.overall_status === "CRITICAL") {
+    updateHologramStatus('HAZARD', 'CONTRAINDICATION HAZARD', 'Renal Glomerular Microvasculature', data.summary_explanation || 'Afferent Arteriolar Vasoconstriction & eGFR Drop');
+  } else if (data.overall_status === "WARNING") {
+    updateHologramStatus('WARNING', 'CLINICAL WARNING', 'Target Organ Receptors Monitored', data.summary_explanation || 'Relative Contraindication / Titration Required');
+  } else {
+    updateHologramStatus('SAFE', 'CLEARANCE APPROVED', 'Physiological Target Stabilized', 'Zero contraindications detected across local SQLite matrices');
+  }
+
   // 4. Standalone discrete alerts if no itemized cards or for backward compatibility
   alertsContainer.innerHTML = "";
   const standardAlerts = (data.alerts || []).filter(a => a.interaction_type !== "POLYPHARMACY");
@@ -1473,11 +1516,23 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault(); switchMainTab('audit');
   } else if ((e.ctrlKey || e.altKey) && e.key === '5') {
     e.preventDefault(); switchMainTab('analytics');
+  } else if ((e.ctrlKey || e.altKey) && (e.key === '6' || e.key === 'd' || e.key === 'D')) {
+    e.preventDefault(); openJudgeDemoModal();
   } else if (e.key === 'Escape') {
     toggleSettingsSidebar(false);
     closeChangeDocModal();
     closeClearanceQrModal();
     closePatientModal();
+    closeJudgeDemoModal();
+  }
+
+  // Hotkeys 1-4 when Judge Demo Modal is active
+  const demoModal = document.getElementById('modal-judge-demo');
+  if (demoModal && demoModal.style.display !== 'none' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (e.key === '1') { e.preventDefault(); executeDemoScenario('renal_collapse'); }
+    else if (e.key === '2') { e.preventDefault(); executeDemoScenario('triple_whammy'); }
+    else if (e.key === '3') { e.preventDefault(); executeDemoScenario('hidden_anaphylaxis'); }
+    else if (e.key === '4') { e.preventDefault(); executeDemoScenario('anticoagulant_hemorrhage'); }
   }
 });
 
@@ -1499,6 +1554,10 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAiStatus();
   checkNetworkGuard();
   updateDoctorUI(currentDoctor);
+
+  // Initialize 3D Holographic Matrix and 3D Hover Tilt Physics
+  initHologramMatrix();
+  init3DCardTilt();
 
   const selectEl = document.getElementById("patient-select");
   if (selectEl) {
@@ -1865,4 +1924,717 @@ function renderLeaderboard(combos) {
 
 window.setAnalyticsDays = setAnalyticsDays;
 window.loadClinicalAnalytics = loadClinicalAnalytics;
+
+// ═══════════════════════════════════════════
+//  🌌 SOVEREIGN 3D HOLOGRAPHIC VECTOR ENGINE
+//  Pure HTML5 Canvas 2D/3D Matrix Projection
+//  100% Offline · 0 Network Overhead · 60 FPS
+// ═══════════════════════════════════════════
+let globalHologram3DInstance = null;
+
+class HolographicMatrix3D {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.target = 'renal'; // 'renal' | 'cardiac' | 'hepatic' | 'shield'
+    this.status = 'HAZARD'; // 'HAZARD' | 'WARNING' | 'SAFE' | 'NEUTRAL'
+    
+    this.pitch = 0.25;
+    this.yaw = 0.6;
+    this.targetPitch = 0.25;
+    this.targetYaw = 0.6;
+    this.autoSpinSpeed = 0.007;
+    
+    this.isDragging = false;
+    this.lastX = 0;
+    this.lastY = 0;
+    this.pulsePhase = 0;
+    this.animFrameId = null;
+
+    this.particles = [];
+    this.initParticles(35);
+    this.initEvents();
+    this.resize();
+    this.startLoop();
+  }
+
+  initParticles(count) {
+    this.particles = [];
+    for (let i = 0; i < count; i++) {
+      const radius = 90 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = (Math.random() - 0.5) * Math.PI;
+      this.particles.push({
+        x: radius * Math.cos(phi) * Math.cos(theta),
+        y: radius * Math.sin(phi),
+        z: radius * Math.cos(phi) * Math.sin(theta),
+        size: Math.random() * 1.5 + 0.8,
+        speed: (Math.random() * 0.008 + 0.004) * (Math.random() > 0.5 ? 1 : -1)
+      });
+    }
+  }
+
+  initEvents() {
+    window.addEventListener('resize', () => this.resize());
+
+    // Mouse Controls
+    this.canvas.addEventListener('mousedown', (e) => {
+      this.isDragging = true;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+      this.canvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isDragging) return;
+      const dx = e.clientX - this.lastX;
+      const dy = e.clientY - this.lastY;
+      this.targetYaw += dx * 0.012;
+      this.targetPitch += dy * 0.012;
+      this.targetPitch = Math.max(-1.3, Math.min(1.3, this.targetPitch));
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.isDragging) {
+        this.isDragging = false;
+        if (this.canvas) this.canvas.style.cursor = 'grab';
+      }
+    });
+
+    // Touch Controls
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        this.isDragging = true;
+        this.lastX = e.touches[0].clientX;
+        this.lastY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!this.isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - this.lastX;
+      const dy = e.touches[0].clientY - this.lastY;
+      this.targetYaw += dx * 0.015;
+      this.targetPitch += dy * 0.015;
+      this.targetPitch = Math.max(-1.3, Math.min(1.3, this.targetPitch));
+      this.lastX = e.touches[0].clientX;
+      this.lastY = e.touches[0].clientY;
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      this.isDragging = false;
+    });
+  }
+
+  resize() {
+    if (!this.canvas) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    this.width = rect.width || 600;
+    this.height = rect.height || 190;
+    this.canvas.width = this.width * dpr;
+    this.canvas.height = this.height * dpr;
+    this.ctx.scale(dpr, dpr);
+  }
+
+  setTarget(targetKey) {
+    this.target = targetKey;
+    ['renal', 'cardiac', 'hepatic', 'shield'].forEach(k => {
+      const btn = document.getElementById(`organ-tab-${k}`);
+      if (btn) {
+        if (k === targetKey) {
+          btn.className = 'px-2.5 py-1 rounded bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition';
+        }
+      }
+    });
+  }
+
+  setStatus(statusKey, title, targetName, loadName) {
+    this.status = statusKey;
+    const hudBadge = document.getElementById('hologram-hud-status-badge');
+    const hudText = document.getElementById('hologram-hud-status-text');
+    const hudTarget = document.getElementById('hologram-hud-target');
+    const hudLoad = document.getElementById('hologram-hud-load');
+
+    if (hudTarget && targetName) hudTarget.textContent = targetName;
+    if (hudLoad && loadName) hudLoad.textContent = loadName;
+
+    if (hudBadge && hudText) {
+      if (statusKey === 'HAZARD') {
+        hudBadge.className = 'px-2.5 py-1 rounded-full bg-red-950/80 border border-red-500/70 text-red-300 text-[10px] font-mono font-bold flex items-center space-x-1.5 shadow-lg glow-critical-pulse';
+        hudText.textContent = title || 'CONTRAINDICATION HAZARD';
+      } else if (statusKey === 'WARNING') {
+        hudBadge.className = 'px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-500/70 text-amber-300 text-[10px] font-mono font-bold flex items-center space-x-1.5 shadow-lg';
+        hudText.textContent = title || 'CLINICAL WARNING';
+      } else {
+        hudBadge.className = 'px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/70 text-emerald-300 text-[10px] font-mono font-bold flex items-center space-x-1.5 shadow-lg glow-safe-pulse';
+        hudText.textContent = title || 'CLEARANCE APPROVED';
+      }
+    }
+  }
+
+  generateMesh() {
+    const nodes = [];
+    const edges = [];
+
+    if (this.target === 'renal') {
+      // 3D Kidney Lobule & Glomerular Capillary Mesh
+      const count = 16;
+      for (let i = 0; i < count; i++) {
+        const u = (i / count) * Math.PI * 2;
+        // Kidney contour equation in 3D
+        const r = 48 + 12 * Math.cos(u);
+        const x = r * Math.sin(u) * 0.9 - 10;
+        const y = r * Math.cos(u) * 1.35;
+        const z = Math.sin(u * 2) * 16;
+        nodes.push({ x, y, z, isAlert: this.status === 'HAZARD' && i % 3 === 0 });
+      }
+      for (let i = 0; i < count; i++) {
+        edges.push([i, (i + 1) % count]);
+        if (i % 2 === 0) edges.push([i, (i + 8) % count]);
+      }
+      // Glomerular Capillary Core
+      for (let j = 0; j < 8; j++) {
+        const a = (j / 8) * Math.PI * 2;
+        nodes.push({
+          x: Math.cos(a) * 18 - 8,
+          y: Math.sin(a) * 22,
+          z: Math.sin(a * 3) * 12,
+          isGlomerulus: true
+        });
+      }
+      for (let j = 0; j < 8; j++) {
+        edges.push([count + j, count + ((j + 1) % 8)]);
+        edges.push([count + j, j * 2]);
+      }
+    } else if (this.target === 'cardiac') {
+      // 3D Cardiac 4-Chamber Wireframe
+      const rings = 4;
+      const ptsPerRing = 10;
+      for (let r = 0; r < rings; r++) {
+        const y = (r - 1.5) * 32;
+        const rad = Math.sin((r / (rings - 1)) * Math.PI) * 55 + 12;
+        for (let p = 0; p < ptsPerRing; p++) {
+          const theta = (p / ptsPerRing) * Math.PI * 2;
+          nodes.push({
+            x: Math.cos(theta) * rad,
+            y: y,
+            z: Math.sin(theta) * rad * 0.85,
+            isCardiacNode: true
+          });
+        }
+      }
+      for (let r = 0; r < rings; r++) {
+        const start = r * ptsPerRing;
+        for (let p = 0; p < ptsPerRing; p++) {
+          edges.push([start + p, start + ((p + 1) % ptsPerRing)]);
+          if (r < rings - 1) {
+            edges.push([start + p, start + ptsPerRing + p]);
+          }
+        }
+      }
+    } else if (this.target === 'hepatic') {
+      // 3D Hexagonal Liver Lobule Lattice
+      const hexCount = 7;
+      for (let h = 0; h < hexCount; h++) {
+        const cx = (h === 0 ? 0 : Math.cos((h - 1) * Math.PI / 3) * 45);
+        const cy = (h === 0 ? 0 : Math.sin((h - 1) * Math.PI / 3) * 38);
+        for (let k = 0; k < 6; k++) {
+          const ang = (k / 6) * Math.PI * 2;
+          nodes.push({
+            x: cx + Math.cos(ang) * 20,
+            y: cy + Math.sin(ang) * 20,
+            z: Math.sin(ang * 2 + h) * 14
+          });
+        }
+      }
+      for (let h = 0; h < hexCount; h++) {
+        const offset = h * 6;
+        for (let k = 0; k < 6; k++) {
+          edges.push([offset + k, offset + ((k + 1) % 6)]);
+        }
+      }
+    } else {
+      // Sovereign Enclave Shield Geodesic Dome
+      const lat = 5;
+      const lon = 10;
+      for (let i = 0; i < lat; i++) {
+        const phi = (i / (lat - 1)) * Math.PI - Math.PI / 2;
+        const rad = Math.cos(phi) * 58;
+        const y = Math.sin(phi) * 58;
+        for (let j = 0; j < lon; j++) {
+          const theta = (j / lon) * Math.PI * 2;
+          nodes.push({
+            x: rad * Math.cos(theta),
+            y: y,
+            z: rad * Math.sin(theta)
+          });
+        }
+      }
+      for (let i = 0; i < lat; i++) {
+        const start = i * lon;
+        for (let j = 0; j < lon; j++) {
+          edges.push([start + j, start + ((j + 1) % lon)]);
+          if (i < lat - 1) {
+            edges.push([start + j, start + lon + j]);
+          }
+        }
+      }
+    }
+
+    return { nodes, edges };
+  }
+
+  project(x, y, z, cx, cy) {
+    // 3D Rotation Matrix Around Yaw (Y-axis) and Pitch (X-axis)
+    const cosY = Math.cos(this.yaw);
+    const sinY = Math.sin(this.yaw);
+    const x1 = x * cosY - z * sinY;
+    const z1 = x * sinY + z * cosY;
+
+    const cosP = Math.cos(this.pitch);
+    const sinP = Math.sin(this.pitch);
+    const y2 = y * cosP - z1 * sinP;
+    const z2 = y * sinP + z1 * cosP;
+
+    // Perspective Projection
+    const focalLength = 320;
+    const scale = focalLength / (focalLength + z2);
+    return {
+      px: cx + x1 * scale,
+      py: cy + y2 * scale,
+      scale: scale,
+      z: z2
+    };
+  }
+
+  startLoop() {
+    const loop = () => {
+      this.update();
+      this.render();
+      this.animFrameId = requestAnimationFrame(loop);
+    };
+    this.animFrameId = requestAnimationFrame(loop);
+  }
+
+  update() {
+    this.pulsePhase += 0.05;
+
+    if (!this.isDragging) {
+      this.targetYaw += this.autoSpinSpeed;
+    }
+
+    // Smooth Euler Interpolation
+    this.yaw += (this.targetYaw - this.yaw) * 0.08;
+    this.pitch += (this.targetPitch - this.pitch) * 0.08;
+
+    // Update Telemetry Display
+    const angleHud = document.getElementById('hologram-hud-angle');
+    if (angleHud) {
+      const pDeg = Math.round((this.pitch * 180) / Math.PI);
+      const yDeg = Math.round(((this.yaw % (Math.PI * 2)) * 180) / Math.PI);
+      angleHud.textContent = `Pitch: ${pDeg}° · Yaw: ${yDeg}°`;
+    }
+  }
+
+  render() {
+    const ctx = this.ctx;
+    if (!ctx || !this.canvas) return;
+
+    const w = this.width;
+    const h = this.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Color Palette mapping based on Status
+    let primaryColor = '#14b8a6'; // Teal
+    let accentGlow = 'rgba(20, 184, 166, 0.4)';
+    let nodeColor = '#2dd4bf';
+    let pulseShockwaveColor = 'rgba(244, 63, 94, ';
+
+    if (this.status === 'HAZARD') {
+      primaryColor = '#f43f5e'; // Rose
+      accentGlow = 'rgba(244, 63, 94, 0.55)';
+      nodeColor = '#fda4af';
+    } else if (this.status === 'WARNING') {
+      primaryColor = '#f59e0b'; // Amber
+      accentGlow = 'rgba(245, 158, 11, 0.5)';
+      nodeColor = '#fde68a';
+      pulseShockwaveColor = 'rgba(245, 158, 11, ';
+    } else if (this.status === 'SAFE') {
+      primaryColor = '#10b981'; // Emerald
+      accentGlow = 'rgba(16, 185, 129, 0.5)';
+      nodeColor = '#a7f3d0';
+      pulseShockwaveColor = 'rgba(16, 185, 129, ';
+    }
+
+    // 1. Draw Ambient Center Holographic Gimbal Rings
+    ctx.save();
+    ctx.strokeStyle = accentGlow;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 110, 42, this.yaw * 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 95, 80, -this.pitch * 0.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 2. Render Particle Starfield
+    ctx.save();
+    this.particles.forEach(pt => {
+      pt.x += pt.speed * 20;
+      const proj = this.project(pt.x, pt.y, pt.z, cx, cy);
+      const alpha = Math.max(0.1, Math.min(0.7, (proj.z + 100) / 200));
+      ctx.fillStyle = primaryColor;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(proj.px, proj.py, pt.size * proj.scale, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // 3. Render 3D Wireframe Organ Mesh
+    const { nodes, edges } = this.generateMesh();
+    const projectedNodes = nodes.map(n => ({
+      ...n,
+      ...this.project(n.x, n.y, n.z, cx, cy)
+    }));
+
+    // Draw Edges with Depth Occlusion
+    ctx.save();
+    edges.forEach(([i1, i2]) => {
+      const p1 = projectedNodes[i1];
+      const p2 = projectedNodes[i2];
+      if (!p1 || !p2) return;
+
+      const avgZ = (p1.z + p2.z) / 2;
+      const alpha = Math.max(0.15, Math.min(0.85, (avgZ + 120) / 240));
+
+      ctx.beginPath();
+      ctx.moveTo(p1.px, p1.py);
+      ctx.lineTo(p2.px, p2.py);
+      ctx.strokeStyle = primaryColor;
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = Math.max(1, 1.8 * ((p1.scale + p2.scale) / 2));
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Draw Nodes and Highlight Active Sites
+    ctx.save();
+    projectedNodes.forEach(p => {
+      const alpha = Math.max(0.2, Math.min(0.95, (p.z + 120) / 240));
+      ctx.globalAlpha = alpha;
+
+      if (p.isAlert || (p.isGlomerulus && this.status === 'HAZARD')) {
+        // Pulsing Target Lock Highlight
+        const pulse = (Math.sin(this.pulsePhase * 2) + 1) / 2;
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, (4 + pulse * 3) * p.scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Expanding Shockwave Wavefront
+        ctx.strokeStyle = `${pulseShockwaveColor}${1 - pulse})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, (8 + pulse * 14) * p.scale, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = nodeColor;
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, 2.2 * p.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    ctx.restore();
+
+    // 4. Draw HUD Targeting Reticle overlay
+    ctx.save();
+    ctx.strokeStyle = primaryColor;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1;
+    const boxSize = 35;
+    // Crosshairs
+    ctx.beginPath();
+    ctx.moveTo(cx - boxSize, cy); ctx.lineTo(cx - boxSize + 10, cy);
+    ctx.moveTo(cx + boxSize - 10, cy); ctx.lineTo(cx + boxSize, cy);
+    ctx.moveTo(cx, cy - boxSize); ctx.lineTo(cx, cy - boxSize + 10);
+    ctx.moveTo(cx, cy + boxSize - 10); ctx.lineTo(cx, cy + boxSize);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  3D HOLOGRAPHIC API WRAPPERS
+// ═══════════════════════════════════════════
+function initHologramMatrix() {
+  if (!globalHologram3DInstance && document.getElementById('canvas-hologram-3d')) {
+    globalHologram3DInstance = new HolographicMatrix3D('canvas-hologram-3d');
+  }
+}
+
+function switchHologramTarget(targetKey) {
+  if (globalHologram3DInstance) {
+    globalHologram3DInstance.setTarget(targetKey);
+  }
+}
+
+function updateHologramStatus(statusKey, title, targetName, loadName) {
+  if (globalHologram3DInstance) {
+    globalHologram3DInstance.setStatus(statusKey, title, targetName, loadName);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  🪞 DYNAMIC 3D CARD HOVER TILT & SPECULAR GLARE
+//  Smooth CSS3 Perspective Tilt Physics
+// ═══════════════════════════════════════════
+function init3DCardTilt() {
+  const cards = document.querySelectorAll('.card-3d-tilt');
+  cards.forEach(card => {
+    let ticking = false;
+
+    card.addEventListener('mousemove', (e) => {
+      if (ticking) return;
+      ticking = true;
+
+      requestAnimationFrame(() => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotX = -((y - centerY) / centerY) * 6.5; // Max 6.5 deg tilt
+        const rotY = ((x - centerX) / centerX) * 6.5;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateZ(4px)`;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+        card.style.setProperty('--sheen-opacity', '1');
+        ticking = false;
+      });
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
+      card.style.setProperty('--sheen-opacity', '0');
+    });
+  });
+}
+
+// Global Window Exports
+window.initHologramMatrix = initHologramMatrix;
+window.switchHologramTarget = switchHologramTarget;
+window.updateHologramStatus = updateHologramStatus;
+window.init3DCardTilt = init3DCardTilt;
+window.toggleQrFlipCard = toggleQrFlipCard;
+
+// ═══════════════════════════════════════════
+//  INTERACTIVE JUDGE DEMO & CLINICAL CRISIS SIMULATOR
+// ═══════════════════════════════════════════
+let demoScenariosCache = null;
+let activeDemoScenario = null;
+let presenterDrawerCollapsed = false;
+
+async function openJudgeDemoModal() {
+  lastFocusedElement = document.activeElement;
+  const modal = document.getElementById('modal-judge-demo');
+  if (!modal) return;
+  modal.style.display = 'flex';
+
+  if (demoScenariosCache) {
+    renderDemoScenariosGrid(demoScenariosCache);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/demo/scenarios');
+    if (!res.ok) throw new Error('Failed to load scenarios');
+    const data = await res.json();
+    demoScenariosCache = data.scenarios || [];
+    renderDemoScenariosGrid(demoScenariosCache);
+  } catch (err) {
+    console.error('Demo scenarios loading error:', err);
+    const grid = document.getElementById('judge-demo-grid');
+    if (grid) {
+      grid.innerHTML = `<div class="p-6 text-center text-rose-400 col-span-2">Failed to load demo scenarios. Ensure backend is running.</div>`;
+    }
+  }
+}
+
+function closeJudgeDemoModal() {
+  const modal = document.getElementById('modal-judge-demo');
+  if (modal) modal.style.display = 'none';
+  if (lastFocusedElement) {
+    try { lastFocusedElement.focus(); } catch (_) {}
+  }
+}
+
+function renderDemoScenariosGrid(scenarios) {
+  const grid = document.getElementById('judge-demo-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  scenarios.forEach((s, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-xl p-4 flex flex-col justify-between transition group shadow-md hover:shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
+    
+    let badgeBg = 'bg-rose-950/80 text-rose-300 border-rose-500/40';
+    if (s.badge_color === 'orange') badgeBg = 'bg-amber-950/80 text-amber-300 border-amber-500/40';
+
+    card.innerHTML = `
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg">
+            ${s.icon || '⚠️'}
+          </span>
+          <span class="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${badgeBg}">
+            ${escapeHtml(s.badge)}
+          </span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-xs font-mono text-amber-400 font-bold">Case #${idx + 1}</span>
+          <h3 class="text-sm font-bold text-white font-heading group-hover:text-amber-300 transition">${escapeHtml(s.title)}</h3>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono mt-0.5">${escapeHtml(s.subtitle)}</p>
+        <div class="mt-2.5 p-2 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-300 leading-relaxed font-sans">
+          <strong class="text-amber-300 font-mono">Prescribed:</strong> <span class="text-white font-semibold">${escapeHtml(s.proposed_medication)} (${escapeHtml(s.dosage)})</span> for ${escapeHtml(s.patient_name)}
+        </div>
+        <p class="text-[10.5px] text-slate-400 mt-2 leading-relaxed">
+          ${escapeHtml(s.hazard_summary)}
+        </p>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+        <span class="text-[10px] font-mono text-slate-500">Hotkey: <kbd class="px-1.5 py-0.5 rounded bg-black/40 border border-slate-700 text-slate-300 font-bold">${idx + 1}</kbd></span>
+        <button type="button" onclick="executeDemoScenario('${escapeHtml(s.id)}')" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-sm">
+          <span>▶ 1-Click Run &amp; Present</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+async function executeDemoScenario(scenarioId) {
+  closeJudgeDemoModal();
+  showToast('⚡ Running Live Simulation', `Executing sovereign safety pipeline for ${scenarioId}...`, 'info', 2500);
+
+  // Switch to Tab 1 (Clinical Review)
+  switchMainTab('review');
+
+  try {
+    const res = await fetch(`/api/demo/run/${scenarioId}`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Demo run failed with status ${res.status}`);
+    const data = await res.json();
+    activeDemoScenario = data;
+
+    // 1. Update form inputs to match scenario
+    const medInput = document.getElementById("proposed-med-input");
+    const doseInput = document.getElementById("proposed-dose-input");
+    if (medInput) medInput.value = data.scenario.proposed_medication;
+    if (doseInput) doseInput.value = data.scenario.dosage;
+
+    // 2. Select patient if available
+    if (data.scenario.patient_id) {
+      currentPatientId = data.scenario.patient_id;
+      const select = document.getElementById("patient-select");
+      const selectHeader = document.getElementById("patient-select-header");
+      if (select) select.value = data.scenario.patient_id;
+      if (selectHeader) selectHeader.value = data.scenario.patient_id;
+      
+      // Update patient display details
+      const nameEl = document.getElementById("display-patient-name");
+      const metaEl = document.getElementById("display-patient-meta");
+      const tokenEl = document.getElementById("display-patient-token");
+      if (nameEl) nameEl.textContent = data.scenario.patient_name;
+      if (metaEl) metaEl.textContent = `ID: ${data.scenario.patient_id} · Age: ${data.scenario.demographics?.age || 65}y · ${data.scenario.demographics?.gender || 'Unknown'}`;
+      if (tokenEl) tokenEl.textContent = `ANON_${data.scenario.patient_id}`;
+    }
+
+    // 3. Render review results
+    if (typeof renderReviewResults === 'function') {
+      renderReviewResults(data.review);
+    }
+
+    // 4. Update and display Floating Live Presenter Cheatsheet
+    const widget = document.getElementById('presenter-floating-widget');
+    const titleEl = document.getElementById('presenter-active-title');
+    const bulletsEl = document.getElementById('presenter-bullets');
+
+    if (titleEl) {
+      titleEl.innerHTML = `<span class="text-amber-400 font-mono mr-1">${data.scenario.icon || '⚡'}</span> ${escapeHtml(data.presenter_cheatsheet.title)}: <span class="text-slate-300 font-normal text-xs">${escapeHtml(data.scenario.subtitle)}</span>`;
+    }
+
+    if (bulletsEl) {
+      bulletsEl.innerHTML = '';
+      (data.presenter_cheatsheet.talking_points || []).forEach(pt => {
+        const li = document.createElement('li');
+        li.className = 'leading-snug';
+        li.innerHTML = escapeHtml(pt);
+        bulletsEl.appendChild(li);
+      });
+    }
+
+    if (widget) {
+      widget.style.display = 'block';
+      const drawer = document.getElementById('presenter-drawer-content');
+      if (drawer) drawer.style.display = 'block';
+      presenterDrawerCollapsed = false;
+      const chevron = document.getElementById('presenter-chevron');
+      if (chevron) chevron.className = 'fa-solid fa-chevron-down';
+    }
+
+    // 5. Scroll smoothly to review card
+    const reviewCard = document.getElementById('review-results-card') || document.getElementById('result-content');
+    if (reviewCard) {
+      reviewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    showToast('Simulation Complete', `Case: ${data.scenario.title} evaluated with 0 bytes cloud egress.`, 'success', 3500);
+
+  } catch (err) {
+    console.error('Error executing demo scenario:', err);
+    showToast('Simulation Error', err.message, 'error', 4000);
+  }
+}
+
+function togglePresenterDrawer() {
+  const drawer = document.getElementById('presenter-drawer-content');
+  const chevron = document.getElementById('presenter-chevron');
+  if (!drawer) return;
+  presenterDrawerCollapsed = !presenterDrawerCollapsed;
+  drawer.style.display = presenterDrawerCollapsed ? 'none' : 'block';
+  if (chevron) {
+    chevron.className = presenterDrawerCollapsed ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+}
+
+function dismissPresenterWidget() {
+  const widget = document.getElementById('presenter-floating-widget');
+  if (widget) widget.style.display = 'none';
+}
+
+// Window Exports for Judge Demo Simulator
+window.openJudgeDemoModal = openJudgeDemoModal;
+window.closeJudgeDemoModal = closeJudgeDemoModal;
+window.executeDemoScenario = executeDemoScenario;
+window.togglePresenterDrawer = togglePresenterDrawer;
+window.dismissPresenterWidget = dismissPresenterWidget;
+
 

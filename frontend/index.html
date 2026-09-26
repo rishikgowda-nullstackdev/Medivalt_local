@@ -499,6 +499,24 @@
       50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
       100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
+    @keyframes hologramScanline {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 0.8; }
+      85% { opacity: 0.8; }
+      100% { transform: translateY(220px); opacity: 0; }
+    }
+    @keyframes criticalBorderPulse {
+      0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.25), inset 0 0 12px rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.6); }
+      50% { box-shadow: 0 0 32px rgba(239, 68, 68, 0.6), inset 0 0 24px rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 1); }
+    }
+    @keyframes safeBorderPulse {
+      0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.2), inset 0 0 8px rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.5); }
+      50% { box-shadow: 0 0 26px rgba(16, 185, 129, 0.45), inset 0 0 18px rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.95); }
+    }
+    @keyframes ambientOrbitGlow {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(13, 148, 136, 0.4)); }
+      50% { filter: drop-shadow(0 0 22px rgba(6, 182, 212, 0.75)); }
+    }
 
     .scanning-pulse {
       animation: scanRipple 0.8s ease-in-out infinite;
@@ -513,6 +531,94 @@
     }
     .animate-badge-critical {
       animation: badgePopCritical 0.2s ease-out forwards;
+    }
+    .glow-critical-pulse {
+      animation: criticalBorderPulse 2s infinite ease-in-out;
+    }
+    .glow-safe-pulse {
+      animation: safeBorderPulse 2.4s infinite ease-in-out;
+    }
+
+    /* ─── 3D PERSPECTIVE & HOVER TILT WITH SPECULAR SHEEN ─── */
+    .card-3d-tilt {
+      transform-style: preserve-3d;
+      will-change: transform;
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+      position: relative;
+    }
+    .card-3d-tilt::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle 220px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(45, 212, 191, 0.14), transparent 75%);
+      opacity: var(--sheen-opacity, 0);
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      border-radius: inherit;
+      z-index: 5;
+    }
+    .card-3d-tilt:hover::after {
+      --sheen-opacity: 1;
+    }
+
+    /* ─── 3D HOLOGRAPHIC VIEWPORT ─── */
+    .hologram-card {
+      position: relative;
+      background: radial-gradient(ellipse at 50% 40%, rgba(13, 148, 136, 0.1) 0%, rgba(8, 13, 24, 0.95) 75%);
+      border: 1px solid rgba(13, 148, 136, 0.35);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: inset 0 0 35px rgba(13, 148, 136, 0.12), 0 8px 30px rgba(0, 0, 0, 0.55);
+    }
+    .hologram-grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(13, 148, 136, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13, 148, 136, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .hologram-scanline-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.8), rgba(6, 182, 212, 0.9), transparent);
+      box-shadow: 0 0 10px var(--teal-bright);
+      animation: hologramScanline 4s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* ─── 3D FLIPPABLE ATTESTATION CARD MODAL ─── */
+    .flip-card-stage {
+      perspective: 1400px;
+      width: 100%;
+    }
+    .flip-card-mesh {
+      position: relative;
+      width: 100%;
+      min-height: 420px;
+      transition: transform 0.65s cubic-bezier(0.34, 1.35, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+    .flip-card-mesh.is-flipped {
+      transform: rotateY(180deg);
+    }
+    .flip-card-face-front, .flip-card-face-back {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .flip-card-face-back {
+      transform: rotateY(180deg);
     }
 
     /* ─── ACCESSIBILITY: REDUCED MOTION ─── */
@@ -857,6 +963,13 @@
         <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-teal-400/80"></i>
       </a>
 
+      <!-- Judge Demo Mode Trigger Button -->
+      <button id="btn-judge-demo-trigger" type="button" onclick="openJudgeDemoModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-red-500/25 hover:from-amber-500/35 hover:to-red-500/35 border border-amber-500/60 text-amber-300 text-xs font-bold transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.25)]" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D / Alt+6)">
+        <i class="fa-solid fa-bolt text-amber-400"></i>
+        <span>⚡ Judge Demo</span>
+        <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40 hidden md:inline">Ctrl+D</kbd>
+      </button>
+
       <!-- Settings Launcher -->
       <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Workstation Settings">
         <i class="fa-solid fa-gear text-sm text-teal-400"></i>
@@ -890,6 +1003,11 @@
       <i class="fa-solid fa-chart-line text-emerald-400"></i>
       <span>5. Clinical Analytics</span>
       <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+5</kbd>
+    </button>
+    <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="step-nav-btn text-amber-300 border-amber-500/30 hover:border-amber-500/60" title="Interactive Judge Demo Simulator (Ctrl+D / Alt+6)">
+      <i class="fa-solid fa-bolt text-amber-400"></i>
+      <span>6. Judge Demo</span>
+      <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold ml-0.5">Live</span>
     </button>
   </nav>
 
@@ -932,7 +1050,7 @@
     </div>
 
     <!-- Quantitative Biomarkers (Renal / Hepatic / Cardiac Panel) -->
-    <div class="clinical-card p-3.5 border-slate-800">
+    <div class="clinical-card card-3d-tilt p-3.5 border-slate-800">
       <div class="flex items-center justify-between mb-2.5">
         <span class="card-title text-xs">
           <i class="fa-solid fa-flask-vial text-teal-400"></i>
@@ -974,6 +1092,82 @@
       </div>
     </div>
 
+    <!-- 🌌 SOVEREIGN 3D HOLOGRAPHIC PHYSIOLOGICAL TARGET MATRIX -->
+    <div class="hologram-card card-3d-tilt p-3.5 border-teal-500/30">
+      <div class="hologram-grid-overlay"></div>
+      <div class="hologram-scanline-bar"></div>
+      <div class="relative z-10">
+        <!-- Hologram Header Strip -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 pb-2 border-b border-teal-500/20">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-ping"></span>
+            <span class="card-title text-xs text-teal-300 font-heading">
+              <i class="fa-solid fa-cube text-teal-400"></i>
+              <span>3D Holographic Physiological Target Matrix</span>
+            </span>
+            <span class="text-[9px] font-mono bg-teal-950/80 border border-teal-500/40 text-teal-300 px-1.5 py-0.5 rounded">
+              PURE OFFLINE CANVAS 3D
+            </span>
+          </div>
+
+          <!-- Organ Selector Toggles -->
+          <div class="flex items-center space-x-1.5 text-[10px] font-mono flex-wrap">
+            <button type="button" id="organ-tab-renal" onclick="switchHologramTarget('renal')" class="px-2.5 py-1 rounded bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition">
+              <i class="fa-solid fa-droplet mr-1 text-teal-400"></i>Renal (Glomerular)
+            </button>
+            <button type="button" id="organ-tab-cardiac" onclick="switchHologramTarget('cardiac')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
+              <i class="fa-solid fa-heart mr-1 text-rose-400"></i>Cardiopulmonary
+            </button>
+            <button type="button" id="organ-tab-hepatic" onclick="switchHologramTarget('hepatic')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
+              <i class="fa-solid fa-filter mr-1 text-amber-400"></i>Hepatic
+            </button>
+            <button type="button" id="organ-tab-shield" onclick="switchHologramTarget('shield')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
+              <i class="fa-solid fa-shield-halved mr-1 text-emerald-400"></i>Enclave Seal
+            </button>
+          </div>
+        </div>
+
+        <!-- 3D Canvas Viewport + Live HUD Overlays -->
+        <div class="relative w-full rounded-lg bg-slate-950/70 border border-teal-500/20 overflow-hidden flex items-center justify-center" style="height: 190px;">
+          <!-- Real-Time HTML5 3D Vector Canvas -->
+          <canvas id="canvas-hologram-3d" class="w-full h-full cursor-grab active:cursor-grabbing block"></canvas>
+          
+          <!-- Top Left HUD Telemetry -->
+          <div class="absolute top-2.5 left-3 pointer-events-none text-[10px] font-mono space-y-1">
+            <div class="flex items-center space-x-1.5">
+              <span class="text-slate-400">Target Structure:</span>
+              <span id="hologram-hud-target" class="text-teal-300 font-bold">Renal Glomerular Microvasculature</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="text-slate-400">Local Receptor Load:</span>
+              <span id="hologram-hud-load" class="text-emerald-400 font-bold">Afferent Arteriolar Vasoconstriction Risk</span>
+            </div>
+          </div>
+
+          <!-- Top Right HUD Status Pill -->
+          <div class="absolute top-2.5 right-3 pointer-events-none">
+            <div id="hologram-hud-status-badge" class="px-2.5 py-1 rounded-full bg-red-950/80 border border-red-500/70 text-red-300 text-[10px] font-mono font-bold flex items-center space-x-1.5 shadow-lg glow-critical-pulse">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
+              <span id="hologram-hud-status-text">CONTRAINDICATION HAZARD</span>
+            </div>
+          </div>
+
+          <!-- Bottom HUD Controls & Angle Telemetry -->
+          <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono text-slate-400 pointer-events-none">
+            <div class="flex items-center space-x-2">
+              <span><i class="fa-solid fa-hand-pointer text-teal-400 mr-1"></i> Drag to orbit 3D view</span>
+              <span class="text-slate-600">|</span>
+              <span id="hologram-hud-angle" class="text-teal-400">Pitch: 12° · Yaw: 45°</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-500">Render: 60 FPS Vector Wireframe</span>
+              <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>0-Cloud Egress</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- MAIN TWO-COLUMN CLINICAL WORKSTATION SPLIT -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
       
@@ -981,7 +1175,7 @@
       <div class="lg:col-span-5 space-y-3">
         
         <!-- Active Patient Baseline: Conditions, Meds, Allergies -->
-        <div class="clinical-card p-3.5 space-y-3 border-slate-800">
+        <div class="clinical-card card-3d-tilt p-3.5 space-y-3 border-slate-800">
           <div class="card-title text-xs">
             <i class="fa-solid fa-clipboard-user text-teal-400"></i>
             <span>Patient Clinical Baseline</span>
@@ -1801,34 +1995,163 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     OPTICAL CLEARANCE QR MODAL
+     3D FLIPPABLE OPTICAL CLEARANCE QR & ENCLAVE ATTESTATION MODAL
 ═══════════════════════════════════════════ -->
-<div id="qr-modal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center;">
-  <div class="clinical-card p-5 w-96 max-w-[90vw] text-center border-slate-700 shadow-2xl relative">
-    <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
-      <div class="text-xs font-bold text-teal-400 flex items-center gap-1.5 font-heading">
-        <i class="fa-solid fa-file-shield"></i>
-        <span>Optical Clearance Seal</span>
+<div id="qr-modal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
+  <div class="flip-card-stage w-full max-w-md">
+    <div id="qr-flip-mesh" class="flip-card-mesh">
+      
+      <!-- FRONT FACE: Optical Vector QR Clearance Seal -->
+      <div class="flip-card-face-front clinical-card p-5 text-center border-teal-500/40 shadow-2xl relative bg-slate-900/95">
+        <div>
+          <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+            <div class="text-xs font-bold text-teal-400 flex items-center gap-1.5 font-heading">
+              <i class="fa-solid fa-qrcode text-teal-400"></i>
+              <span>Optical Clearance Seal (Air-Gapped)</span>
+            </div>
+            <button type="button" onclick="closeClearanceQrModal()" class="text-slate-400 hover:text-white bg-transparent border-0 text-base cursor-pointer">&times;</button>
+          </div>
+          <div class="text-[11px] text-slate-400 mb-2.5 leading-snug">
+            Scan via camera to verify zero-cloud cryptographic seal wirelessly without USB or LAN cables.
+          </div>
+          <div id="qr-image-container" class="bg-white p-3 rounded-xl inline-block mb-2.5 shadow-lg min-w-[210px] min-h-[210px] relative">
+            <div id="qr-loading" class="text-slate-900 text-xs py-20 font-mono">Rendering Vector Seal…</div>
+          </div>
+          <div id="qr-modal-hash" class="text-[10px] font-mono text-teal-300 break-all bg-slate-950 p-2 rounded-lg border border-teal-500/30">
+            SHA-256 Seal: Calculating…
+          </div>
+        </div>
+        
+        <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center gap-2">
+          <button type="button" onclick="toggleQrFlipCard(true)" class="btn-clinical-secondary flex-1 py-1.5 text-xs">
+            <i class="fa-solid fa-arrows-rotate mr-1 text-teal-400"></i> 3D Flip to Enclave Ledger
+          </button>
+          <button type="button" onclick="closeClearanceQrModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition">
+            Close
+          </button>
+        </div>
       </div>
-      <button onclick="closeClearanceQrModal()" class="text-slate-400 hover:text-white bg-transparent border-0 text-base cursor-pointer">&times;</button>
+
+      <!-- BACK FACE: Cryptographic Enclave Attestation & Merkle Proof Ledger -->
+      <div class="flip-card-face-back clinical-card p-5 text-left border-emerald-500/40 shadow-2xl relative bg-slate-950/95">
+        <div>
+          <div class="flex justify-between items-center mb-2 pb-2 border-b border-emerald-500/20">
+            <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 font-heading">
+              <i class="fa-solid fa-certificate text-emerald-400"></i>
+              <span>Hardware Enclave Attestation Ledger</span>
+            </div>
+            <button type="button" onclick="closeClearanceQrModal()" class="text-slate-400 hover:text-white bg-transparent border-0 text-base cursor-pointer">&times;</button>
+          </div>
+
+          <div class="space-y-2 text-[11px] font-mono">
+            <div class="p-2 rounded bg-slate-900 border border-slate-800 space-y-1">
+              <div class="text-slate-500 text-[10px] uppercase font-bold">Cryptographic Attestation Seal</div>
+              <div id="modal-attestation-hash" class="text-emerald-300 text-[10px] break-all">0x7f83b2e94a11c82...49e1</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <div class="text-slate-500 text-[9px] uppercase">Enclave Egress:</div>
+                <div class="text-emerald-400 font-bold text-[10px]">0 Bytes (127.0.0.1)</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <div class="text-slate-500 text-[9px] uppercase">Compliance:</div>
+                <div class="text-teal-300 font-bold text-[10px]">HIPAA § 164.514(b)</div>
+              </div>
+            </div>
+
+            <div class="p-2 rounded bg-slate-900 border border-slate-800 space-y-1">
+              <div class="text-slate-500 text-[9px] uppercase">Signing Authority:</div>
+              <div class="text-slate-200 text-[10px]">Local Station Enclave Alpha-1 (RAM Buffer Only)</div>
+              <div class="text-slate-400 text-[9px]">Tamper-Evident SHA-256 Digest Chain Verified</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center gap-2">
+          <button type="button" onclick="toggleQrFlipCard(false)" class="btn-clinical-secondary flex-1 py-1.5 text-xs">
+            <i class="fa-solid fa-qrcode mr-1 text-teal-400"></i> 3D Flip to QR Seal
+          </button>
+          <button type="button" onclick="closeClearanceQrModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition">
+            Close
+          </button>
+        </div>
+      </div>
+
+<!-- ═══════════════════════════════════════════
+     JUDGE DEMO & CLINICAL CRISIS SIMULATOR MODAL
+═══════════════════════════════════════════ -->
+<div id="modal-judge-demo" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+  <div class="w-full max-w-4xl clinical-card p-6 border-amber-500/50 shadow-2xl relative max-h-[92vh] flex flex-col">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800 shrink-0">
+      <div class="flex items-center space-x-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-2xl shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h2 class="text-lg font-black text-white font-heading">⚡ Judge Demo &amp; Clinical Crisis Simulator</h2>
+            <span class="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">3-Minute Presentation Suite</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Pre-staged hospital disaster scenarios with live doctor talking points and 1-click execution.</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeJudgeDemoModal()" class="btn-clinical-secondary py-1 px-3 text-xs">
+        <i class="fa-solid fa-xmark mr-1"></i> Close
+      </button>
     </div>
-    <div class="text-[11px] text-slate-400 mb-3 leading-normal">
-      Scan with physician camera to verify zero-cloud cryptographic seal wirelessly without USB or data cables.
+
+    <!-- Scenarios Grid (Scrollable) -->
+    <div id="judge-demo-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-1 flex-1 py-1">
+      <!-- Dynamically populated from /api/demo/scenarios -->
+      <div class="text-center py-12 text-slate-500 col-span-2">
+        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading high-impact clinical scenarios...
+      </div>
     </div>
-    <div id="qr-image-container" class="bg-white p-3 rounded-lg inline-block mb-3 min-w-[210px] min-h-[210px]">
-      <div id="qr-loading" class="text-slate-900 text-xs py-20">Rendering Vector Seal…</div>
+
+    <!-- Modal Footer with Fast Pitch Tips -->
+    <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 shrink-0">
+      <div class="flex items-center space-x-2 font-mono text-[11px]">
+        <span class="text-amber-400 font-bold">💡 Hackathon Presentation Tip:</span>
+        <span>Click any scenario to instantly run the full pipeline, highlight the hazard, and reveal the 1-Click Alternative Swap!</span>
+      </div>
+      <div class="text-[11px] font-mono text-slate-500">
+        <span>Hotkeys: <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">1</kbd>–<kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">4</kbd> to launch scenario</span>
+      </div>
     </div>
-    <div id="qr-modal-hash" class="text-[10px] font-mono text-slate-400 break-all bg-slate-900 p-2 rounded border border-slate-800">
-      SHA-256 Seal: Calculating…
-    </div>
-    <button onclick="closeClearanceQrModal()" class="btn-clinical-secondary w-full mt-3 py-1.5 text-xs">
-      Close Window
-    </button>
   </div>
 </div>
 
+<!-- FLOATING LIVE PRESENTER CHEATSHEET WIDGET (Active during Demo) -->
+<div id="presenter-floating-widget" style="display:none" class="fixed bottom-5 right-5 z-40 max-w-md w-full bg-slate-900/95 border-2 border-amber-500/60 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.85)] backdrop-blur-lg p-4 text-slate-200 transition-all transform animate-in slide-in-from-bottom-5">
+  <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+    <div class="flex items-center space-x-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+      <span class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono">🎙️ Live Judge Talking Points</span>
+    </div>
+    <div class="flex items-center space-x-1">
+      <button type="button" onclick="togglePresenterDrawer()" class="text-slate-400 hover:text-white p-1 text-xs" title="Minimize/Maximize">
+        <i id="presenter-chevron" class="fa-solid fa-chevron-down"></i>
+      </button>
+      <button type="button" onclick="dismissPresenterWidget()" class="text-slate-400 hover:text-red-400 p-1 text-xs" title="Dismiss">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+  <div id="presenter-drawer-content">
+    <div id="presenter-active-title" class="font-bold text-sm text-white font-heading mb-1.5"></div>
+    <ul id="presenter-bullets" class="space-y-1.5 text-xs text-slate-300 list-disc list-inside font-sans leading-relaxed"></ul>
+    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+      <span class="text-teal-400 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> Safe Alternative Loaded</span>
+      <button type="button" onclick="openJudgeDemoModal()" class="text-amber-300 hover:text-amber-200 font-semibold underline cursor-pointer">
+        ⚡ Switch Scenario
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=2.2"></script>
+<script src="/static/app.js?v=2.3"></script>
 </body>
 </html>
