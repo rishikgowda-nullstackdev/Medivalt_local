@@ -28,6 +28,7 @@ from backend.ai_bridge import ai_bridge
 from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, call_person_c_ai_engine
 from backend.cds_hooks import cds_router
 from backend.patient_portal import patient_router
+from backend.analytics import analytics_router
 from backend.auth import (
     hash_password,
     verify_password,
@@ -67,6 +68,9 @@ app.include_router(cds_router)
 
 # Mount Patient Portal API Router
 app.include_router(patient_router)
+
+# Mount Clinical Analytics & Insights Router
+app.include_router(analytics_router)
 
 
 # ---------------------------------------------------------------------------
