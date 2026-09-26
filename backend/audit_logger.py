@@ -9,7 +9,7 @@ import json
 import sqlite3
 import hashlib
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
@@ -117,6 +117,7 @@ class AuditLogger:
                 f.write(json.dumps(entry) + "\n")
 
             # 2. Insert into SQLite DB if available
+            conn = None
             try:
                 conn = sqlite3.connect(self.db_path, timeout=5.0)
                 cursor = conn.cursor()
@@ -133,9 +134,14 @@ class AuditLogger:
                     execution_time_ms, prev_hash, current_hash
                 ))
                 conn.commit()
-                conn.close()
             except Exception:
                 pass  # JSONL remains primary audit of record
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
 
             return entry
 

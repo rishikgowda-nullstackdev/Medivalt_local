@@ -3,78 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MediVault Local — Sovereign AI Clinical Reviewer</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>MediVault Local — Sovereign Clinical Decision Support System</title>
+  
+  <!-- Tailwind CSS & Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
-    /* ─── DARK THEME (default) ─── */
-    :root {
-      --teal: #14b8a6;
-      --teal-bright: #2dd4bf;
-      --cyan: #06b6d4;
-      --navy: #0a0f1e;
-      --navy-mid: #0d1427;
-      --card: rgba(13,20,39,0.85);
-      --glass: rgba(20,184,166,0.06);
-      --border: rgba(20,184,166,0.18);
+  
+  <!-- Clinical Fonts with Offline System Fallbacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
 
-      /* Semantic tokens – dark */
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       MEDIVAULT SOVEREIGN DESIGN TOKENS (DARK MODE DEFAULT)
+       Asset Reference: assets/4010198914031322601 (ROUND_EIGHT, TONAL_SPOT)
+    ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Brand Clinical Accents */
+      --teal-primary: #0d9488;
+      --teal-accent: #14b8a6;
+      --teal-bright: #2dd4bf;
+      --teal-glow: rgba(45, 212, 191, 0.15);
+      --cyan-accent: #06b6d4;
+
+      /* Spatial Canvas & Surfaces */
+      --bg-canvas: #070b14;
       --bg-page: #0a0f1e;
-      --bg-header: rgba(10,15,30,0.85);
-      --bg-card: rgba(13,20,39,0.75);
-      --bg-input: rgba(255,255,255,0.04);
-      --bg-pill: rgba(20,184,166,0.06);
-      --bg-tab-bar: rgba(255,255,255,0.03);
-      --bg-tab-active: rgba(20,184,166,0.18);
+      --bg-card: #0d1527;
+      --bg-card-subtle: #0f1a30;
+      --bg-input-well: #050811;
+      --bg-header: rgba(10, 15, 30, 0.95);
+      --bg-tab-bar: rgba(255, 255, 255, 0.03);
+      --bg-tab-active: rgba(13, 148, 136, 0.22);
+      
+      /* Crisp Structural Borders */
+      --border-main: #1e293b;
+      --border-card: #1e293b;
+      --border-focus: #0d9488;
+      --border-hover: rgba(20, 184, 166, 0.35);
+
+      /* Typography Contrast Tokens */
+      --text-heading: #f8fafc;
       --text-primary: #e2e8f0;
-      --text-muted: rgba(148,163,184,0.7);
-      --text-faint: rgba(148,163,184,0.4);
-      --border-main: rgba(20,184,166,0.14);
-      --border-input: rgba(255,255,255,0.08);
-      --border-card: rgba(20,184,166,0.15);
-      --shadow-card: 0 8px 32px rgba(0,0,0,0.3);
-      --auth-backdrop: var(--navy);
-      --particle-color-1: rgba(20,184,166,;
-      --particle-color-2: rgba(6,182,212,;
-      --particle-color-3: rgba(45,212,191,;
-      --splash-bg: #0a0f1e;
-      --float-card-bg: rgba(13,20,39,0.96);
-      --audit-table-hover: rgba(20,184,166,0.04);
-      --drop-zone-border: rgba(20,184,166,0.22);
-      --recommendation-bg: rgba(20,184,166,0.06);
-      --recommendation-border: rgba(20,184,166,0.18);
-      --otp-box-bg: rgba(20,184,166,0.05);
-      --otp-box-border: rgba(20,184,166,0.15);
-      --switch-modal-bg: rgba(13,20,39,0.98);
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+
+      /* Triage Status Colors */
+      --alert-critical-bg: rgba(69, 10, 10, 0.85);
+      --alert-critical-border: #ef4444;
+      --alert-critical-text: #fca5a5;
+
+      --alert-warning-bg: rgba(69, 26, 3, 0.85);
+      --alert-warning-border: #f59e0b;
+      --alert-warning-text: #fde68a;
+
+      --alert-safe-bg: rgba(2, 44, 34, 0.85);
+      --alert-safe-border: #10b981;
+      --alert-safe-text: #a7f3d0;
+
+      --alert-allergy-bg: rgba(59, 7, 100, 0.85);
+      --alert-allergy-border: #a855f7;
+      --alert-allergy-text: #e9d5ff;
+
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-elevation: 0 12px 36px rgba(0, 0, 0, 0.6);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
     }
 
-    /* ─── LIGHT THEME ─── */
+    /* ─── LIGHT THEME OVERRIDES ─── */
     html.light {
-      --navy: #f0f4f8;
-      --navy-mid: #e2eaf2;
-      --bg-page: #f0f4f8;
-      --bg-header: rgba(240,244,248,0.92);
-      --bg-card: rgba(255,255,255,0.88);
-      --bg-input: rgba(0,0,0,0.04);
-      --bg-pill: rgba(20,184,166,0.08);
-      --bg-tab-bar: rgba(0,0,0,0.04);
-      --bg-tab-active: rgba(20,184,166,0.14);
-      --text-primary: #0f172a;
-      --text-muted: rgba(51,65,85,0.75);
-      --text-faint: rgba(100,116,139,0.6);
-      --border-main: rgba(20,184,166,0.22);
-      --border-input: rgba(0,0,0,0.1);
-      --border-card: rgba(20,184,166,0.18);
-      --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
-      --auth-backdrop: #f0f4f8;
-      --float-card-bg: rgba(255,255,255,0.98);
-      --audit-table-hover: rgba(20,184,166,0.04);
-      --drop-zone-border: rgba(20,184,166,0.25);
-      --recommendation-bg: rgba(20,184,166,0.05);
-      --recommendation-border: rgba(20,184,166,0.2);
-      --otp-box-bg: rgba(20,184,166,0.04);
-      --otp-box-border: rgba(20,184,166,0.18);
-      --switch-modal-bg: rgba(255,255,255,0.99);
+      --bg-canvas: #e2e8f0;
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f8fafc;
+      --bg-input-well: #ffffff;
+      --bg-header: rgba(255, 255, 255, 0.95);
+      --bg-tab-bar: rgba(0, 0, 0, 0.04);
+      --bg-tab-active: rgba(13, 148, 136, 0.14);
+
+      --border-main: #cbd5e1;
+      --border-card: #e2e8f0;
+      --border-focus: #0d9488;
+      --border-hover: #0d9488;
+
+      --text-heading: #0f172a;
+      --text-primary: #1e293b;
+      --text-muted: #475569;
+      --text-faint: #64748b;
+
+      --alert-critical-bg: #fef2f2;
+      --alert-critical-border: #f87171;
+      --alert-critical-text: #991b1b;
+
+      --alert-warning-bg: #fffbeb;
+      --alert-warning-border: #fcd34d;
+      --alert-warning-text: #92400e;
+
+      --alert-safe-bg: #f0fdf4;
+      --alert-safe-border: #86efac;
+      --alert-safe-text: #166534;
+
+      --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+      --shadow-elevation: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
 
     * { box-sizing: border-box; }
@@ -82,614 +118,715 @@
 
     body {
       margin: 0; padding: 0;
-      background: var(--bg-page);
+      background: var(--bg-canvas);
       color: var(--text-primary);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow-x: hidden;
-      transition: background 0.35s ease, color 0.35s ease;
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
-    /* ─── PARTICLE CANVAS ─── */
-    #particle-canvas {
-      position: fixed; inset: 0; z-index: 0;
-      pointer-events: none;
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     }
 
-    /* ─── SPLASH SCREEN ─── */
-    #splash {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--navy);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 32px;
-      transition: opacity 0.8s ease, visibility 0.8s ease;
-    }
-    #splash.fade-out { opacity: 0; visibility: hidden; }
-
-    .splash-logo-ring {
-      position: relative;
-      width: 140px; height: 140px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .splash-ring-outer {
-      position: absolute; inset: 0;
-      border-radius: 50%;
-      border: 2px solid rgba(20,184,166,0.3);
-      animation: spin-slow 8s linear infinite;
-    }
-    .splash-ring-outer::before {
-      content: '';
-      position: absolute; top: -3px; left: 50%; width: 6px; height: 6px;
-      background: var(--teal-bright);
-      border-radius: 50%;
-      box-shadow: 0 0 12px 4px var(--teal-bright);
-      transform: translateX(-50%);
-    }
-    .splash-ring-inner {
-      position: absolute; inset: 16px;
-      border-radius: 50%;
-      border: 1px solid rgba(6,182,212,0.25);
-      animation: spin-slow 5s linear infinite reverse;
-    }
-    .splash-ring-inner::before {
-      content: '';
-      position: absolute; bottom: -3px; left: 50%; width: 5px; height: 5px;
-      background: var(--cyan);
-      border-radius: 50%;
-      box-shadow: 0 0 10px 3px var(--cyan);
-      transform: translateX(-50%);
-    }
-    .splash-shield-wrap {
-      position: relative; z-index: 1;
-      display: flex; align-items: center; justify-content: center;
-      width: 80px; height: 80px;
-      background: radial-gradient(circle, rgba(20,184,166,0.15) 0%, transparent 70%);
-    }
-    .splash-shield {
-      font-size: 54px;
-      color: var(--teal-bright);
-      filter: drop-shadow(0 0 20px rgba(45,212,191,0.8)) drop-shadow(0 0 40px rgba(20,184,166,0.4));
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-    .splash-cross {
-      position: absolute;
-      font-size: 22px;
-      color: white;
-      filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-    .splash-title {
-      font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
-      color: white; text-align: center;
-    }
-    .splash-subtitle {
-      font-size: 13px; color: rgba(148,163,184,0.7);
-      letter-spacing: 2px; text-transform: uppercase;
-      font-weight: 500; margin-top: 4px; text-align: center;
-    }
-    .splash-progress {
-      width: 240px; height: 3px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 99px; overflow: hidden;
-    }
-    .splash-progress-bar {
-      height: 100%; width: 0%;
-      background: linear-gradient(90deg, var(--teal), var(--cyan), var(--teal-bright));
-      border-radius: 99px;
-      animation: progress-fill 1.8s ease-in-out forwards;
+    .font-mono-telemetry {
+      font-family: 'JetBrains Mono', monospace;
     }
 
-    @keyframes spin-slow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    @keyframes pulse-glow {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(45,212,191,0.7)); }
-      50% { transform: scale(1.06); filter: drop-shadow(0 0 28px rgba(45,212,191,1)); }
-    }
-    @keyframes progress-fill {
-      0% { width: 0%; }
-      60% { width: 75%; }
-      100% { width: 100%; }
-    }
-
-    /* ─── AUTH GATE ─── */
-    #auth-gate {
-      position: fixed; inset: 0; z-index: 5000;
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px;
-      transition: opacity 0.5s ease, visibility 0.5s ease;
-    }
-    #auth-gate.dismissed { opacity: 0; visibility: hidden; pointer-events: none; }
-    .auth-backdrop {
-      position: absolute; inset: 0;
-      background: var(--auth-backdrop); opacity: 0.95;
-      backdrop-filter: blur(12px);
-    }
-    .auth-card {
-      position: relative; z-index: 1;
-      width: 100%; max-width: 480px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-main);
-      border-radius: 24px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-      overflow: hidden;
-      animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .auth-header-strip {
-      padding: 24px 28px 16px;
-      border-bottom: 1px solid var(--border-main);
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-    }
-    .auth-logo-mini {
-      width: 48px; height: 48px;
-      border-radius: 14px;
-      background: rgba(20,184,166,0.12);
-      border: 1px solid rgba(20,184,166,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; color: var(--teal-bright);
-    }
-    .auth-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
-    .auth-subtitle { font-size: 12px; color: var(--text-muted); }
-    .auth-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border-main);
-      background: var(--bg-tab-bar);
-    }
-    .auth-tab-btn {
-      flex: 1; padding: 12px;
-      background: none; border: none;
-      font-size: 12px; font-weight: 600;
-      color: var(--text-faint); cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    .auth-tab-btn.active {
-      color: var(--teal-bright);
-      border-bottom-color: var(--teal-bright);
-      background: var(--bg-tab-active);
-    }
-    .auth-body { padding: 24px 28px; }
-    .auth-tab-content { display: none; }
-    .auth-tab-content.active { display: block; }
-    .auth-alert {
-      display: none; padding: 10px 14px;
-      border-radius: 10px; font-size: 12px;
-      margin-bottom: 14px;
-    }
-    .auth-alert.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5; }
-    .auth-alert.success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; }
-
-    /* ─── UI COMPONENTS ─── */
-    .glass-card {
+    /* ─── WORKSTATION CARD BASE ─── */
+    .clinical-card {
       background: var(--bg-card);
       border: 1px solid var(--border-card);
-      border-radius: 20px;
+      border-radius: var(--radius-md);
       box-shadow: var(--shadow-card);
-      backdrop-filter: blur(12px);
-      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .glass-card:hover {
-      border-color: rgba(20,184,166,0.3);
-      box-shadow: 0 12px 36px rgba(0,0,0,0.35);
-    }
-    .glass-card-title {
-      font-size: 13px; font-weight: 700;
-      color: var(--teal-bright);
-      display: flex; align-items: center; gap: 8px;
+    .clinical-card:hover {
+      border-color: var(--border-hover);
     }
 
-    .mv-label {
-      font-size: 11px; font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px; display: block;
-      text-transform: uppercase; letter-spacing: 0.5px;
+    .card-header-strip {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .mv-input {
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── FORM & INPUT WELLS ─── */
+    .clinical-input {
       width: 100%;
-      background: var(--bg-input);
-      border: 1px solid var(--border-input);
-      border-radius: 12px;
-      padding: 10px 14px;
+      background: var(--bg-input-well);
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
       color: var(--text-primary);
       font-size: 13px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .mv-input:focus {
-      border-color: var(--teal);
-      box-shadow: 0 0 0 3px rgba(20,184,166,0.15);
+    .clinical-input:focus {
+      border-color: var(--teal-primary);
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
     }
 
-    .mv-btn-primary {
-      width: 100%; padding: 11px 16px;
-      background: linear-gradient(135deg, var(--teal), var(--cyan));
-      border: none; border-radius: 12px;
-      color: white; font-weight: 700; font-size: 13px;
-      cursor: pointer; transition: opacity 0.2s, transform 0.1s;
-      display: flex; align-items: center; justify-content: center;
+    .clinical-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      display: block;
     }
-    .mv-btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
 
-    .mv-btn-secondary {
-      width: 100%; padding: 9px 14px;
-      background: rgba(20,184,166,0.08);
-      border: 1px solid rgba(20,184,166,0.25);
-      border-radius: 12px;
-      color: var(--teal-bright); font-weight: 600; font-size: 12px;
-      cursor: pointer; transition: background 0.2s;
-      display: flex; align-items: center; justify-content: center;
+    /* ─── BUTTON HIERARCHY ─── */
+    .btn-clinical-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--teal-primary);
+      border: 1px solid var(--teal-accent);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35);
+      transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
     }
-    .mv-btn-secondary:hover { background: rgba(20,184,166,0.16); }
+    .btn-clinical-primary:hover:not(:disabled) {
+      background: #0f766e;
+      box-shadow: 0 4px 16px rgba(13, 148, 136, 0.5);
+    }
+    .btn-clinical-primary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .btn-clinical-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-    .chip {
-      padding: 4px 10px; border-radius: 8px;
-      font-size: 11px; font-weight: 600;
+    .btn-clinical-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(13, 148, 136, 0.08);
+      border: 1px solid rgba(13, 148, 136, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--teal-bright);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-clinical-secondary:hover {
+      background: rgba(13, 148, 136, 0.16);
+      border-color: var(--teal-accent);
+    }
+
+    /* ─── PRESET TEST CHIPS ─── */
+    .test-chip {
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
       border: 1px solid transparent;
-      cursor: pointer; transition: all 0.15s;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.12s ease;
     }
-    .chip-red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
-    .chip-red:hover { background: rgba(239,68,68,0.25); }
-    .chip-amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
-    .chip-amber:hover { background: rgba(245,158,11,0.25); }
-    .chip-purple { background: rgba(168,85,247,0.12); border-color: rgba(168,85,247,0.3); color: #d8b4fe; }
-    .chip-purple:hover { background: rgba(168,85,247,0.25); }
-
-    .run-btn {
-      width: 100%; padding: 13px 20px;
-      background: linear-gradient(135deg, #0d9488, #0891b2, #0284c7);
-      border: 1px solid rgba(45,212,191,0.4);
-      border-radius: 14px;
-      color: white; font-weight: 800; font-size: 13px;
-      letter-spacing: 0.5px; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(13,148,136,0.35);
-      transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .run-btn:hover {
-      box-shadow: 0 6px 28px rgba(13,148,136,0.55);
-      transform: translateY(-1px);
-    }
-
-    .result-banner {
-      border-radius: 14px; padding: 14px 18px;
-      margin-bottom: 14px; display: flex; align-items: flex-start; gap: 12px;
-      border: 1px solid transparent;
-    }
-    .result-banner.danger {
-      background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.35);
+    .test-chip-danger {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
       color: #fca5a5;
     }
-    .result-banner.safe {
-      background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.35);
-      color: #6ee7b7;
+    .test-chip-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
     }
-    .result-banner.warning {
-      background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.35);
-      color: #fcd34d;
+    .test-chip-warning {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+    }
+    .test-chip-warning:hover {
+      background: rgba(245, 158, 11, 0.25);
+    }
+    .test-chip-purple {
+      background: rgba(168, 85, 247, 0.12);
+      border-color: rgba(168, 85, 247, 0.35);
+      color: #e9d5ff;
+    }
+    .test-chip-purple:hover {
+      background: rgba(168, 85, 247, 0.25);
     }
 
-    .drop-zone {
-      border: 2px dashed var(--drop-zone-border);
-      border-radius: 14px; padding: 22px;
-      text-align: center; cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+    /* ─── STATUS TRIAGE BANNERS ─── */
+    .triage-banner {
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border: 1px solid transparent;
     }
-    .drop-zone:hover {
-      border-color: var(--teal);
-      background: rgba(20,184,166,0.03);
+    .triage-banner.danger, .result-banner.danger {
+      background: var(--alert-critical-bg);
+      border-color: var(--alert-critical-border);
+      color: var(--alert-critical-text);
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.15);
+    }
+    .triage-banner.warning, .result-banner.warning {
+      background: var(--alert-warning-bg);
+      border-color: var(--alert-warning-border);
+      color: var(--alert-warning-text);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+    }
+    .triage-banner.safe, .result-banner.safe {
+      background: var(--alert-safe-bg);
+      border-color: var(--alert-safe-border);
+      color: var(--alert-safe-text);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
     }
 
-    .tag-danger { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
-    .tag-neutral { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
-    .tag-med { background: rgba(6,182,212,0.12); color: #67e8f9; border: 1px solid rgba(6,182,212,0.25); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
-    .tag-warning { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
-
-    /* ─── DOCTOR CARDS & AVATARS ─── */
-    .demo-doc-card {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-radius: 12px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-input);
-      cursor: pointer; transition: all 0.2s;
+    /* ─── DROP ZONE ─── */
+    .drop-zone-clinical {
+      border: 2px dashed rgba(13, 148, 136, 0.35);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(13, 148, 136, 0.02);
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
-    .demo-doc-card:hover {
-      border-color: var(--teal);
-      background: rgba(20,184,166,0.06);
-    }
-    .doc-avatar {
-      width: 34px; height: 34px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--teal), var(--cyan));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 12px; color: white;
-      flex-shrink: 0;
-    }
-    .doc-switch-btn {
-      padding: 5px 12px; border-radius: 8px;
-      font-size: 11px; font-weight: 600;
-      background: rgba(20,184,166,0.12);
-      border: 1px solid rgba(20,184,166,0.3);
-      color: var(--teal-bright); cursor: pointer;
+    .drop-zone-clinical:hover, .drop-zone--over {
+      border-color: var(--teal-accent);
+      background: rgba(13, 148, 136, 0.06);
     }
 
     /* ─── AUDIT TABLE ─── */
-    .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .audit-table th {
-      padding: 8px 12px; text-align: left;
-      color: var(--text-faint); font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+    .audit-table-clinical {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
     }
-    .audit-table td {
-      padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
-      color: var(--text-muted); font-family: monospace;
+    .audit-table-clinical th {
+      padding: 10px 14px;
+      text-align: left;
+      color: var(--text-faint);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-main);
+      background: rgba(0, 0, 0, 0.2);
     }
-    .audit-table tr:hover td { background: var(--audit-table-hover); color: var(--text-primary); }
-
-    /* ─── SETTINGS SIDEBAR ─── */
-    #settings-backdrop {
-      position: fixed; inset: 0; z-index: 9990;
-      background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
-      opacity: 0; visibility: hidden; pointer-events: none;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+    .audit-table-clinical td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
     }
-    #settings-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; }
-
-    #settings-sidebar {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 380px; max-width: 90vw;
-      z-index: 9991;
-      background: var(--float-card-bg);
-      border-left: 1px solid var(--border-main);
-      box-shadow: -10px 0 40px rgba(0,0,0,0.6);
-      transform: translateX(100%);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex; flex-direction: column;
-    }
-    #settings-sidebar.open { transform: translateX(0); }
-
-    /* ─── MULTI-PAGE VIEW TABS ─── */
-    .page-tab-btn {
-      padding: 8px 16px; border-radius: 10px;
-      font-size: 12px; font-weight: 600;
-      color: var(--text-muted); cursor: pointer;
-      display: flex; align-items: center; gap: 8px;
-      border: 1px solid transparent; transition: all 0.2s;
-    }
-    .page-tab-btn.active {
-      background: linear-gradient(135deg, rgba(20,184,166,0.25), rgba(6,182,212,0.25));
-      border-color: rgba(20,184,166,0.4);
-      color: var(--teal-bright);
-      box-shadow: 0 2px 10px rgba(20,184,166,0.15);
-    }
-    .page-tab-btn:hover:not(.active) {
+    .audit-table-clinical tr:hover td {
+      background: rgba(13, 148, 136, 0.04);
       color: var(--text-primary);
-      background: rgba(255,255,255,0.03);
+    }
+
+    /* ─── NAVIGATION STEP TABS ─── */
+    .step-nav-btn {
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .step-nav-btn.active {
+      background: var(--bg-tab-active);
+      border-color: rgba(13, 148, 136, 0.45);
+      color: var(--teal-bright);
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.18);
+    }
+    .step-nav-btn:hover:not(.active) {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .page-view-panel {
       display: none;
-      animation: view-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: view-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
     .page-view-panel.active { display: block; }
 
     @keyframes view-fade-in {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes slide-up {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+
+    /* ─── SOVEREIGN SPLASH SCREEN ─── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #060911;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    #splash.dismissed {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* ─── AUTH GATE ─── */
+    #auth-gate {
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #auth-gate.dismissed {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* ─── SETTINGS SIDEBAR ─── */
+    #settings-backdrop {
+      position: fixed; inset: 0; z-index: 9990;
+      background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      display: none;
+    }
+    #settings-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; display: block; }
+
+    #settings-sidebar {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 400px; max-width: 92vw;
+      z-index: 9991;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-main);
+      box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: none; flex-direction: column;
+    }
+    #settings-sidebar.open { transform: translateX(0); display: flex; }
+
+    /* Doctor Profile Avatars */
+    .doc-avatar {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--teal-primary), var(--cyan-accent));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; color: white;
+      flex-shrink: 0;
     }
   </style>
+
+  <!-- Immediate Early UI Controller (Always Ready on Click) -->
+  <script>
+    window.switchMainTab = function(tabKey) {
+      const tabs = ['review', 'intake', 'fhir', 'audit'];
+      tabs.forEach(function(t) {
+        const btn = document.getElementById('nav-btn-' + t);
+        const panel = document.getElementById('page-view-' + t);
+        if (btn) {
+          if (t === tabKey) {
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+          } else {
+            btn.classList.remove('active');
+            btn.setAttribute('aria-selected', 'false');
+          }
+        }
+        if (panel) {
+          if (t === tabKey) {
+            panel.classList.add('active');
+            panel.style.display = 'block';
+          } else {
+            panel.classList.remove('active');
+            panel.style.display = 'none';
+          }
+        }
+      });
+    };
+
+    window.toggleSettingsSidebar = function(open) {
+      const sidebar = document.getElementById('settings-sidebar');
+      const backdrop = document.getElementById('settings-backdrop');
+      if (!sidebar || !backdrop) return;
+      if (open) {
+        sidebar.classList.add('open');
+        backdrop.classList.add('open');
+        sidebar.style.display = 'flex';
+        sidebar.style.transform = 'translateX(0)';
+        backdrop.style.display = 'block';
+        backdrop.style.opacity = '1';
+        backdrop.style.visibility = 'visible';
+        backdrop.style.pointerEvents = 'auto';
+      } else {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('open');
+        sidebar.style.transform = 'translateX(100%)';
+        backdrop.style.opacity = '0';
+        backdrop.style.visibility = 'hidden';
+        backdrop.style.pointerEvents = 'none';
+        setTimeout(function() {
+          if (!sidebar.classList.contains('open')) {
+            sidebar.style.display = 'none';
+            backdrop.style.display = 'none';
+          }
+        }, 250);
+      }
+    };
+
+    window.openPatientModal = function() {
+      const modal = document.getElementById('switch-patient-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        if (typeof window.refreshPatientModalCards === 'function') {
+          window.refreshPatientModalCards();
+        }
+      }
+    };
+
+    window.closePatientModal = function() {
+      const modal = document.getElementById('switch-patient-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.showChangeDocModal = function() {
+      const modal = document.getElementById('switch-doc-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        if (typeof window.renderDocList === 'function') {
+          window.renderDocList();
+        }
+      }
+    };
+
+    window.closeChangeDocModal = function() {
+      const modal = document.getElementById('switch-doc-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.openClearanceQrModal = function() {
+      const modal = document.getElementById('qr-modal');
+      if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeClearanceQrModal = function() {
+      const modal = document.getElementById('qr-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.dismissSplash = function() {
+      const splash = document.getElementById('splash');
+      if (splash && !splash.classList.contains('dismissed')) {
+        splash.classList.add('dismissed');
+        setTimeout(function() {
+          if (splash && splash.parentNode) {
+            splash.parentNode.removeChild(splash);
+          }
+        }, 350);
+      }
+    };
+  </script>
 </head>
 <body>
 
-<!-- PARTICLE CANVAS -->
-<canvas id="particle-canvas"></canvas>
-
 <!-- ═══════════════════════════════════════════
-     SPLASH SCREEN
+     SOVEREIGN BOOT SPLASH SCREEN (Self-Dismissing Diagnostics)
 ═══════════════════════════════════════════ -->
-<div id="splash">
-  <div class="splash-logo-ring">
-    <div class="splash-ring-outer"></div>
-    <div class="splash-ring-inner"></div>
-    <div class="splash-shield-wrap">
-      <i class="fa-solid fa-shield-heart splash-shield"></i>
-      <i class="fa-solid fa-plus splash-cross"></i>
+<div id="splash" onclick="dismissSplash()" title="Click anywhere to enter workstation immediately">
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(13,148,136,0.18)_0%,transparent_70%)] pointer-events-none"></div>
+
+  <div class="relative z-10 flex flex-col items-center max-w-sm w-full mx-4 text-center space-y-4" onclick="event.stopPropagation()">
+    <!-- Insignia with pulsing ring -->
+    <div class="relative w-20 h-20 flex items-center justify-center">
+      <div class="absolute inset-0 rounded-2xl border border-teal-500/30 animate-ping" style="animation-duration: 3s;"></div>
+      <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-teal-500/60 flex items-center justify-center text-teal-400 text-3xl shadow-[0_0_30px_rgba(20,184,166,0.3)]">
+        <i class="fa-solid fa-shield-heart"></i>
+      </div>
     </div>
-  </div>
-  <div style="text-align:center">
-    <div class="splash-title">MediVault <span style="color:var(--teal-bright)">Local</span></div>
-    <div class="splash-subtitle">Sovereign AI · Zero Cloud · HIPAA Compliant</div>
-  </div>
-  <div class="splash-progress">
-    <div class="splash-progress-bar"></div>
+
+    <!-- Title and Subtitle -->
+    <div>
+      <div class="flex items-center justify-center space-x-2">
+        <h1 class="text-2xl font-black text-white tracking-tight font-heading m-0">MediVault <span class="text-teal-400">Local</span></h1>
+        <span class="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40">v1.4</span>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1 font-mono tracking-wide uppercase">Sovereign Air-Gapped CDSS · Zero Cloud Egress</p>
+    </div>
+
+    <!-- Real-time Diagnostic Boot Sequence -->
+    <div class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-[11px] font-mono text-left space-y-2 shadow-2xl backdrop-blur">
+      <div class="flex items-center justify-between text-slate-300">
+        <span class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2 text-xs"></i> Loopback Guard (127.0.0.1)</span>
+        <span class="text-emerald-400 text-[10px] font-bold">ENFORCED</span>
+      </div>
+      <div class="flex items-center justify-between text-slate-300">
+        <span class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2 text-xs"></i> HIPAA Safe Harbor Redactor</span>
+        <span class="text-emerald-400 text-[10px] font-bold">READY</span>
+      </div>
+      <div class="flex items-center justify-between text-slate-300">
+        <span class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2 text-xs"></i> Deterministic Pharmacology Matrix</span>
+        <span class="text-teal-400 text-[10px] font-bold">ACTIVE</span>
+      </div>
+      <div class="flex items-center justify-between text-slate-300">
+        <span class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2 text-xs"></i> Cryptographic SHA-256 WAL Ledger</span>
+        <span class="text-emerald-400 text-[10px] font-bold">SEALED</span>
+      </div>
+    </div>
+
+    <!-- Animated Diagnostic Progress Bar -->
+    <div class="w-full space-y-1.5">
+      <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+        <div id="splash-progress" class="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full transition-all duration-300 ease-out" style="width: 20%;"></div>
+      </div>
+      <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+        <span id="splash-status">Verifying local loopback isolation...</span>
+        <span id="splash-pct">20%</span>
+      </div>
+    </div>
+
+    <!-- Manual Skip Action -->
+    <button type="button" onclick="dismissSplash()" class="btn-clinical-secondary py-1.5 px-4 text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 group cursor-pointer">
+      <span>Enter Workstation</span>
+      <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+    </button>
   </div>
 </div>
 
+<script>
+  (function() {
+    const hasBooted = sessionStorage.getItem('medivault_booted');
+    const scale = hasBooted ? 0.35 : 1.0;
+
+    const pBar = document.getElementById('splash-progress');
+    const pPct = document.getElementById('splash-pct');
+    const pStat = document.getElementById('splash-status');
+
+    setTimeout(() => {
+      if (pBar) pBar.style.width = '55%';
+      if (pPct) pPct.textContent = '55%';
+      if (pStat) pStat.textContent = 'Loading deterministic safety matrix...';
+    }, 140 * scale);
+
+    setTimeout(() => {
+      if (pBar) pBar.style.width = '85%';
+      if (pPct) pPct.textContent = '85%';
+      if (pStat) pStat.textContent = 'Hydrating patient profile in local RAM...';
+    }, 320 * scale);
+
+    setTimeout(() => {
+      if (pBar) pBar.style.width = '100%';
+      if (pPct) pPct.textContent = '100%';
+      if (pStat) pStat.textContent = 'System Ready · Launching Workstation';
+    }, 550 * scale);
+
+    setTimeout(() => {
+      sessionStorage.setItem('medivault_booted', 'true');
+      if (typeof window.dismissSplash === 'function') {
+        window.dismissSplash();
+      }
+    }, 850 * scale);
+
+    // Guaranteed Fail-Safe: Dismiss unconditionally after 1.4s
+    setTimeout(() => {
+      if (typeof window.dismissSplash === 'function') {
+        window.dismissSplash();
+      }
+    }, 1400);
+  })();
+</script>
+
 <!-- ═══════════════════════════════════════════
-     AUTH GATE
+     AUTHENTICATION GATE (Institutional Sign-In)
 ═══════════════════════════════════════════ -->
-<div id="auth-gate">
-  <div class="auth-backdrop"></div>
-  <div class="auth-card">
-    <div class="auth-header-strip">
-      <div class="auth-logo-mini">
-        <i class="fa-solid fa-shield-heart"></i>
+<div id="auth-gate" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+  <div class="w-full max-w-lg clinical-card p-6 border-slate-700 shadow-2xl relative">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-xl">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white font-heading">MediVault Local Sovereign Gateway</h2>
+          <p class="text-xs text-slate-400">Institutional Clinical Sign-In &amp; Attestation</p>
+        </div>
       </div>
-      <div class="auth-title">MediVault <span style="color:var(--teal-bright)">Local</span></div>
-      <div class="auth-subtitle">HIPAA § 164.514(b) · DPDP 2023 · Sovereign AI</div>
+      <button type="button" onclick="closeAuthModal()" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+        <i class="fa-solid fa-xmark mr-1"></i> Close
+      </button>
     </div>
 
-    <div class="auth-tabs" id="auth-tabs-bar">
-      <button class="auth-tab-btn active" onclick="switchAuthGateTab('demo')" id="gtab-demo">
-        <i class="fa-solid fa-bolt mr-1"></i> Demo Staff
+    <!-- Mode Tabs -->
+    <div id="modal-tabs-header" class="flex border-b border-slate-800 mb-4 bg-slate-900/50 p-1 rounded-lg">
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30" onclick="switchAuthTab('demo')" id="tab-btn-demo">
+        <i class="fa-solid fa-user-doctor mr-1"></i> Demo Staff
       </button>
-      <button class="auth-tab-btn" onclick="switchAuthGateTab('login')" id="gtab-login">
-        <i class="fa-solid fa-right-to-bracket mr-1"></i> Sign In
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthTab('login')" id="tab-btn-login">
+        <i class="fa-solid fa-key mr-1"></i> Sign In
       </button>
-      <button class="auth-tab-btn" onclick="switchAuthGateTab('register')" id="gtab-register">
+      <button type="button" class="flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200" onclick="switchAuthTab('register')" id="tab-btn-register">
         <i class="fa-solid fa-user-plus mr-1"></i> Register
       </button>
     </div>
 
-    <div class="auth-body">
-      <div id="auth-alert-gate" class="auth-alert"></div>
+    <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg text-xs font-mono"></div>
 
-      <!-- DEMO TAB -->
-      <div id="gtab-content-demo" class="auth-tab-content active">
-        <p style="font-size:12px;color:rgba(148,163,184,0.6);margin-bottom:12px">
-          1-click switch to evaluate institutional accountability:
-        </p>
-        <div id="gate-demo-list" style="display:flex;flex-direction:column;gap:8px">
-          <div class="demo-doc-card" onclick="gateSelectDemo('house')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">GH</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Gregory House, MD</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">Princeton Plainsboro · NPI-1999887766</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
-          </div>
-          <div class="demo-doc-card" onclick="gateSelectDemo('patel')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">AP</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Anika Patel, MBBS</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">Metro General · NPI-2345678901</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
-          </div>
-          <div class="demo-doc-card" onclick="gateSelectDemo('chen')">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="doc-avatar">RC</div>
-              <div>
-                <div style="font-size:12px;font-weight:600;color:white">Dr. Robert Chen, MD</div>
-                <div style="font-size:10px;color:rgba(148,163,184,0.5)">City Medical Center · NPI-3456789012</div>
-              </div>
-            </div>
-            <button class="doc-switch-btn">Enter</button>
-          </div>
-        </div>
+    <!-- Demo Staff Tab -->
+    <div id="auth-tab-demo" class="space-y-2.5">
+      <p class="text-xs text-slate-400 mb-2">Select an accredited medical staff member to authenticate institutional oversight:</p>
+      <div id="demo-doctors-list" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+        <!-- Dynamically populated from /api/auth/practitioners -->
       </div>
-
-      <!-- LOGIN TAB -->
-      <div id="gtab-content-login" class="auth-tab-content">
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <div>
-            <label class="mv-label">Institutional Email</label>
-            <input id="gate-email" type="email" class="mv-input" placeholder="dr.house@princeton.edu" />
-          </div>
-          <div>
-            <label class="mv-label">Password</label>
-            <input id="gate-password" type="password" class="mv-input" placeholder="••••••••" />
-          </div>
-          <button class="mv-btn-primary" onclick="handleGateLogin()">
-            <i class="fa-solid fa-lock mr-2"></i> Sign in to Hospital Portal
-          </button>
-          <p style="text-align:center;font-size:11px;color:rgba(148,163,184,0.4);font-family:monospace">
-            Demo password: <span style="color:var(--teal-bright)">HospitalPass123!</span>
-          </p>
-        </div>
-      </div>
-
-      <!-- REGISTER TAB -->
-      <div id="gtab-content-register" class="auth-tab-content">
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div>
-            <label class="mv-label">Full Legal Name</label>
-            <input id="reg-name" type="text" class="mv-input" placeholder="Dr. Sarah Connor, MD" />
-          </div>
-          <div>
-            <label class="mv-label">Healthcare Institution</label>
-            <select id="reg-hospital" class="mv-input" onchange="onRegHospitalChange()" style="cursor:pointer">
-              <option value="H001">Princeton Plainsboro Teaching Hospital</option>
-              <option value="H002">Metro General Hospital</option>
-              <option value="H003">City Medical Center</option>
-            </select>
-            <div id="reg-domain-hint" style="font-size:10px;color:var(--teal-bright);margin-top:4px;font-family:monospace">
-              Required domain: @princeton.edu
-            </div>
-          </div>
-          <div>
-            <label class="mv-label">Hospital Email</label>
-            <input id="reg-email" type="email" class="mv-input" placeholder="s.connor@princeton.edu" />
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div>
-              <label class="mv-label">Medical License</label>
-              <input id="reg-license" type="text" class="mv-input" placeholder="NPI-1234567890" />
-            </div>
-            <div>
-              <label class="mv-label">Password</label>
-              <input id="reg-password" type="password" class="mv-input" placeholder="Min 8 chars" />
-            </div>
-          </div>
-          <button class="mv-btn-primary" onclick="handleGateRegister()">
-            <i class="fa-solid fa-envelope-circle-check mr-2"></i> Register &amp; Dispatch OTP
-          </button>
-        </div>
-      </div>
-
-      <!-- OTP SIMULATION SCREEN -->
-      <div id="otp-screen" style="display:none">
-        <div style="background:var(--otp-box-bg);border:1px solid var(--otp-box-border);border-radius:12px;padding:12px;margin-bottom:14px;font-family:monospace;font-size:11px;color:rgba(148,163,184,0.7)">
-          <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:8px;margin-bottom:8px">
-            <span><i class="fa-solid fa-server mr-1"></i> Hospital Intranet Mail</span>
-            <span style="color:#6ee7b7;font-size:10px">Air-Gapped</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span>One-Time Code:</span>
-            <strong id="otp-sim-code" style="color:#fcd34d;font-size:18px;letter-spacing:4px;background:rgba(0,0,0,0.3);padding:2px 10px;border-radius:6px">------</strong>
-          </div>
-        </div>
-
-        <input type="text" id="otp-input-gate" maxlength="6" class="mv-input" placeholder="000000" style="margin-bottom:12px;text-align:center;font-size:18px;letter-spacing:4px" />
-        <button class="mv-btn-primary" onclick="handleGateOtp()">Verify Institutional Identity</button>
-        <button onclick="handleGateResend()" style="margin-top:8px;background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;width:100%;text-align:center">
-          Resend code
-        </button>
-      </div>
-
     </div>
+
+    <!-- Login Tab -->
+    <div id="auth-tab-login" class="hidden space-y-3.5">
+      <div>
+        <label class="clinical-label">Institutional Email</label>
+        <input id="login-email" type="email" class="clinical-input" placeholder="dr.house@princeton.edu" />
+      </div>
+      <div>
+        <label class="clinical-label">Password</label>
+        <input id="login-password" type="password" class="clinical-input" placeholder="••••••••" />
+      </div>
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleLogin()">
+        <i class="fa-solid fa-lock mr-2"></i> Sign In to Hospital Portal
+      </button>
+      <p class="text-center text-[11px] text-slate-500 font-mono">Demo password: <span class="text-teal-400">HospitalPass123!</span></p>
+    </div>
+
+    <!-- Register Tab -->
+    <div id="auth-tab-register" class="hidden space-y-3">
+      <div>
+        <label class="clinical-label">Full Legal Practitioner Name</label>
+        <input id="reg-name" type="text" class="clinical-input" placeholder="Dr. Sarah Connor, MD" />
+      </div>
+      <div>
+        <label class="clinical-label">Healthcare Institution</label>
+        <select id="reg-hospital-select" class="clinical-input cursor-pointer" onchange="onHospitalSelectChange()">
+          <!-- Populated from /api/auth/hospitals -->
+        </select>
+        <div id="reg-domain-hint" class="text-[10px] text-teal-400 font-mono mt-1">Required domain: @princeton.edu</div>
+      </div>
+      <div>
+        <label class="clinical-label">Hospital Email</label>
+        <input id="reg-email" type="email" class="clinical-input" placeholder="s.connor@princeton.edu" />
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="clinical-label">Medical License</label>
+          <input id="reg-license" type="text" class="clinical-input" placeholder="NPI-1234567890" />
+        </div>
+        <div>
+          <label class="clinical-label">Password</label>
+          <input id="reg-password" type="password" class="clinical-input" placeholder="Min 8 chars" />
+        </div>
+      </div>
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleRegister()">
+        <i class="fa-solid fa-envelope-circle-check mr-2"></i> Register Credentials &amp; Issue OTP
+      </button>
+    </div>
+
+    <!-- OTP Simulation Screen -->
+    <div id="auth-screen-otp" class="hidden space-y-3 mt-4">
+      <div class="p-3 bg-slate-950/80 border border-teal-500/30 rounded-lg text-xs font-mono text-slate-300">
+        <div class="flex justify-between border-b border-slate-800 pb-1.5 mb-2">
+          <span><i class="fa-solid fa-server mr-1 text-teal-400"></i> Air-Gapped Intranet Dispatch</span>
+          <span class="text-emerald-400 text-[10px]">Zero Cloud Egress</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="text-[10px] text-slate-400">Target Address:</div>
+            <div id="otp-target-email" class="font-bold text-white">doctor@hospital.org</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400">Simulated Code:</div>
+            <strong id="simulated-otp-code" class="text-amber-300 text-base tracking-widest bg-slate-900 px-2 py-0.5 rounded border border-slate-800">------</strong>
+          </div>
+        </div>
+      </div>
+      <input type="text" id="otp-input" maxlength="6" class="clinical-input text-center text-lg font-mono tracking-widest" placeholder="000000" />
+      <button type="button" class="btn-clinical-primary w-full" onclick="handleVerifyOtp()">Verify Institutional Identity</button>
+      <button type="button" onclick="handleResendOtp()" class="w-full text-center text-[11px] text-slate-500 hover:text-slate-300 bg-transparent border-0 cursor-pointer">
+        Resend Code
+      </button>
+    </div>
+
+    <!-- Regulatory Footer -->
+    <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+      <span>HIPAA § 164.514(b) · DPDP Act 2023</span>
+      <span>Station Alpha-1 (127.0.0.1)</span>
+    </div>
+
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
-     MAIN APPLICATION WRAPPER
+     MAIN CLINICAL WORKSTATION SHELL
 ═══════════════════════════════════════════ -->
-<div id="main-app" class="relative z-10 max-w-6xl mx-auto px-4 py-4 space-y-4">
+<div id="main-app" class="relative z-10 max-w-7xl mx-auto px-4 py-3 space-y-3">
 
-  <!-- TOP HEADER -->
-  <header class="glass-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <!-- Brand Info -->
+  <!-- DOCKED SOVEREIGN CLINICAL HEADER -->
+  <header class="clinical-card px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-slate-800">
+    <!-- Brand & Trust Beacon -->
     <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300">
-        <i class="fa-solid fa-shield-heart text-xl"></i>
+      <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-lg">
+        <i class="fa-solid fa-shield-heart"></i>
       </div>
       <div>
         <div class="flex items-center space-x-2">
-          <h1 class="text-base font-bold tracking-tight text-white">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
-          <span class="text-[10px] bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-bold">100% OFFLINE</span>
+          <h1 class="text-base font-bold tracking-tight text-white font-heading">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
+          <span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.4-OFFLINE</span>
         </div>
-        <p class="text-xs text-slate-400">Zero-Cloud Sovereign CDSS &amp; Clinical Safety Architecture</p>
+        <p class="text-xs text-slate-400">Sovereign Clinical Decision Support &amp; Contraindication Reviewer</p>
       </div>
     </div>
 
-    <!-- Network & Profile Actions -->
+    <!-- Hardware & Profile Telemetry -->
     <div class="flex items-center space-x-2.5 flex-wrap">
-      <!-- Air-Gap Status Indicator -->
-      <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner">
+      <!-- Air-Gap Status Badge -->
+      <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="font-semibold tracking-wide">AIR-GAPPED: 0 BYTES</span>
-        <span class="text-emerald-500 font-mono text-[10px] hidden sm:inline">(127.0.0.1)</span>
+        <span id="network-status-badge" class="font-semibold tracking-wide">100% OFFLINE</span>
+        <span id="egress-telemetry-text" class="text-emerald-400 text-[10px] hidden sm:inline">0 BYTES EGRESS (127.0.0.1)</span>
       </div>
 
-      <!-- Direct Doctor Profile Trigger (Replaces old floating button) -->
-      <button id="header-profile-btn" onclick="toggleSettingsSidebar(true)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-teal-950/70 hover:bg-teal-900 border border-teal-500/40 text-teal-200 text-xs transition cursor-pointer shadow-sm group">
+      <!-- Local AI Model Telemetry Pill -->
+      <div class="flex items-center space-x-1.5 bg-slate-900 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
+        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+        <span id="ai-status-text">Ollama SLM: Checking...</span>
+      </div>
+
+      <!-- Active Physician Pill Button -->
+      <button id="header-profile-btn" type="button" onclick="toggleSettingsSidebar(true)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-850 border border-slate-700 text-slate-200 text-xs transition cursor-pointer shadow-sm group">
         <div class="relative">
           <div id="header-avatar" class="w-6 h-6 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white text-[10px] font-bold shadow">
             GH
@@ -697,262 +834,336 @@
           <div class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900"></div>
         </div>
         <span id="current-doctor-pill" class="font-medium text-slate-100 group-hover:text-teal-300 transition">Dr. Gregory House, MD</span>
-        <span id="current-hospital-badge" class="bg-teal-900/90 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-700 font-mono hidden md:inline">Princeton Plainsboro</span>
+        <span id="current-hospital-badge" class="bg-slate-800 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-mono hidden md:inline">Princeton Plainsboro</span>
         <i class="fa-solid fa-chevron-down text-[10px] text-teal-400"></i>
       </button>
 
-      <!-- Settings Gear Button -->
-      <button onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 transition cursor-pointer shadow-sm" title="Settings">
+      <!-- Patient Portal Launcher Button -->
+      <a href="/patient-portal" target="_blank" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
+        <i class="fa-solid fa-heart-pulse text-teal-400"></i>
+        <span>Patient Portal</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-teal-400/80"></i>
+      </a>
+
+      <!-- Settings Launcher -->
+      <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Workstation Settings">
         <i class="fa-solid fa-gear text-sm text-teal-400"></i>
       </button>
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════
-       MULTI-PAGE NAVIGATION BAR (4 DEDICATED VIEWS)
-  ═══════════════════════════════════════════ -->
-  <nav class="glass-card p-1.5 flex items-center space-x-1.5 overflow-x-auto">
-    <button id="nav-btn-review" onclick="switchMainTab('review')" class="page-tab-btn active">
-      <i class="fa-solid fa-radar text-teal-400"></i>
+  <!-- WORKFLOW STEPPER NAVIGATION -->
+  <nav class="clinical-card p-1.5 flex items-center space-x-1.5 overflow-x-auto border-slate-800">
+    <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="step-nav-btn active" title="Clinical CDSS & Contraindication Review (Ctrl+1 / Alt+1)">
+      <i class="fa-solid fa-stethoscope text-teal-400"></i>
       <span>1. Clinical CDSS &amp; Review</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+1</kbd>
     </button>
-    <button id="nav-btn-intake" onclick="switchMainTab('intake')" class="page-tab-btn">
-      <i class="fa-solid fa-hospital-user"></i>
+    <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="step-nav-btn" title="Patient Intake & Safe Harbor Redaction (Ctrl+2 / Alt+2)">
+      <i class="fa-solid fa-hospital-user text-cyan-400"></i>
       <span>2. Patient Intake &amp; PHI</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+2</kbd>
     </button>
-    <button id="nav-btn-fhir" onclick="switchMainTab('fhir')" class="page-tab-btn">
-      <i class="fa-solid fa-network-wired"></i>
+    <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="step-nav-btn" title="Hospital EHR & FHIR R4 Interoperability (Ctrl+3 / Alt+3)">
+      <i class="fa-solid fa-network-wired text-amber-400"></i>
       <span>3. Hospital EHR &amp; FHIR</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+3</kbd>
     </button>
-    <button id="nav-btn-audit" onclick="switchMainTab('audit')" class="page-tab-btn">
-      <i class="fa-solid fa-database"></i>
+    <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="step-nav-btn" title="Sovereign Immutable Cryptographic Audit Ledger (Ctrl+4 / Alt+4)">
+      <i class="fa-solid fa-database text-emerald-400"></i>
       <span>4. Sovereign Audit Ledger</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+4</kbd>
     </button>
   </nav>
 
   <!-- ═══════════════════════════════════════════
-       VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW
+       VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Two-Column Workstation)
+       Stitch Ref: Screen 2a6160b66fcc470ea54c7b68b7b61944
   ═══════════════════════════════════════════ -->
-  <div id="page-view-review" class="page-view-panel active space-y-4">
-    <!-- Patient Summary Banner -->
-    <div class="glass-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+  <div id="page-view-review" class="page-view-panel active space-y-3" style="display:block">
+    
+    <!-- Top Active Patient Demographics Bar -->
+    <div class="clinical-card px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-slate-800">
       <div>
         <div class="flex items-center space-x-2">
-          <span class="text-xs text-teal-400 font-semibold uppercase tracking-wider">Active Patient Review:</span>
-          <h2 id="display-patient-name" class="text-sm font-bold text-white">John Doe (Renal Profile)</h2>
+          <span class="text-[11px] font-semibold text-teal-400 uppercase tracking-wide">Active Patient Record:</span>
+          <h2 id="display-patient-name" class="text-sm font-bold text-white font-heading">John Doe (Renal Profile)</h2>
         </div>
         <div id="display-patient-meta" class="text-xs text-slate-400 font-mono mt-0.5">
           ID: PT-101 · Age: 64 · Male
         </div>
       </div>
-      <div class="flex items-center space-x-2">
-        <span id="display-patient-token" class="text-xs font-mono bg-teal-950/80 border border-teal-500/30 text-teal-300 px-2.5 py-1 rounded-lg">
+      <div class="flex items-center space-x-2 flex-wrap">
+        <!-- Direct Fast Switch Dropdown -->
+        <select id="patient-select-header" onchange="selectPatient(this.value)" class="clinical-input text-xs py-1 px-2.5 bg-slate-900 border-teal-500/40 text-teal-300 font-medium cursor-pointer rounded-lg shadow-sm" title="Quick Switch Patient Profile">
+          <option value="PT-101">PT-101: John Doe (Stage 3 CKD)</option>
+          <option value="PT-102">PT-102: Sarah Connor (Asthma / Resp)</option>
+          <option value="PT-103">PT-103: Robert Smith (AFib / Coag)</option>
+        </select>
+
+        <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Token:</span>
+        <span id="display-patient-token" class="text-xs font-mono bg-teal-950/80 border border-teal-500/30 text-teal-300 px-2 py-1 rounded-lg">
           ANON_A9F201
         </span>
-        <button onclick="switchMainTab('intake')" class="text-xs text-teal-400 hover:text-teal-300 px-2.5 py-1 bg-teal-500/10 rounded-lg border border-teal-500/20">
-          <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Change Patient
+
+        <!-- Full Patient Modal Switcher Button -->
+        <button type="button" onclick="openPatientModal()" class="btn-clinical-secondary py-1 px-2.5 text-xs flex items-center space-x-1.5" title="Open patient switcher modal">
+          <i class="fa-solid fa-users text-teal-400"></i>
+          <span>Switch Patient</span>
         </button>
       </div>
     </div>
 
     <!-- Quantitative Biomarkers (Renal / Hepatic / Cardiac Panel) -->
-    <div class="glass-card p-4">
-      <div class="glass-card-title mb-3">
-        <i class="fa-solid fa-flask-vial"></i> Quantitative Organ Function Biomarkers
-        <span class="ml-auto text-[10px] text-slate-400 font-mono">Live Labs</span>
+    <div class="clinical-card p-3.5 border-slate-800">
+      <div class="flex items-center justify-between mb-2.5">
+        <span class="card-title text-xs">
+          <i class="fa-solid fa-flask-vial text-teal-400"></i>
+          <span>Quantitative Organ Function Biomarkers</span>
+        </span>
+        <span class="text-[10px] text-slate-400 font-mono">Live Labs · Threshold Triggers</span>
       </div>
-      <div id="biomarkers-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-red-500/30">
+      <div id="biomarkers-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-red-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">eGFR (CKD-EPI)</div>
-          <div class="text-sm font-bold text-red-400">42 mL/min</div>
-          <span class="text-[9px] text-red-300 font-mono">Stage 3 CKD</span>
+          <div class="text-sm font-bold text-red-400 font-mono">42 mL/min</div>
+          <span class="text-[9px] text-red-300 font-mono">Stage 3a CKD Alert</span>
         </div>
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-red-500/30">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-amber-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">Serum Creatinine</div>
-          <div class="text-sm font-bold text-red-400">1.9 mg/dL</div>
-          <span class="text-[9px] text-red-300 font-mono">Elevated</span>
+          <div class="text-sm font-bold text-amber-400 font-mono">1.9 mg/dL</div>
+          <span class="text-[9px] text-amber-300 font-mono">Elevated</span>
         </div>
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-emerald-500/30">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">Potassium (K+)</div>
-          <div class="text-sm font-bold text-emerald-400">4.4 mEq/L</div>
+          <div class="text-sm font-bold text-emerald-400 font-mono">4.4 mEq/L</div>
           <span class="text-[9px] text-emerald-300 font-mono">Normokalemic</span>
         </div>
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-emerald-500/30">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">QTc Interval</div>
-          <div class="text-sm font-bold text-emerald-400">420 ms</div>
+          <div class="text-sm font-bold text-emerald-400 font-mono">420 ms</div>
           <span class="text-[9px] text-emerald-300 font-mono">Normal &lt;450ms</span>
         </div>
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-emerald-500/30">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">ALT / AST</div>
-          <div class="text-sm font-bold text-emerald-400">22 / 24 U/L</div>
+          <div class="text-sm font-bold text-emerald-400 font-mono">22 / 24 U/L</div>
           <span class="text-[9px] text-emerald-300 font-mono">Hepatic Safe</span>
         </div>
-        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-amber-500/30">
+        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-amber-500 border border-slate-800">
           <div class="text-[10px] text-slate-400">Blood Pressure</div>
-          <div class="text-sm font-bold text-amber-400">138/86 mmHg</div>
+          <div class="text-sm font-bold text-amber-400 font-mono">138/86 mmHg</div>
           <span class="text-[9px] text-amber-300 font-mono">Stage 1 HTN</span>
         </div>
       </div>
     </div>
 
-    <!-- Active Patient Baseline: Conditions, Meds, Allergies -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div class="glass-card p-3.5 space-y-2">
-        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wide flex items-center">
-          <i class="fa-solid fa-stethoscope text-teal-400 mr-1.5"></i> Diagnosed Conditions
-        </div>
-        <div id="conditions-list" class="flex flex-wrap gap-1.5">
-          <span class="tag-danger">Stage 3 Chronic Kidney Disease</span>
-          <span class="tag-neutral">Essential Hypertension</span>
-          <span class="tag-neutral">Type 2 Diabetes Mellitus</span>
-        </div>
-      </div>
-      <div class="glass-card p-3.5 space-y-2">
-        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wide flex items-center">
-          <i class="fa-solid fa-pills text-teal-400 mr-1.5"></i> Active Medications
-        </div>
-        <div id="medications-list" class="flex flex-wrap gap-1.5">
-          <span class="tag-med">Lisinopril 20mg</span>
-          <span class="tag-med">Metformin 500mg BID</span>
-          <span class="tag-med">Amlodipine 5mg</span>
-        </div>
-      </div>
-      <div class="glass-card p-3.5 space-y-2">
-        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wide flex items-center">
-          <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
-        </div>
-        <div id="allergies-list" class="flex flex-wrap gap-1.5">
-          <span class="tag-warning">Sulfonamides</span>
-        </div>
-      </div>
-    </div>
+    <!-- MAIN TWO-COLUMN CLINICAL WORKSTATION SPLIT -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+      
+      <!-- LEFT COLUMN: Patient Baseline & Prescribing Form (5 cols) -->
+      <div class="lg:col-span-5 space-y-3">
+        
+        <!-- Active Patient Baseline: Conditions, Meds, Allergies -->
+        <div class="clinical-card p-3.5 space-y-3 border-slate-800">
+          <div class="card-title text-xs">
+            <i class="fa-solid fa-clipboard-user text-teal-400"></i>
+            <span>Patient Clinical Baseline</span>
+          </div>
 
-    <!-- Prescription Input & Offline Review Form -->
-    <div class="glass-card p-4 space-y-4">
-      <div class="glass-card-title">
-        <i class="fa-solid fa-prescription-bottle-medical"></i> Proposed Prescription Cross-Check
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="sm:col-span-2">
-          <label class="mv-label">Proposed Medication</label>
-          <input type="text" id="proposed-med-input" value="Ibuprofen" class="mv-input" placeholder="e.g. Ibuprofen, Propranolol, Gabapentin" />
-        </div>
-        <div>
-          <label class="mv-label">Dosage &amp; Route</label>
-          <input type="text" id="proposed-dose-input" value="400mg PO TID" class="mv-input" placeholder="e.g. 400mg PO TID" />
-        </div>
-      </div>
-
-      <!-- Quick Preset Prescriptions -->
-      <div>
-        <div class="text-[11px] text-slate-400 mb-2">Quick Prescribe Test Cases:</div>
-        <div class="flex flex-wrap gap-2">
-          <button class="chip chip-red" onclick="setProposedMed('Advil','400mg PO TID')">
-            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Advil (Brand Norm. · Renal)
-          </button>
-          <button class="chip chip-red" onclick="setProposedMed('Propranolol','40mg PO BID')">
-            <i class="fa-solid fa-lungs mr-1"></i> Propranolol (Asthma)
-          </button>
-          <button class="chip chip-amber" onclick="setProposedMed('Aspirin','81mg daily')">
-            <i class="fa-solid fa-droplet mr-1"></i> Aspirin (Bleeding Risk)
-          </button>
-          <button class="chip chip-purple" onclick="setProposedMed('Amoxicillin','500mg PO TID')">
-            <i class="fa-solid fa-allergies mr-1"></i> Amoxicillin (Penicillin Allergy)
-          </button>
-          <button class="chip chip-purple" onclick="setProposedMed('Diphenhydramine','50mg PO QHS')">
-            <i class="fa-solid fa-person-cane mr-1"></i> Diphenhydramine (Beers Delirium)
-          </button>
-          <button class="chip chip-red" onclick="setProposedMed('Ciprofloxacin','500mg PO BID')">
-            <i class="fa-solid fa-heart-pulse mr-1"></i> Ciprofloxacin (QTc Prolongation)
-          </button>
-        </div>
-      </div>
-
-      <!-- Run Button -->
-      <button id="btn-run-review" class="run-btn" onclick="runSafetyCheck()">
-        <i class="fa-solid fa-radar"></i>
-        <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
-      </button>
-    </div>
-
-    <!-- Review Results Panel -->
-    <div class="glass-card p-4">
-      <div id="result-idle-hint" class="text-center py-8 text-slate-500">
-        <i class="fa-solid fa-radar text-3xl mb-2.5 block text-teal-500/40"></i>
-        <div class="text-xs">Click "Run Offline Contraindication Review" to evaluate prescription safety against sovereign rules.</div>
-      </div>
-
-      <div id="result-content" style="display:none" class="space-y-4">
-        <!-- Status Banner -->
-        <div id="status-banner" class="result-banner idle">
-          <div id="status-icon" class="text-2xl mt-0.5"></div>
-          <div class="flex-1">
-            <div class="flex items-center justify-between mb-1">
-              <h4 id="status-title" class="text-xs font-extrabold tracking-wide uppercase m-0"></h4>
-              <span id="alerts-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full"></span>
+          <!-- Diagnosed Conditions -->
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+              <i class="fa-solid fa-notes-medical text-teal-400 mr-1.5"></i> Diagnosed Conditions
             </div>
-            <p id="status-explanation" class="text-xs leading-relaxed m-0 text-slate-200"></p>
+            <div id="conditions-list" class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 bg-red-950/60 border border-red-500/40 text-red-200 rounded text-xs">Stage 3 Chronic Kidney Disease</span>
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Essential Hypertension</span>
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Type 2 Diabetes Mellitus</span>
+            </div>
+          </div>
+
+          <!-- Active Medications -->
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+              <i class="fa-solid fa-pills text-cyan-400 mr-1.5"></i> Current Outpatient Regimen
+            </div>
+            <div id="medications-list" class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Lisinopril 20mg daily</span>
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Metformin 500mg BID</span>
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Amlodipine 5mg daily</span>
+            </div>
+          </div>
+
+          <!-- Documented Allergies -->
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+              <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
+            </div>
+            <div id="allergies-list" class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded text-xs">Sulfonamides (Anaphylactoid)</span>
+            </div>
           </div>
         </div>
 
-        <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
-        <div id="polypharmacy-container" class="space-y-2"></div>
-
-        <!-- Alert Cards -->
-        <div id="alerts-container" class="space-y-2.5"></div>
-
-        <!-- Clinical Safe Alternatives Formulary (1-Click Swap) -->
-        <div id="alternatives-container" class="space-y-2"></div>
-
-        <!-- Cryptographic Proof & Verification Stamp -->
-        <div class="border-t border-slate-700/60 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center space-x-2 font-mono text-slate-400">
-            <i class="fa-solid fa-fingerprint text-teal-400"></i>
-            <span>SHA-256 Seal:</span>
-            <span id="audit-hash-display" class="text-slate-200">Pending</span>
+        <!-- Proposed Prescription Input Well -->
+        <div class="clinical-card p-4 space-y-3.5 border-slate-800">
+          <div class="card-title text-xs">
+            <i class="fa-solid fa-prescription-bottle-medical text-teal-400"></i>
+            <span>Proposed Prescription Evaluation</span>
           </div>
-          <div class="flex items-center space-x-3 text-slate-400">
-            <span>Latency: <strong id="exec-time-display" class="text-slate-200">18ms</strong></span>
-            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check-circle mr-1"></i>Zero-Cloud Verified</span>
-            <button id="btn-beam-qr" onclick="openClearanceQrModal()" class="px-2.5 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 rounded-lg text-cyan-300 text-xs font-semibold flex items-center space-x-1 cursor-pointer">
-              <i class="fa-solid fa-qrcode"></i>
-              <span>Beam QR</span>
-            </button>
-            <button id="btn-print-cert" onclick="exportClinicalCertificate()" class="px-2.5 py-1 bg-teal-950/80 hover:bg-teal-900 border border-teal-500/40 rounded-lg text-teal-300 text-xs font-semibold flex items-center space-x-1 cursor-pointer">
-              <i class="fa-solid fa-file-shield"></i>
-              <span>Certificate</span>
-            </button>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="sm:col-span-2">
+              <label class="clinical-label">Proposed Medication</label>
+              <input type="text" id="proposed-med-input" value="Ibuprofen" class="clinical-input" placeholder="e.g. Ibuprofen, Propranolol" />
+            </div>
+            <div>
+              <label class="clinical-label">Dose &amp; Route</label>
+              <input type="text" id="proposed-dose-input" value="400mg PO TID" class="clinical-input" placeholder="e.g. 400mg PO TID" />
+            </div>
           </div>
+
+          <!-- Preset Chips -->
+          <div>
+            <div class="text-[11px] text-slate-400 mb-2">Preset Clinical Challenge Cases:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button class="test-chip test-chip-danger" onclick="setProposedMed('Advil','400mg PO TID')">
+                <i class="fa-solid fa-triangle-exclamation"></i> Advil (Brand · Renal)
+              </button>
+              <button class="test-chip test-chip-danger" onclick="setProposedMed('Propranolol','40mg PO BID')">
+                <i class="fa-solid fa-lungs"></i> Propranolol (Asthma)
+              </button>
+              <button class="test-chip test-chip-warning" onclick="setProposedMed('Aspirin','81mg daily')">
+                <i class="fa-solid fa-droplet"></i> Aspirin (Bleed Risk)
+              </button>
+              <button class="test-chip test-chip-purple" onclick="setProposedMed('Amoxicillin','500mg PO TID')">
+                <i class="fa-solid fa-shield-virus"></i> Amoxicillin (Penicillin)
+              </button>
+              <button class="test-chip test-chip-purple" onclick="setProposedMed('Diphenhydramine','50mg PO QHS')">
+                <i class="fa-solid fa-person-cane"></i> Diphenhydramine (Beers)
+              </button>
+              <button class="test-chip test-chip-danger" onclick="setProposedMed('Ciprofloxacin','500mg PO BID')">
+                <i class="fa-solid fa-heart-pulse"></i> Ciprofloxacin (QTc)
+              </button>
+            </div>
+          </div>
+
+          <!-- Primary CTA Button -->
+          <button id="btn-run-review" class="btn-clinical-primary w-full py-3" onclick="runSafetyCheck()">
+            <i class="fa-solid fa-stethoscope"></i>
+            <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
+            <span class="text-[10px] opacity-75 font-mono ml-1">[Ctrl+Enter]</span>
+          </button>
         </div>
+
       </div>
+
+      <!-- RIGHT COLUMN: Clinical Safety Results & Decision Support (7 cols) -->
+      <div class="lg:col-span-7 space-y-3">
+        
+        <!-- Results Card Wrapper -->
+        <div class="clinical-card p-4 border-slate-800">
+          
+          <!-- Idle State Hint -->
+          <div id="result-idle-hint" class="text-center py-12 text-slate-500 space-y-2">
+            <i class="fa-solid fa-shield-halved text-4xl block text-teal-500/30"></i>
+            <div class="text-xs font-semibold text-slate-400">Clinical Safety Engine Standing By</div>
+            <p class="text-[11px] text-slate-500 max-w-sm mx-auto">
+              Select or type a proposed medication and click <strong>"Run Offline Contraindication Review"</strong> to verify safety against local deterministic SQLite pharmacology matrices.
+            </p>
+          </div>
+
+          <!-- Live Results Container -->
+          <div id="result-content" style="display:none" class="space-y-3.5">
+            
+            <!-- Triage Status Banner -->
+            <div id="status-banner" class="triage-banner danger">
+              <div id="status-icon" class="text-2xl mt-0.5"></div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <h4 id="status-title" class="text-xs font-extrabold tracking-wide uppercase m-0 font-heading"></h4>
+                  <span id="alerts-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold"></span>
+                </div>
+                <p id="status-explanation" class="text-xs leading-relaxed m-0 text-slate-200"></p>
+              </div>
+            </div>
+
+            <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
+            <div id="polypharmacy-container" class="space-y-2"></div>
+
+            <!-- Discrete Interaction Alerts -->
+            <div id="alerts-container" class="space-y-2.5"></div>
+
+            <!-- Clinical Safe Alternatives Formulary (1-Click Swap) -->
+            <div id="alternatives-container" class="space-y-2"></div>
+
+            <!-- Cryptographic Proof Bar -->
+            <div class="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div class="flex items-center space-x-2 font-mono text-slate-400">
+                <i class="fa-solid fa-fingerprint text-teal-400"></i>
+                <span>SHA-256 Seal:</span>
+                <span id="audit-hash-display" class="text-slate-200 font-mono">Pending</span>
+              </div>
+              <div class="flex items-center space-x-2.5 text-slate-400">
+                <span>Latency: <strong id="exec-time-display" class="text-slate-200 font-mono">18ms</strong></span>
+                <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Zero-Cloud Verified</span>
+                <button id="btn-beam-qr" onclick="openClearanceQrModal()" class="btn-clinical-secondary py-1 px-2 text-xs">
+                  <i class="fa-solid fa-qrcode"></i>
+                  <span>Beam QR</span>
+                </button>
+                <button id="btn-print-cert" onclick="exportClinicalCertificate()" class="btn-clinical-secondary py-1 px-2 text-xs">
+                  <i class="fa-solid fa-file-shield"></i>
+                  <span>Certificate</span>
+                </button>
+                <button id="btn-export-fhir" onclick="exportFhirBundle()" class="btn-clinical-secondary py-1 px-2 text-xs" title="Export FHIR R4 Bundle JSON">
+                  <i class="fa-solid fa-fire text-amber-400"></i>
+                  <span>FHIR R4</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
   </div>
 
   <!-- ═══════════════════════════════════════════
        VIEW 2: PATIENT INTAKE & SAFE HARBOR PHI REDACTION
+       Stitch Ref: Screen 35de836a78a94b9d9ba811291f3596ba
   ═══════════════════════════════════════════ -->
-  <div id="page-view-intake" class="page-view-panel space-y-4">
-    <div class="glass-card p-4 space-y-4">
-      <div class="glass-card-title">
-        <i class="fa-solid fa-hospital-user"></i> Patient Ingestion &amp; Safe Harbor PHI Redaction
-        <span class="ml-auto text-[10px] text-emerald-400 font-mono">HIPAA § 164.514(b)</span>
+  <div id="page-view-intake" class="page-view-panel space-y-3" style="display:none">
+    <div class="clinical-card p-4 space-y-4 border-slate-800">
+      
+      <!-- Card Header Strip -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="card-title text-sm">
+          <i class="fa-solid fa-hospital-user text-teal-400"></i>
+          <span>Patient Ingestion &amp; Safe Harbor PHI Redaction</span>
+        </div>
+        <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded">
+          HIPAA Safe Harbor § 164.514(b)
+        </span>
       </div>
 
-      <!-- Ingestion Tabs -->
-      <div class="flex items-center space-x-2 bg-slate-900/60 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-        <button id="itab-demo" onclick="switchIntakeMode('demo')" class="px-4 py-2 rounded-lg bg-teal-600 text-white transition">
+      <!-- Mode Switcher -->
+      <div class="flex items-center space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
+        <button id="itab-demo" onclick="switchIntakeMode('demo')" class="px-4 py-2 rounded bg-teal-700 text-white transition">
           <i class="fa-solid fa-user-check mr-1.5"></i> Demo Patients
         </button>
-        <button id="itab-raw" onclick="switchIntakeMode('raw')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">
+        <button id="itab-raw" onclick="switchIntakeMode('raw')" class="px-4 py-2 rounded text-slate-400 hover:text-slate-200 transition">
           <i class="fa-solid fa-file-arrow-up mr-1.5"></i> Upload PDF / TXT
         </button>
       </div>
 
       <!-- Demo Patient Mode -->
       <div id="section-demo" class="space-y-3">
-        <label class="mv-label">Select Synthetic Hospital Patient:</label>
-        <select id="patient-select" class="mv-input cursor-pointer">
+        <label class="clinical-label">Select Synthetic Hospital Patient:</label>
+        <select id="patient-select" class="clinical-input cursor-pointer">
           <option value="PT-101">PT-101: John Doe (Stage 3 CKD, HTN, T2DM) · Renal Panel</option>
           <option value="PT-102">PT-102: Sarah Connor (Moderate Asthma, Rhinitis) · Resp Panel</option>
           <option value="PT-103">PT-103: Robert Smith (AFib, Warfarin Therapy) · Coag Panel</option>
@@ -960,42 +1171,85 @@
         <p class="text-xs text-slate-400">Selecting a synthetic patient updates baseline conditions, active medications, allergies, and lab values in local RAM.</p>
       </div>
 
-      <!-- Upload / Raw Note Mode -->
-      <div id="section-raw" style="display:none" class="space-y-3">
-        <div id="file-drop-zone" class="drop-zone">
-          <input type="file" id="file-upload-input" accept=".pdf,.txt" style="display:none" />
-          <i class="fa-solid fa-cloud-arrow-up text-2xl text-teal-400 mb-1.5 block"></i>
-          <div class="text-xs font-semibold text-slate-200">Drag &amp; drop PDF discharge summary or TXT clinical note</div>
-          <div class="text-[10px] text-slate-400 mt-1">Parsed completely in local RAM with PyMuPDF with zero disk persistence</div>
-        </div>
+      <!-- Upload / Raw Note Mode (Split Comparison) -->
+      <div id="section-raw" style="display:none" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <!-- Left: Upload & Raw Editor -->
+        <div class="space-y-3">
+          <div id="file-drop-zone" class="drop-zone-clinical">
+            <input type="file" id="file-upload-input" accept=".pdf,.txt" style="display:none" />
+            <i class="fa-solid fa-cloud-arrow-up text-2xl text-teal-400 mb-1.5 block"></i>
+            <div class="text-xs font-semibold text-slate-200">Drag &amp; drop PDF discharge summary or TXT note</div>
+            <div class="text-[10px] text-slate-400 mt-1">In-Memory PyMuPDF Parsing · Zero Disk Persistence</div>
+          </div>
 
-        <div class="flex items-center justify-between">
-          <label class="mv-label m-0">Or Paste Raw Clinical Record:</label>
-          <button onclick="applySampleDischargeNote()" class="text-xs text-teal-400 hover:text-teal-300 font-semibold bg-transparent border-0 cursor-pointer">
-            <i class="fa-solid fa-file-import mr-1"></i> Insert Sample Discharge Note
+          <div class="flex items-center justify-between">
+            <label class="clinical-label m-0">Raw Clinical Document Content:</label>
+            <button onclick="applySampleDischargeNote()" class="text-xs text-teal-400 hover:text-teal-300 font-semibold bg-transparent border-0 cursor-pointer">
+              <i class="fa-solid fa-file-import mr-1"></i> Insert Sample Discharge Note
+            </button>
+          </div>
+          <textarea id="raw-note-input" rows="7" class="clinical-input font-mono text-xs leading-relaxed" placeholder="Paste unstructured hospital discharge summary note with patient identifiers..."></textarea>
+          
+          <button onclick="triggerRedaction()" class="btn-clinical-primary w-full py-2.5">
+            <i class="fa-solid fa-user-secret mr-2"></i> Run Safe Harbor PHI Redaction
           </button>
         </div>
-        <textarea id="raw-note-input" rows="5" class="mv-input font-mono text-xs" placeholder="Paste unstructured hospital discharge summary note with patient identifiers..."></textarea>
-        <button onclick="triggerRedaction()" class="mv-btn-primary">
-          <i class="fa-solid fa-user-secret mr-2"></i> Run Safe Harbor PHI Redaction
-        </button>
+
+        <!-- Right: Redacted Output & Extracted Structured Entities -->
+        <div class="space-y-3 bg-slate-900/60 p-3.5 rounded-lg border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="card-title text-xs">
+              <i class="fa-solid fa-shield-virus text-emerald-400"></i>
+              <span>De-Identified Clinical Entity Stream</span>
+            </span>
+            <span id="redacted-summary-badge" class="text-[10px] text-teal-400 font-mono">RAM Buffer</span>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            All 18 direct identifiers (names, SSNs, phone numbers, MRNs, dates of birth) are stripped via deterministic regex before any clinical entity is passed to the reasoning engine.
+          </p>
+
+          <div class="p-3 bg-slate-950 rounded border border-slate-800 font-mono text-xs text-slate-300 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Redaction Status:</span>
+              <span id="redacted-count-val" class="text-emerald-400 font-bold">0 PHI Tokens Stripped</span>
+            </div>
+            <div>Direct Identifiers Replaced: <span class="text-amber-300">[REDACTED_NAME], [REDACTED_PHONE], [REDACTED_SSN]</span></div>
+            <div>Cryptographic Token: <span id="redacted-token-val" class="text-emerald-300">ANON_INGEST_READY</span></div>
+          </div>
+
+          <div>
+            <label class="clinical-label">Safe Harbor Redacted Text Preview:</label>
+            <textarea id="redacted-output-text" rows="5" class="clinical-input font-mono text-xs leading-relaxed" readonly placeholder="De-identified text will appear here after redaction..."></textarea>
+          </div>
+
+          <!-- Pipeline Transfer Action Button -->
+          <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5 mt-2">
+            <span>Transfer De-Identified Profile to CDSS Review Engine</span>
+            <i class="fa-solid fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+
       </div>
+
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
-       VIEW 3: HOSPITAL EHR & INTEROPERABILITY SANDBOX
+       VIEW 3: HOSPITAL EHR & FHIR INTEROPERABILITY
   ═══════════════════════════════════════════ -->
-  <div id="page-view-fhir" class="page-view-panel space-y-4">
-    <div class="glass-card p-4 space-y-4">
-      <div class="glass-card-title">
-        <i class="fa-solid fa-network-wired"></i> Hospital EHR Interoperability &amp; Air-Gap Transfer
+  <div id="page-view-fhir" class="page-view-panel space-y-3" style="display:none">
+    <div class="clinical-card p-4 space-y-4 border-slate-800">
+      <div class="card-title text-sm">
+        <i class="fa-solid fa-network-wired text-teal-400"></i>
+        <span>Hospital EHR Interoperability &amp; Air-Gap Transfer</span>
         <span class="ml-auto text-[10px] text-teal-400 font-mono">HL7 CDS Hooks v1.0</span>
       </div>
 
-      <div class="p-3 bg-teal-950/30 border border-teal-500/30 rounded-xl text-xs text-slate-300 space-y-1">
+      <div class="p-3 bg-teal-950/30 border border-teal-500/30 rounded-lg text-xs text-slate-300 space-y-1">
         <div class="font-bold text-teal-300 flex items-center justify-between">
-          <span><i class="fa-solid fa-satellite-dish mr-1.5"></i> Sovereign Zero-Cloud Hospital Interface</span>
+          <span><i class="fa-solid fa-satellite-dish mr-1.5"></i> Sovereign Hospital Interface</span>
           <span class="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded font-mono">FHIR R4 / HL7 v2</span>
         </div>
         <div>Ingest structured FHIR bundles, hospital lab feeds, or optical QR clearance seals completely offline without external internet.</div>
@@ -1003,24 +1257,24 @@
 
       <!-- Presets -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button onclick="loadFhirPreset('geriatric')" class="p-3 rounded-xl border border-yellow-500/30 bg-yellow-950/20 text-yellow-300 hover:border-yellow-500/60 text-left transition flex items-center justify-between">
+        <button onclick="loadFhirPreset('geriatric')" class="p-3 rounded-lg border border-amber-500/30 bg-amber-950/20 text-amber-300 hover:border-amber-500/60 text-left transition flex items-center justify-between cursor-pointer">
           <div>
             <div class="font-bold text-xs"><i class="fa-solid fa-person-cane mr-1.5"></i> Preset 1: Geriatric ER (Beers Criteria)</div>
             <div class="text-[10px] text-slate-400 mt-0.5">76yo female (50kg, Cr 1.8) · Gabapentin + Diphenhydramine</div>
           </div>
-          <i class="fa-solid fa-bolt text-yellow-400"></i>
+          <i class="fa-solid fa-bolt text-amber-400"></i>
         </button>
-        <button onclick="loadFhirPreset('optical_qr')" class="p-3 rounded-xl border border-teal-500/30 bg-teal-950/20 text-teal-300 hover:border-teal-500/60 text-left transition flex items-center justify-between">
+        <button onclick="loadFhirPreset('optical_qr')" class="p-3 rounded-lg border border-teal-500/30 bg-teal-950/20 text-teal-300 hover:border-teal-500/60 text-left transition flex items-center justify-between cursor-pointer">
           <div>
             <div class="font-bold text-xs"><i class="fa-solid fa-qrcode mr-1.5"></i> Preset 2: Optical QR Air-Gap Transfer</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">Camera-to-screen QR transmission without USB cables</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Camera-to-screen QR transmission without cables</div>
           </div>
           <i class="fa-solid fa-camera text-teal-400"></i>
         </button>
       </div>
 
       <!-- FHIR Drop Zone -->
-      <div id="fhir-drop-zone" class="drop-zone" onclick="document.getElementById('fhir-upload-input').click()">
+      <div id="fhir-drop-zone" class="drop-zone-clinical" onclick="document.getElementById('fhir-upload-input').click()">
         <input type="file" id="fhir-upload-input" accept=".json,.hl7,.txt" style="display:none" onchange="handleFhirFileUpload(event)" />
         <i class="fa-solid fa-file-code text-2xl text-teal-400 mb-1.5 block"></i>
         <div class="text-xs font-semibold text-slate-200">Drop FHIR R4 Bundle (.json) or HL7 v2 (.hl7)</div>
@@ -1028,28 +1282,34 @@
       </div>
 
       <div>
-        <label class="mv-label">Raw FHIR JSON Bundle / HL7 Pipe Message:</label>
-        <textarea id="fhir-raw-input" rows="4" class="mv-input font-mono text-xs" placeholder="Paste FHIR JSON Bundle, HL7 v2 pipes, or Optical QR payload..."></textarea>
+        <label class="clinical-label">Raw FHIR JSON Bundle / HL7 Pipe Message:</label>
+        <textarea id="fhir-raw-input" rows="4" class="clinical-input font-mono text-xs" placeholder="Paste FHIR JSON Bundle, HL7 v2 pipes, or Optical QR payload..."></textarea>
       </div>
 
-      <button onclick="triggerFhirIngestion()" class="mv-btn-primary">
+      <button onclick="triggerFhirIngestion()" class="btn-clinical-primary w-full py-2.5">
         <i class="fa-solid fa-microchip mr-2"></i> Parse &amp; Load into Sovereign Registry
       </button>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
-       VIEW 4: SOVEREIGN AUDIT TRAIL & LEDGER
+       VIEW 4: SOVEREIGN AUDIT LEDGER & CHAIN INSPECTOR
+       Stitch Ref: Screen 18a2f0ca3ee14e5ba7a46697221b17f8
   ═══════════════════════════════════════════ -->
-  <div id="page-view-audit" class="page-view-panel space-y-4">
-    <div class="glass-card p-4 space-y-4">
-      <div class="flex items-center justify-between">
-        <div class="glass-card-title">
-          <i class="fa-solid fa-database"></i> Immutable Cryptographic Audit Ledger
-          <span class="ml-2 text-[10px] text-slate-400 font-mono">HIPAA § 164.312(b)</span>
+  <div id="page-view-audit" class="page-view-panel space-y-3" style="display:none">
+    <div class="clinical-card p-4 space-y-4 border-slate-800">
+      
+      <!-- Top Action Strip -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div>
+          <div class="card-title text-sm">
+            <i class="fa-solid fa-database text-teal-400"></i>
+            <span>Immutable Cryptographic Audit Ledger</span>
+          </div>
+          <p class="text-xs text-slate-400">HIPAA Security Rule § 164.312(b) &amp; DPDP Act 2023 § 8(5)</p>
         </div>
-        <button onclick="verifyAuditChain()" class="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 text-xs font-semibold flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-solid fa-shield-halved"></i>
+        <button onclick="verifyAuditChain()" class="btn-clinical-primary py-2 px-3 text-xs">
+          <i class="fa-solid fa-shield-halved mr-1.5"></i>
           <span>Verify SHA-256 Chain</span>
         </button>
       </div>
@@ -1057,9 +1317,33 @@
       <div id="integrity-banner-wrap"></div>
       <div id="integrity-banner" class="hidden"></div>
 
+      <!-- Audit Telemetry Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+          <div class="text-[10px] text-slate-400">Sealed Audit Blocks</div>
+          <div id="stat-sealed-blocks" class="text-base font-bold text-white font-mono mt-0.5">Live Chained</div>
+          <span class="text-[9px] text-teal-400 font-mono">SQLite WAL Mode</span>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+          <div class="text-[10px] text-slate-400">Chain Integrity</div>
+          <div id="stat-chain-integrity" class="text-base font-bold text-emerald-400 font-mono mt-0.5">SHA-256 Verified</div>
+          <span class="text-[9px] text-emerald-300 font-mono">Zero Tamper Risk</span>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+          <div class="text-[10px] text-slate-400">Current Reviewer</div>
+          <div id="stat-current-reviewer" class="text-sm font-bold text-slate-200 truncate mt-0.5">Dr. G. House</div>
+          <span class="text-[9px] text-slate-400 font-mono">NPI-1999887766</span>
+        </div>
+        <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+          <div class="text-[10px] text-slate-400">Egress Telemetry</div>
+          <div id="audit-egress-val" class="text-base font-bold text-emerald-400 font-mono mt-0.5">0 Bytes</div>
+          <span class="text-[9px] text-emerald-300 font-mono">Air-Gapped</span>
+        </div>
+      </div>
+
       <!-- Audit Table -->
-      <div class="overflow-x-auto rounded-xl border border-slate-800">
-        <table class="audit-table">
+      <div class="overflow-x-auto rounded-lg border border-slate-800">
+        <table class="audit-table-clinical">
           <thead>
             <tr>
               <th>Timestamp</th>
@@ -1080,48 +1364,46 @@
       <!-- Compliance Export Actions -->
       <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-800 gap-2">
         <span class="text-[11px] text-slate-400">
-          <i class="fa-solid fa-shield-halved text-teal-400 mr-1"></i> HIPAA Security Rule § 164.312(b) Audit Compliance Export
+          <i class="fa-solid fa-file-shield text-teal-400 mr-1"></i> HIPAA § 164.312(b) Audit Compliance Export
         </span>
         <div class="flex items-center space-x-2">
-          <a href="/api/audit-export?format=csv" download class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-teal-300 text-xs rounded-lg border border-slate-700 flex items-center space-x-1 text-decoration-none">
-            <i class="fa-solid fa-file-csv"></i>
-            <span>Export CSV</span>
+          <a href="/api/audit-export?format=csv" download class="btn-clinical-secondary py-1 px-3 text-xs text-decoration-none">
+            <i class="fa-solid fa-file-csv mr-1"></i> Export CSV
           </a>
-          <a href="/api/audit-export?format=json" download class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-teal-300 text-xs rounded-lg border border-slate-700 flex items-center space-x-1 text-decoration-none">
-            <i class="fa-solid fa-file-code"></i>
-            <span>Export JSON</span>
+          <a href="/api/audit-export?format=json" download class="btn-clinical-secondary py-1 px-3 text-xs text-decoration-none">
+            <i class="fa-solid fa-file-code mr-1"></i> Export JSON
           </a>
         </div>
       </div>
+
     </div>
   </div>
 
 </div><!-- /main-app -->
 
 <!-- ═══════════════════════════════════════════
-     SETTINGS SIDEBAR (Drawer replacing old floatcard)
+     SETTINGS SLIDE-OVER SIDEBAR
 ═══════════════════════════════════════════ -->
 <div id="settings-backdrop" onclick="toggleSettingsSidebar(false)"></div>
 <aside id="settings-sidebar">
-  <!-- Sidebar Header -->
+  <!-- Header -->
   <div class="p-4 border-b border-slate-800 flex items-center justify-between">
     <div class="flex items-center space-x-2 text-teal-400 font-bold text-sm">
       <i class="fa-solid fa-gear"></i>
-      <span>Settings</span>
+      <span class="font-heading">Workstation Settings</span>
     </div>
     <button onclick="toggleSettingsSidebar(false)" class="text-slate-400 hover:text-white text-lg bg-transparent border-0 cursor-pointer">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
 
-  <!-- Sidebar Body -->
-  <div class="p-4 space-y-5 overflow-y-auto flex-1 text-xs">
+  <!-- Body -->
+  <div class="p-4 space-y-4 overflow-y-auto flex-1 text-xs">
+    
     <!-- Section 1: Active Doctor Profile -->
     <div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block mb-2">
-        <i class="fa-solid fa-id-card-clip mr-1"></i> Authenticated Physician Profile
-      </span>
-      <div class="bg-slate-900/80 p-3 rounded-xl border border-teal-500/30 space-y-2.5">
+      <span class="clinical-label text-teal-400">Authenticated Physician Profile</span>
+      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2.5">
         <div class="flex items-center space-x-3">
           <div id="profile-avatar" class="doc-avatar">GH</div>
           <div class="overflow-hidden">
@@ -1130,25 +1412,22 @@
             <div id="profile-license" class="text-[10px] text-teal-400 font-mono mt-0.5 truncate">NPI-1999887766</div>
           </div>
         </div>
-        <button onclick="showChangeDocModal()" class="w-full py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer">
-          <i class="fa-solid fa-arrows-rotate"></i>
-          <span>Switch Physician</span>
+        <button onclick="showChangeDocModal()" class="btn-clinical-secondary w-full py-1.5 text-xs">
+          <i class="fa-solid fa-arrows-rotate mr-1"></i> Switch Physician
         </button>
       </div>
     </div>
 
     <!-- Section 2: Display Theme -->
     <div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block mb-2">
-        <i class="fa-solid fa-circle-half-stroke mr-1"></i> Display Theme
-      </span>
-      <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+      <span class="clinical-label text-teal-400">Display Theme</span>
+      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
         <div>
           <div id="sidebar-theme-title" class="font-medium text-slate-200">Dark Mode Active</div>
-          <div class="text-[10px] text-slate-500">Toggle dark and light color scheme</div>
+          <div class="text-[10px] text-slate-500">Clinical high-contrast dark/light theme</div>
         </div>
-        <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 font-semibold flex items-center space-x-1.5 cursor-pointer">
-          <i id="sidebar-theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+        <button onclick="toggleTheme()" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+          <i id="sidebar-theme-icon" class="fa-solid fa-sun text-amber-400 mr-1"></i>
           <span id="sidebar-theme-btn">Switch to Light</span>
         </button>
       </div>
@@ -1156,12 +1435,10 @@
 
     <!-- Section 3: AI Inference & Typist -->
     <div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block mb-2">
-        <i class="fa-solid fa-microchip mr-1"></i> Local SLM Speed
-      </span>
-      <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2">
+      <span class="clinical-label text-teal-400">Local SLM Stream Speed</span>
+      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2">
         <div class="flex justify-between text-slate-300">
-          <span>Streaming Typing Speed:</span>
+          <span>Typing Simulation Speed:</span>
           <span id="speed-label" class="font-mono text-teal-400">Normal (12ms)</span>
         </div>
         <input type="range" id="setting-speed" min="2" max="30" value="12" oninput="updateSpeedLabel(this.value)" class="w-full accent-teal-500 cursor-pointer" />
@@ -1170,10 +1447,8 @@
 
     <!-- Section 4: Local LAN & Sovereignty Status -->
     <div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block mb-2">
-        <i class="fa-solid fa-network-wired mr-1"></i> Sovereign Network Isolation
-      </span>
-      <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1.5 font-mono text-[11px]">
+      <span class="clinical-label text-teal-400">Sovereign Network Isolation</span>
+      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5 font-mono text-[11px]">
         <div class="flex justify-between">
           <span class="text-slate-400">Binding Host:</span>
           <span class="text-emerald-400">127.0.0.1 (Loopback)</span>
@@ -1184,24 +1459,32 @@
         </div>
         <div class="flex justify-between">
           <span class="text-slate-400">Compliance Standard:</span>
-          <span class="text-teal-300">HIPAA Safe Harbor</span>
+          <span class="text-teal-300">HIPAA Safe Harbor § 164.514</span>
         </div>
       </div>
     </div>
 
-    <!-- Section 5: Session Lock / Logout -->
+    <!-- Section 5: Replay Diagnostics -->
     <div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-red-400 block mb-2">
-        <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Session Actions
-      </span>
-      <button onclick="handleLogout()" class="w-full py-2 bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-red-200 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer">
+      <span class="clinical-label text-teal-400">System Telemetry &amp; Diagnostics</span>
+      <button type="button" onclick="sessionStorage.removeItem('medivault_booted'); location.reload();" class="btn-clinical-secondary w-full py-1.5 text-xs font-semibold flex items-center justify-center space-x-1.5">
+        <i class="fa-solid fa-arrows-rotate text-teal-400"></i>
+        <span>Replay Sovereign Boot Diagnostics</span>
+      </button>
+    </div>
+
+    <!-- Section 6: Session Lock / Logout -->
+    <div>
+      <span class="clinical-label text-red-400">Session Security</span>
+      <button onclick="handleLogout()" class="w-full py-2 bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-red-200 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer transition">
         <i class="fa-solid fa-lock mr-1"></i>
         <span>Lock Session &amp; Sign Out</span>
       </button>
     </div>
+
   </div>
 
-  <!-- Sidebar Footer -->
+  <!-- Footer -->
   <div class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono">
     <span>MediVault v1.4-OFFLINE</span>
     <span>0 Bytes Egress</span>
@@ -1209,15 +1492,48 @@
 </aside>
 
 <!-- ═══════════════════════════════════════════
+     SWITCH PATIENT MODAL
+═══════════════════════════════════════════ -->
+<div id="switch-patient-modal" style="display:none;position:fixed;inset:0;z-index:9996;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
+  <div class="clinical-card p-5 w-full max-w-xl border-slate-700 shadow-2xl relative max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between mb-3 pb-3 border-b border-slate-800">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-sm">
+          <i class="fa-solid fa-hospital-user"></i>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-white font-heading">Switch Active Patient Record</div>
+          <div class="text-[10px] text-slate-400">Offline Synthetic Clinical Cohort · Zero Cloud Leakage</div>
+        </div>
+      </div>
+      <button type="button" onclick="closePatientModal()" class="text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer text-lg p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div id="switch-patient-list" class="space-y-2.5 overflow-y-auto pr-1 flex-1">
+      <!-- Populated dynamically by JS with rich patient cards -->
+    </div>
+
+    <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+      <span class="font-mono"><i class="fa-solid fa-shield-halved text-teal-400 mr-1"></i>HIPAA Safe Harbor Hash Masking</span>
+      <button type="button" onclick="closePatientModal()" class="btn-clinical-secondary py-1 px-3 text-xs">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
      SWITCH DOCTOR MODAL
 ═══════════════════════════════════════════ -->
-<div id="switch-doc-modal" style="display:none;position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:center;justify-content:center">
-  <div style="background:var(--switch-modal-bg);border:1px solid rgba(20,184,166,0.3);border-radius:20px;padding:24px;width:380px;max-width:calc(100vw - 32px);animation:slide-up 0.3s ease">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:white">Switch Reviewing Physician</div>
-      <button onclick="closeChangeDocModal()" style="background:none;border:none;color:rgba(148,163,184,0.5);cursor:pointer;font-size:16px"><i class="fa-solid fa-xmark"></i></button>
+<div id="switch-doc-modal" style="display:none;position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div class="clinical-card p-5 w-96 max-w-[calc(100vw-32px)] border-slate-700 shadow-2xl">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+      <div class="text-sm font-bold text-white font-heading">Switch Reviewing Physician</div>
+      <button onclick="closeChangeDocModal()" class="text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer text-base">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
-    <div id="switch-doc-list" style="display:flex;flex-direction:column;gap:8px">
+    <div id="switch-doc-list" class="space-y-2">
       <!-- Populated by JS -->
     </div>
   </div>
@@ -1227,56 +1543,36 @@
      OPTICAL CLEARANCE QR MODAL
 ═══════════════════════════════════════════ -->
 <div id="qr-modal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center;">
-  <div style="background:var(--float-card-bg); border:1px solid rgba(20,184,166,0.35); border-radius:18px; max-width:380px; width:90%; padding:22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.7); position:relative;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <div style="font-size:13px; font-weight:700; color:var(--teal-bright); display:flex; align-items:center; gap:6px;">
+  <div class="clinical-card p-5 w-96 max-w-[90vw] text-center border-slate-700 shadow-2xl relative">
+    <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+      <div class="text-xs font-bold text-teal-400 flex items-center gap-1.5 font-heading">
         <i class="fa-solid fa-file-shield"></i>
         <span>Optical Clearance Seal</span>
       </div>
-      <button onclick="closeClearanceQrModal()" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer;">&times;</button>
+      <button onclick="closeClearanceQrModal()" class="text-slate-400 hover:text-white bg-transparent border-0 text-base cursor-pointer">&times;</button>
     </div>
-    <div style="font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
-      Point physician smartphone camera to verify zero-cloud cryptographic seal wirelessly without USB or cables.
+    <div class="text-[11px] text-slate-400 mb-3 leading-normal">
+      Scan with physician camera to verify zero-cloud cryptographic seal wirelessly without USB or data cables.
     </div>
-    <div id="qr-image-container" style="background:white; padding:12px; border-radius:12px; display:inline-block; margin-bottom:12px; min-width:210px; min-height:210px;">
-      <div id="qr-loading" style="color:#0f172a; font-size:11px; padding:90px 0;">Rendering Seal…</div>
+    <div id="qr-image-container" class="bg-white p-3 rounded-lg inline-block mb-3 min-w-[210px] min-h-[210px]">
+      <div id="qr-loading" class="text-slate-900 text-xs py-20">Rendering Vector Seal…</div>
     </div>
-    <div style="font-size:10px; font-family:monospace; color:var(--text-muted); word-break:break-all;" id="qr-modal-hash">
+    <div id="qr-modal-hash" class="text-[10px] font-mono text-slate-400 break-all bg-slate-900 p-2 rounded border border-slate-800">
       SHA-256 Seal: Calculating…
     </div>
-    <button onclick="closeClearanceQrModal()" class="mv-btn-secondary" style="margin-top:14px; font-size:12px; padding:7px;">Close</button>
+    <button onclick="closeClearanceQrModal()" class="btn-clinical-secondary w-full mt-3 py-1.5 text-xs">
+      Close Window
+    </button>
   </div>
 </div>
 
-<!-- Backwards compatibility containers for app.js (hidden) -->
-<div id="auth-modal" style="display:none">
-  <button id="auth-modal-btn" style="display:none"></button>
-  <div id="auth-screen-otp" style="display:none"></div>
-  <div id="auth-alert" style="display:none"></div>
-  <input id="login-email" type="hidden" />
-  <input id="login-password" type="hidden" />
-  <select id="reg-hospital-select" style="display:none"></select>
-  <input id="otp-target-email" type="hidden" />
-  <span id="simulated-otp-code" style="display:none"></span>
-  <input id="otp-input" type="hidden" />
-  <div id="demo-doctors-list" style="display:none"></div>
-  <div id="modal-tabs-header" style="display:none"></div>
-  <div id="audit-drawer" style="display:none"></div>
-  <i id="audit-toggle-icon" style="display:none"></i>
-  <span id="audit-toggle-text" style="display:none"></span>
-  <div id="tab-demo" style="display:none"></div>
-  <div id="tab-raw" style="display:none"></div>
-  <div id="demo-patient-section" style="display:none"></div>
-  <div id="raw-note-section" style="display:none"></div>
-  <span id="ai-status-text" style="display:none"></span>
-</div>
 
-<!-- Core Application Script -->
+<!-- Application Controller Script -->
 <script src="/static/app.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
-//  THEME TOGGLE (Dark ↔ Light)
+//  THEME CONTROLLER (Dark ↔ Light)
 // ═══════════════════════════════════════════
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
@@ -1292,11 +1588,11 @@ function updateThemeUI(isLight) {
     if (isLight) {
       title.textContent = 'Light Mode Active';
       btn.textContent = 'Switch to Dark';
-      icon.className = 'fa-solid fa-moon text-teal-400';
+      icon.className = 'fa-solid fa-moon text-teal-400 mr-1';
     } else {
       title.textContent = 'Dark Mode Active';
       btn.textContent = 'Switch to Light';
-      icon.className = 'fa-solid fa-sun text-amber-400';
+      icon.className = 'fa-solid fa-sun text-amber-400 mr-1';
     }
   }
 }
@@ -1311,17 +1607,59 @@ function updateThemeUI(isLight) {
 })();
 
 // ═══════════════════════════════════════════
-//  MULTI-PAGE VIEW SWITCHER
+//  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
   const tabs = ['review', 'intake', 'fhir', 'audit'];
   tabs.forEach(t => {
     const btn = document.getElementById(`nav-btn-${t}`);
     const panel = document.getElementById(`page-view-${t}`);
-    if (btn) btn.classList.toggle('active', t === tabKey);
-    if (panel) panel.classList.toggle('active', t === tabKey);
+    if (btn) {
+      if (t === tabKey) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      }
+    }
+    if (panel) {
+      if (t === tabKey) {
+        panel.classList.add('active');
+        panel.style.display = 'block';
+      } else {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      }
+    }
   });
 }
+
+// ═══════════════════════════════════════════
+//  GLOBAL KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    const activeReview = document.getElementById('page-view-review').classList.contains('active');
+    const activeIntake = document.getElementById('page-view-intake').classList.contains('active');
+    if (activeReview) runSafetyCheck();
+    else if (activeIntake) triggerRedaction();
+  } else if ((e.ctrlKey || e.altKey) && e.key === '1') {
+    e.preventDefault(); switchMainTab('review');
+  } else if ((e.ctrlKey || e.altKey) && e.key === '2') {
+    e.preventDefault(); switchMainTab('intake');
+  } else if ((e.ctrlKey || e.altKey) && e.key === '3') {
+    e.preventDefault(); switchMainTab('fhir');
+  } else if ((e.ctrlKey || e.altKey) && e.key === '4') {
+    e.preventDefault(); switchMainTab('audit');
+  } else if (e.key === 'Escape') {
+    toggleSettingsSidebar(false);
+    closeChangeDocModal();
+    closeClearanceQrModal();
+    if (typeof closePatientModal === 'function') closePatientModal();
+  }
+});
 
 // ═══════════════════════════════════════════
 //  SETTINGS SIDEBAR TOGGLE
@@ -1329,12 +1667,29 @@ function switchMainTab(tabKey) {
 function toggleSettingsSidebar(open) {
   const sidebar = document.getElementById('settings-sidebar');
   const backdrop = document.getElementById('settings-backdrop');
+  if (!sidebar || !backdrop) return;
   if (open) {
     sidebar.classList.add('open');
     backdrop.classList.add('open');
+    sidebar.style.display = 'flex';
+    sidebar.style.transform = 'translateX(0)';
+    backdrop.style.display = 'block';
+    backdrop.style.opacity = '1';
+    backdrop.style.visibility = 'visible';
+    backdrop.style.pointerEvents = 'auto';
   } else {
     sidebar.classList.remove('open');
     backdrop.classList.remove('open');
+    sidebar.style.transform = 'translateX(100%)';
+    backdrop.style.opacity = '0';
+    backdrop.style.visibility = 'hidden';
+    backdrop.style.pointerEvents = 'none';
+    setTimeout(() => {
+      if (!sidebar.classList.contains('open')) {
+        sidebar.style.display = 'none';
+        backdrop.style.display = 'none';
+      }
+    }, 250);
   }
 }
 
@@ -1364,7 +1719,11 @@ let currentDoctor = DEMO_DOCTORS[0];
 function activateDoctor(doc) {
   currentDoctor = doc;
   updateDoctorUI(doc);
-  document.getElementById('auth-gate').classList.add('dismissed');
+  const gate = document.getElementById('auth-gate');
+  if (gate) {
+    gate.classList.add('dismissed');
+    gate.style.display = 'none';
+  }
 }
 
 function updateDoctorUI(doc) {
@@ -1392,22 +1751,22 @@ function showChangeDocModal() {
   list.innerHTML = '';
   DEMO_DOCTORS.forEach(doc => {
     const card = document.createElement('div');
-    card.className = 'demo-doc-card';
+    card.className = 'p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer hover:border-teal-500/50 transition';
     const isActive = currentDoctor.key === doc.key;
     card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="doc-avatar">${doc.initials}</div>
+      <div class="flex items-center space-x-2.5">
+        <div class="doc-avatar text-xs">${doc.initials}</div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:white">${doc.name}</div>
-          <div style="font-size:10px;color:rgba(148,163,184,0.5)">${doc.hospital}</div>
+          <div class="text-xs font-bold text-white">${doc.name}</div>
+          <div class="text-[10px] text-slate-400">${doc.hospital}</div>
         </div>
       </div>
       ${isActive
-        ? '<span style="font-size:10px;color:#6ee7b7;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:6px">ACTIVE</span>'
-        : '<button class="doc-switch-btn">Switch</button>'}
+        ? '<span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">ACTIVE</span>'
+        : '<button class="btn-clinical-secondary py-1 px-2 text-xs">Switch</button>'}
     `;
     if (!isActive) {
-      card.querySelector('.doc-switch-btn').addEventListener('click', () => {
+      card.addEventListener('click', () => {
         activateDoctor(doc);
         closeChangeDocModal();
       });
@@ -1424,21 +1783,13 @@ function closeChangeDocModal() {
 
 function handleLogout() {
   toggleSettingsSidebar(false);
-  document.getElementById('auth-gate').classList.remove('dismissed');
+  const gate = document.getElementById('auth-gate');
+  if (gate) {
+    gate.classList.remove('dismissed');
+    gate.style.display = 'flex';
+  }
 }
 
-// ═══════════════════════════════════════════
-//  SPLASH SCREEN AUTO-DISMISS
-// ═══════════════════════════════════════════
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    if (splash) {
-      splash.classList.add('fade-out');
-      setTimeout(() => splash.remove(), 800);
-    }
-  }, 1400);
-});
 
 // ═══════════════════════════════════════════
 //  INTAKE MODE SWITCHER
@@ -1450,27 +1801,17 @@ function switchIntakeMode(mode) {
   const secRaw = document.getElementById('section-raw');
 
   if (tabDemo && tabRaw && secDemo && secRaw) {
-    tabDemo.classList.toggle('bg-teal-600', mode === 'demo');
+    tabDemo.classList.toggle('bg-teal-700', mode === 'demo');
     tabDemo.classList.toggle('text-white', mode === 'demo');
     tabDemo.classList.toggle('text-slate-400', mode !== 'demo');
 
-    tabRaw.classList.toggle('bg-teal-600', mode === 'raw');
+    tabRaw.classList.toggle('bg-teal-700', mode === 'raw');
     tabRaw.classList.toggle('text-white', mode === 'raw');
     tabRaw.classList.toggle('text-slate-400', mode !== 'raw');
 
     secDemo.style.display = mode === 'demo' ? 'block' : 'none';
-    secRaw.style.display = mode === 'raw' ? 'block' : 'none';
+    secRaw.style.display = mode === 'raw' ? 'grid' : 'none';
   }
-}
-
-// ═══════════════════════════════════════════
-//  QUICK PRESET SETTER
-// ═══════════════════════════════════════════
-function setProposedMed(name, dose) {
-  const medInput = document.getElementById('proposed-med-input');
-  const doseInput = document.getElementById('proposed-dose-input');
-  if (medInput) medInput.value = name;
-  if (doseInput) doseInput.value = dose;
 }
 
 // ═══════════════════════════════════════════
@@ -1480,8 +1821,12 @@ function switchAuthGateTab(tab) {
   ['demo','login','register'].forEach(t => {
     const btn = document.getElementById(`gtab-${t}`);
     const content = document.getElementById(`gtab-content-${t}`);
-    if (btn) btn.classList.toggle('active', t === tab);
-    if (content) content.classList.toggle('active', t === tab);
+    if (btn) {
+      btn.className = (t === tab)
+        ? 'flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30'
+        : 'flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200';
+    }
+    if (content) content.classList.toggle('hidden', t !== tab);
   });
 }
 
@@ -1491,7 +1836,6 @@ function gateSelectDemo(key) {
 }
 
 function handleGateLogin() {
-  const email = document.getElementById('gate-email').value;
   activateDoctor(DEMO_DOCTORS[0]);
 }
 
@@ -1532,82 +1876,30 @@ function closeClearanceQrModal() {
 async function verifyAuditChain() {
   const wrap = document.getElementById('integrity-banner-wrap');
   if (!wrap) return;
-  wrap.innerHTML = `<div class="p-3 bg-teal-950/60 border border-teal-500/40 rounded-xl text-teal-300 text-xs font-mono flex items-center space-x-2">
-    <i class="fa-solid fa-spinner fa-spin"></i><span>Verifying SHA-256 Merkle chain blocks...</span>
+  wrap.innerHTML = `<div class="p-3 bg-teal-950/60 border border-teal-500/40 rounded-lg text-teal-300 text-xs font-mono flex items-center space-x-2">
+    <i class="fa-solid fa-spinner fa-spin"></i><span>Verifying SHA-256 Merkle chain integrity across all blocks...</span>
   </div>`;
   try {
     const res = await fetch('/api/audit-verify');
     const data = await res.json();
     if (data.valid) {
-      wrap.innerHTML = `<div class="p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-mono flex items-center justify-between">
+      wrap.innerHTML = `<div class="p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-lg text-emerald-300 text-xs font-mono flex items-center justify-between">
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-check-double text-emerald-400"></i>
-          <span><strong>CRYPTOGRAPHIC PROOF:</strong> All ${data.total_blocks} blocks verified intact.</span>
+          <span><strong>CRYPTOGRAPHIC PROOF:</strong> All ${data.total_blocks} blocks verified intact. Zero tampering detected.</span>
         </div>
-        <span class="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-bold">HIPAA § 164.312(b)</span>
+        <span class="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-bold uppercase">HIPAA § 164.312(b)</span>
       </div>`;
     } else {
-      wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-mono flex items-center space-x-2">
+      wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-red-300 text-xs font-mono flex items-center space-x-2">
         <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
         <span><strong>TAMPER DETECTED:</strong> ${data.error}</span>
       </div>`;
     }
   } catch(e) {
-    wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-mono">Verification error: ${e.message}</div>`;
+    wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-red-300 text-xs font-mono">Verification error: ${e.message}</div>`;
   }
 }
-
-// ═══════════════════════════════════════════
-//  PARTICLE CANVAS (Lightweight Ambient Visuals)
-// ═══════════════════════════════════════════
-(function() {
-  const canvas = document.getElementById('particle-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  let width, height;
-  let particles = [];
-
-  function resize() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  for (let i = 0; i < 35; i++) {
-    particles.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      radius: Math.random() * 2 + 1,
-      alpha: Math.random() * 0.3 + 0.1
-    });
-  }
-
-  function render() {
-    ctx.clearRect(0, 0, width, height);
-    const isLight = document.documentElement.classList.contains('light');
-    const color = isLight ? 'rgba(20,184,166,' : 'rgba(45,212,191,';
-
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < 0) p.x = width;
-      if (p.x > width) p.x = 0;
-      if (p.y < 0) p.y = height;
-      if (p.y > height) p.y = 0;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `${color}${p.alpha})`;
-      ctx.fill();
-    });
-    requestAnimationFrame(render);
-  }
-  render();
-})();
 </script>
-
 </body>
 </html>

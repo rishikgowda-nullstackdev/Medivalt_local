@@ -1,0 +1,3 @@
+# MediVault Local - Data Ingestion & Privacy Dependencies (Person B)
+pypdf>=4.1.0
+pymupdf>=1.23.0

@@ -257,20 +257,21 @@ def get_current_practitioner(request: Request) -> Dict[str, Any]:
         payload = decode_access_token(token)
         if payload and "practitioner_id" in payload:
             conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email,
-                       p.medical_license, p.role, p.email_verified,
-                       h.hospital_name, h.department
-                FROM practitioners p
-                JOIN hospitals h ON p.hospital_id = h.hospital_id
-                WHERE p.practitioner_id = ?
-            """, (payload["practitioner_id"],))
-            row = cursor.fetchone()
-            conn.close()
-
-            if row:
-                return dict(row)
+            try:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT p.practitioner_id, p.hospital_id, p.full_name, p.email,
+                           p.medical_license, p.role, p.email_verified,
+                           h.hospital_name, h.department
+                    FROM practitioners p
+                    JOIN hospitals h ON p.hospital_id = h.hospital_id
+                    WHERE p.practitioner_id = ?
+                """, (payload["practitioner_id"],))
+                row = cursor.fetchone()
+                if row:
+                    return dict(row)
+            finally:
+                conn.close()
 
     # Return default active demo doctor in hybrid mode
     return DEFAULT_DEMO_PRACTITIONER

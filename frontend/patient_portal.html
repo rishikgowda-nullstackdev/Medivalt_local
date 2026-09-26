@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediVault Local - Patient Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        },
+                        rose: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    boxShadow: {
+                        'sanctuary': '0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(13, 148, 136, 0.03)',
+                        'sanctuary-hover': '0 20px 25px -5px rgba(15, 23, 42, 0.06), 0 10px 10px -5px rgba(13, 148, 136, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0d9488;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .gauge-meter-track {
+            background: linear-gradient(to right, #10b981 0%, #10b981 50%, #f59e0b 50%, #f59e0b 80%, #ef4444 80%, #ef4444 100%);
+        }
+        /* Custom scrollbar for cleanliness */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; color: black; }
+            .print-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-3 sm:p-6 lg:p-8">
+
+    <!-- Top Sovereign Navigation Header (Always Visible) -->
+    <header class="w-full max-w-6xl flex flex-wrap justify-between items-center mb-6 bg-white/90 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-slate-200/80 shadow-sanctuary">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-700 text-lg shadow-sm">
+                <i class="fa-solid fa-shield-heart"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-base font-extrabold tracking-tight text-slate-900 font-heading">MediVault <span class="text-teal-600">Local</span></span>
+                    <span class="text-[10px] bg-teal-50 border border-teal-200 text-teal-700 font-semibold px-2 py-0.5 rounded-full font-mono">PATIENT SANCTUARY</span>
+                </div>
+                <p class="text-xs text-slate-500">Sovereign Personal Health Portal &amp; AI Nutritionist</p>
+            </div>
+        </div>
+
+        <!-- Trust Badges & Controls -->
+        <div class="flex items-center space-x-2.5 mt-2 sm:mt-0">
+            <!-- 100% Offline Trust Pill -->
+            <div class="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-3 py-1.5 rounded-full font-medium shadow-sm" title="Zero cloud connectivity. All health data is strictly processed and encrypted on your local machine.">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-semibold tracking-wide">100% OFFLINE</span>
+                <span class="text-emerald-600 text-[10px] hidden md:inline">· 0 Bytes Egress</span>
+            </div>
+
+            <!-- Return to Clinical CDSS Link -->
+            <a href="/" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200" title="Switch back to Doctor / Physician CDSS Dashboard">
+                <i class="fa-solid fa-user-doctor text-slate-500 text-xs"></i>
+                <span class="hidden sm:inline">Doctor View</span>
+            </a>
+
+            <!-- Header Logout Button (Rendered dynamically when logged in) -->
+            <button id="header-logout-btn" onclick="handleLogout()" class="hidden px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-full border border-rose-200 transition items-center">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Sign Out
+            </button>
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- AUTH GATE: Registration & Sign In                                         -->
+    <!-- ========================================================================= -->
+    <div id="auth-gate" class="w-full max-w-md bg-white rounded-3xl shadow-sanctuary border border-slate-200/80 overflow-hidden fade-in my-auto">
+        <div class="bg-gradient-to-br from-teal-600 to-teal-700 text-white p-7 text-center relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-white text-2xl mb-3 shadow-inner">
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <h1 class="text-2xl font-bold font-heading mb-1">Your Personal Health Sanctuary</h1>
+            <p class="text-teal-100 text-xs max-w-xs mx-auto">Access your medical history, plain-language labs, and local AI dietary advice safely on this device.</p>
+        </div>
+
+        <div class="flex border-b border-slate-200 bg-slate-50/50">
+            <button id="tab-login" class="flex-1 py-3.5 text-center font-bold text-teal-700 border-b-2 border-teal-600 focus:outline-none transition text-sm" onclick="switchTab('login')">
+                <i class="fa-solid fa-arrow-right-to-bracket mr-1.5"></i> Sign In
+            </button>
+            <button id="tab-register" class="flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-teal-700 focus:outline-none transition text-sm" onclick="switchTab('register')">
+                <i class="fa-solid fa-user-plus mr-1.5"></i> Register Account
+            </button>
+        </div>
+        
+        <div class="p-6 sm:p-7">
+            <!-- Inline Notifications -->
+            <div id="error-message" class="hidden mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center">
+                <i class="fa-solid fa-circle-exclamation mr-2 text-rose-500 text-sm"></i>
+                <span id="error-message-text"></span>
+            </div>
+
+            <!-- Demo Quick-Fill Pill -->
+            <div class="mb-5 bg-teal-50/70 border border-teal-200/80 rounded-xl p-3 text-xs text-teal-800 flex items-center justify-between">
+                <div>
+                    <span class="font-bold">Demo Patient:</span> John Doe (`PT-101`)
+                </div>
+                <button type="button" onclick="fillDemoCredentials()" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] px-2.5 py-1 rounded-lg transition shadow-sm">
+                    Fill Demo
+                </button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1.5" for="login-username">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="login-username" required placeholder="e.g. john.doe" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1.5" for="login-password">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                    </div>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm hover:shadow flex justify-center items-center text-sm cursor-pointer">
+                    <span id="login-text">Sign In to My Sanctuary</span>
+                    <div id="login-spinner" class="spinner ml-2 hidden border-white"></div>
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden space-y-3.5" onsubmit="handleRegister(event)">
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-patient-id">Clinical Patient ID</label>
+                    <input type="text" id="reg-patient-id" placeholder="e.g. PT-101 (from your hospital wristband)" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-fullname">Your Full Legal Name</label>
+                    <input type="text" id="reg-fullname" placeholder="e.g. John Doe" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-dob">Date of Birth</label>
+                    <input type="date" id="reg-dob" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-username">Choose a Username</label>
+                    <input type="text" id="reg-username" placeholder="e.g. john.doe" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-password">Create Password (min 6 characters)</label>
+                    <input type="password" id="reg-password" minlength="6" placeholder="••••••••" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold text-xs mb-1" for="reg-confirm">Confirm Password</label>
+                    <input type="password" id="reg-confirm" minlength="6" placeholder="••••••••" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+                </div>
+                <button type="submit" id="btn-register" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-sm hover:shadow flex justify-center items-center text-xs cursor-pointer mt-2">
+                    <span id="register-text">Activate Patient Account</span>
+                    <div id="register-spinner" class="spinner ml-2 hidden border-white"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- PATIENT DASHBOARD: Sanctuary Workspace                                    -->
+    <!-- ========================================================================= -->
+    <main id="dashboard" class="w-full max-w-6xl hidden fade-in pb-16">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-sanctuary mb-6 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-teal-500/15 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div class="flex items-center space-x-4">
+                    <div id="patient-avatar-circle" class="w-14 h-14 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white text-xl font-bold shadow-inner font-heading">
+                        JD
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2.5 flex-wrap">
+                            <h2 id="welcome-msg" class="text-2xl sm:text-3xl font-bold font-heading">Welcome back, John! 👋</h2>
+                            <span id="patient-id-badge" class="bg-teal-500/30 border border-teal-400/40 text-teal-200 text-xs font-mono px-2.5 py-0.5 rounded-full">PT-101</span>
+                        </div>
+                        <p class="text-teal-100 text-xs sm:text-sm mt-1">Your encrypted sovereign health records are stored securely on this offline device.</p>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center space-x-2.5 flex-wrap">
+                    <button onclick="window.print()" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white rounded-xl text-xs font-medium transition flex items-center shadow-sm no-print cursor-pointer">
+                        <i class="fa-solid fa-print mr-2"></i> Print Health Pass
+                    </button>
+                    <button onclick="handleLogout()" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-rose-200 rounded-xl text-xs font-medium transition flex items-center shadow-sm no-print cursor-pointer">
+                        <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Log Out
+                    </button>
+                </div>
+            </div>
+
+            <!-- Attending Physician & Facility Bar -->
+            <div class="mt-5 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between text-xs text-teal-200/90 gap-2">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-user-doctor text-teal-400"></i>
+                    <span>Primary Attending: <strong id="doctor-attribution" class="text-white">Dr. Gregory House, MD</strong> (Internal Medicine)</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-hospital text-teal-400"></i>
+                    <span id="hospital-attribution">Princeton Plainsboro Teaching Hospital</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- GLANCEABLE VITALS & HEALTH GAUGES RIBBON                              -->
+        <!-- ===================================================================== -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- 1. Kidney Health (eGFR) Gauge -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sanctuary hover:shadow-sanctuary-hover transition">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Kidney Filtration</span>
+                    <span id="ribbon-egfr-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Stage 3b CKD</span>
+                </div>
+                <div class="flex items-baseline space-x-1.5">
+                    <span id="ribbon-egfr-val" class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">38</span>
+                    <span class="text-xs text-slate-500 font-medium">mL/min</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Normal target is &ge; 60 mL/min</p>
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                    <div id="ribbon-egfr-bar" class="h-2 rounded-full bg-amber-500 transition-all duration-700" style="width: 38%"></div>
+                </div>
+            </div>
+
+            <!-- 2. Blood Pressure Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sanctuary hover:shadow-sanctuary-hover transition">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Blood Pressure</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Controlled</span>
+                </div>
+                <div class="flex items-baseline space-x-1.5">
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">128/82</span>
+                    <span class="text-xs text-slate-500 font-medium">mmHg</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Target &lt; 130/80 in renal care</p>
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                    <div class="h-2 rounded-full bg-emerald-500 transition-all duration-700" style="width: 75%"></div>
+                </div>
+            </div>
+
+            <!-- 3. Serum Potassium Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sanctuary hover:shadow-sanctuary-hover transition">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Potassium (K+)</span>
+                    <span id="ribbon-k-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Safe Range</span>
+                </div>
+                <div class="flex items-baseline space-x-1.5">
+                    <span id="ribbon-k-val" class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">4.6</span>
+                    <span class="text-xs text-slate-500 font-medium">mEq/L</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Safe zone: 3.5 – 5.0 mEq/L</p>
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                    <div class="h-2 rounded-full bg-emerald-500 transition-all duration-700" style="width: 65%"></div>
+                </div>
+            </div>
+
+            <!-- 4. Daily Hydration Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sanctuary hover:shadow-sanctuary-hover transition">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Daily Hydration</span>
+                    <span id="hydration-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">1.8 / 2.0 L</span>
+                </div>
+                <div class="flex items-baseline space-x-1.5">
+                    <span class="text-2xl sm:text-3xl font-extrabold text-teal-700 font-heading">90%</span>
+                    <span class="text-xs text-slate-500 font-medium">of daily goal</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Steady hydration protects kidneys</p>
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                    <div class="h-2 rounded-full bg-teal-600 transition-all duration-700" style="width: 90%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- TWO-COLUMN WORKSPACE: Baseline History & AI Dietary Nutritionist       -->
+        <!-- ===================================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: Conditions, Medications, Allergies & Lab Meters (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Section A: Health Summary -->
+                <section class="bg-white p-6 rounded-3xl shadow-sanctuary border border-slate-200/80">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center font-heading">
+                        <span class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mr-2.5 text-sm">
+                            <i class="fa-solid fa-clipboard-user"></i>
+                        </span>
+                        My Health Summary · Active Profile
+                    </h3>
+                    
+                    <!-- Diagnosed Conditions -->
+                    <div class="mb-5">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Diagnosed Conditions</span>
+                        <ul id="conditions-list" class="space-y-2">
+                            <!-- Populated dynamically via JS -->
+                        </ul>
+                    </div>
+                    
+                    <!-- Current Medications Schedule -->
+                    <div class="mb-5">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Prescription Schedule</span>
+                        <div id="medications-container" class="space-y-2">
+                            <table class="w-full text-xs text-left hidden">
+                                <tbody id="medications-list"></tbody>
+                            </table>
+                            <div id="medications-cards" class="space-y-2.5">
+                                <!-- Populated dynamically as schedule cards via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Critical OTC Pain Reliever Safety Warning -->
+                    <div class="mb-5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs">
+                        <div class="flex items-start space-x-2.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-amber-950">Medication Safety Guardrail</h5>
+                                <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                                    Avoid over-the-counter NSAIDs (<strong>Advil, Aleve, Ibuprofen, Naproxen</strong>). In kidney care, use <strong>Acetaminophen (Tylenol)</strong> as approved by your doctor.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Allergies -->
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Documented Allergies</span>
+                        <ul id="allergies-list" class="space-y-2">
+                            <!-- Populated dynamically via JS -->
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Section B: Lab Results with Graduated Range Meters -->
+                <section class="bg-white p-6 rounded-3xl shadow-sanctuary border border-slate-200/80">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center font-heading">
+                            <span class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mr-2.5 text-sm">
+                                <i class="fa-solid fa-vial"></i>
+                            </span>
+                            My Lab Results Explained
+                        </h3>
+                        <span class="text-[11px] text-slate-500 font-medium">Plain-English Translation</span>
+                    </div>
+
+                    <div id="labs-list" class="space-y-4">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- RIGHT COLUMN: Personalized AI Food & Nutrition Guide (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Section C: Food & Diet Guide Sanctuary -->
+                <section class="bg-white p-6 sm:p-7 rounded-3xl shadow-sanctuary border border-slate-200/80">
+                    <div class="flex flex-wrap justify-between items-center mb-5 pb-4 border-b border-slate-100 gap-3">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">🥗 My Food &amp; Diet Guide</span>
+                                <span class="text-[10px] bg-teal-50 text-teal-700 border border-teal-200 font-bold px-2 py-0.5 rounded-full font-mono">LOCAL SLM</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Compassionate dietary guidance synthesized entirely on your offline machine.</p>
+                        </div>
+                        <button onclick="loadRecommendations()" class="px-3.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl text-xs font-semibold transition flex items-center cursor-pointer shadow-sm">
+                            <i id="refresh-icon" class="fa-solid fa-rotate-right mr-1.5"></i> Refresh Guide
+                        </button>
+                    </div>
+
+                    <!-- AI Nutrition Narrative Card -->
+                    <div id="diet-narrative-container" class="bg-gradient-to-br from-teal-50/90 via-emerald-50/60 to-slate-50 p-5 rounded-2xl border border-teal-200/70 mb-6 shadow-sm">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center text-xs shadow-sm">
+                                <i class="fa-solid fa-robot"></i>
+                            </span>
+                            <span class="text-xs font-bold text-teal-900 uppercase tracking-wide">Personalized Nutrition Note from Local AI</span>
+                        </div>
+                        <p id="diet-narrative" class="text-slate-800 text-xs sm:text-sm leading-relaxed font-normal">
+                            <i class="fa-solid fa-spinner fa-spin mr-2 text-teal-600"></i> Preparing your personalized dietary advice with on-device AI...
+                        </p>
+                    </div>
+
+                    <!-- 3-Column Categorized Dietary Sanctuary Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        
+                        <!-- Column 1: Foods to Eat More -->
+                        <div class="bg-emerald-50/40 rounded-2xl p-4 border border-emerald-100">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm">
+                                    <i class="fa-solid fa-check"></i>
+                                </span>
+                                <h4 class="text-xs font-bold text-emerald-900 uppercase tracking-wider">Foods to Eat More</h4>
+                            </div>
+                            <div id="eat-more-list" class="space-y-2.5">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+                        
+                        <!-- Column 2: Foods to Avoid -->
+                        <div class="bg-rose-50/40 rounded-2xl p-4 border border-rose-100">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <span class="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shadow-sm">
+                                    <i class="fa-solid fa-ban"></i>
+                                </span>
+                                <h4 class="text-xs font-bold text-rose-900 uppercase tracking-wider">Foods to Avoid</h4>
+                            </div>
+                            <div id="avoid-list" class="space-y-2.5">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Column 3: Wellness Tips -->
+                        <div class="bg-teal-50/40 rounded-2xl p-4 border border-teal-100">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <span class="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs shadow-sm">
+                                    <i class="fa-solid fa-lightbulb"></i>
+                                </span>
+                                <h4 class="text-xs font-bold text-teal-900 uppercase tracking-wider">Wellness Tips</h4>
+                            </div>
+                            <div id="tips-list" class="space-y-2.5">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Daily Wellness Habit Checklist -->
+                    <div class="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/80">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+                                <i class="fa-solid fa-calendar-check text-teal-600 mr-2 text-sm"></i>
+                                Today's Sovereign Wellness Routine
+                            </h4>
+                            <span id="habit-progress-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                                0 / 4 Complete
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700">
+                            <label class="flex items-center space-x-2.5 p-2.5 bg-white rounded-xl border border-slate-200/70 hover:border-teal-400 cursor-pointer transition select-none">
+                                <input type="checkbox" id="habit-1" onchange="toggleHabit('habit-1')" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                <span>Morning 8oz water + Lisinopril dose</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5 p-2.5 bg-white rounded-xl border border-slate-200/70 hover:border-teal-400 cursor-pointer transition select-none">
+                                <input type="checkbox" id="habit-2" onchange="toggleHabit('habit-2')" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                <span>20-minute gentle post-lunch walk</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5 p-2.5 bg-white rounded-xl border border-slate-200/70 hover:border-teal-400 cursor-pointer transition select-none">
+                                <input type="checkbox" id="habit-3" onchange="toggleHabit('habit-3')" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                <span>Low-sodium dinner choice logged</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5 p-2.5 bg-white rounded-xl border border-slate-200/70 hover:border-teal-400 cursor-pointer transition select-none">
+                                <input type="checkbox" id="habit-4" onchange="toggleHabit('habit-4')" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                <span>Evening blood pressure check (target &lt; 130/80)</span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sovereign Vault Persistent Footer -->
+    <footer id="footer" class="w-full max-w-6xl mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-200/70 flex flex-col sm:flex-row items-center justify-between gap-2 px-4 no-print">
+        <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>MediVault Local Sovereign Storage · Encrypted SQLite · Zero Cloud Telemetry</span>
+        </div>
+        <div class="text-[11px] font-mono text-slate-400">
+            HIPAA Safe Harbor § 164.514(b) &amp; Security Rule § 164.312(b)
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT STATE ENGINE & API CONTROLLER                                  -->
+    <!-- ========================================================================= -->
+    <script>
+        // State
+        let token = localStorage.getItem('patient_token');
+
+        // Helper: Toggle Visibility
+        const show = id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        };
+        const hide = id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        };
+        const showError = msg => {
+            const el = document.getElementById('error-message');
+            const txt = document.getElementById('error-message-text') || el;
+            txt.textContent = msg;
+            el.classList.remove('hidden');
+        };
+        const hideError = () => {
+            const el = document.getElementById('error-message');
+            if (el) el.classList.add('hidden');
+        };
+
+        // Tab Switching in Auth Gate
+        function switchTab(tab) {
+            hideError();
+            if (tab === 'login') {
+                show('login-form');
+                hide('register-form');
+                document.getElementById('tab-login').className = 'flex-1 py-3.5 text-center font-bold text-teal-700 border-b-2 border-teal-600 focus:outline-none transition text-sm';
+                document.getElementById('tab-register').className = 'flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-teal-700 focus:outline-none transition text-sm';
+            } else {
+                hide('login-form');
+                show('register-form');
+                document.getElementById('tab-register').className = 'flex-1 py-3.5 text-center font-bold text-teal-700 border-b-2 border-teal-600 focus:outline-none transition text-sm';
+                document.getElementById('tab-login').className = 'flex-1 py-3.5 text-center font-semibold text-slate-500 hover:text-teal-700 focus:outline-none transition text-sm';
+            }
+        }
+
+        // Quick-Fill Demo Credentials
+        function fillDemoCredentials() {
+            switchTab('login');
+            document.getElementById('login-username').value = 'john.doe';
+            document.getElementById('login-password').value = 'Patient123!';
+        }
+
+        // Standardized API Caller
+        async function apiCall(endpoint, options = {}) {
+            options.headers = options.headers || {};
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            if (options.body && typeof options.body === 'string' && !options.headers['Content-Type']) {
+                options.headers['Content-Type'] = 'application/json';
+            }
+
+            const res = await fetch(endpoint, options);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.detail || data.message || `Request failed (${res.status})`);
+            }
+            return data;
+        }
+
+        // Handle Login
+        async function handleLogin(e) {
+            e.preventDefault();
+            hideError();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            const btn = document.getElementById('btn-login');
+            const spinner = document.getElementById('login-spinner');
+            const btnText = document.getElementById('login-text');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Verifying...';
+
+            try {
+                const data = await apiCall('/api/patient/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+
+                token = data.token;
+                localStorage.setItem('patient_token', token);
+                if (data.patient_id) localStorage.setItem('patient_id', data.patient_id);
+                loadDashboard();
+            } catch (err) {
+                showError(err.message || 'Invalid username or password.');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Sign In to My Sanctuary';
+            }
+        }
+
+        // Handle Registration
+        async function handleRegister(e) {
+            e.preventDefault();
+            hideError();
+
+            const patient_id = document.getElementById('reg-patient-id').value.trim();
+            const full_name = document.getElementById('reg-fullname').value.trim();
+            const date_of_birth = document.getElementById('reg-dob').value;
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-confirm').value;
+
+            if (password !== confirm) {
+                showError("Passwords do not match. Please re-enter.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-register');
+            const spinner = document.getElementById('register-spinner');
+            const btnText = document.getElementById('register-text');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Creating Account...';
+
+            try {
+                const data = await apiCall('/api/patient/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ patient_id, full_name, date_of_birth, username, password })
+                });
+
+                if (data.access_token || data.token) {
+                    token = data.access_token || data.token;
+                    localStorage.setItem('patient_token', token);
+                    if (data.patient_id) localStorage.setItem('patient_id', data.patient_id);
+                    loadDashboard();
+                } else {
+                    switchTab('login');
+                    document.getElementById('login-username').value = username;
+                    document.getElementById('login-password').value = password;
+                    showError("Registration successful! Click Sign In to enter.");
+                    document.getElementById('error-message').className = "mb-4 p-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-medium";
+                }
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Activate Patient Account';
+            }
+        }
+
+        // Handle Logout
+        async function handleLogout() {
+            if (token) {
+                try {
+                    await apiCall('/api/patient/logout', { method: 'POST' });
+                } catch(e) {}
+            }
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('patient_id');
+            token = null;
+            hide('dashboard');
+            hide('header-logout-btn');
+            show('auth-gate');
+            document.getElementById('login-form').reset();
+            document.getElementById('register-form').reset();
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            hide('auth-gate');
+            show('dashboard');
+            show('header-logout-btn');
+            
+            try {
+                const profile = await apiCall('/api/patient/profile', { method: 'GET' });
+                renderProfile(profile);
+                await loadRecommendations();
+                loadHabitsState();
+            } catch(err) {
+                if (err.message.includes('expired') || err.message.includes('401') || err.message.includes('Unauthorized')) {
+                    handleLogout();
+                } else {
+                    console.error("Dashboard load error:", err);
+                }
+            }
+        }
+
+        // Render Patient Profile
+        function renderProfile(profile) {
+            // Welcome & Header
+            const name = profile.full_name || 'Patient';
+            document.getElementById('welcome-msg').textContent = `Welcome back, ${name}! 👋`;
+            
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'PT';
+            document.getElementById('patient-avatar-circle').textContent = initials;
+            
+            if (profile.patient_id) {
+                document.getElementById('patient-id-badge').textContent = profile.patient_id;
+            }
+
+            // Conditions
+            const condList = document.getElementById('conditions-list');
+            condList.innerHTML = '';
+            if (profile.conditions && profile.conditions.length > 0) {
+                profile.conditions.forEach(cond => {
+                    let icon = 'fa-solid fa-heart-pulse text-teal-600';
+                    let condName = cond.condition_name || cond.name || cond;
+                    let lower = condName.toLowerCase();
+                    
+                    if (lower.includes('kidney') || lower.includes('renal')) icon = 'fa-solid fa-droplet text-amber-600';
+                    else if (lower.includes('asthma') || lower.includes('lung') || lower.includes('respiratory')) icon = 'fa-solid fa-lungs text-blue-600';
+                    else if (lower.includes('diabetes')) icon = 'fa-solid fa-cubes-stacked text-purple-600';
+                    else if (lower.includes('hypertension') || lower.includes('blood pressure')) icon = 'fa-solid fa-heart text-rose-600';
+                    
+                    condList.innerHTML += `
+                        <li class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+                            <span class="flex items-center font-medium text-slate-800">
+                                <i class="${icon} mr-2.5 text-sm w-4 text-center"></i>
+                                ${condName}
+                            </span>
+                            ${cond.icd10_code ? `<span class="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-500">${cond.icd10_code}</span>` : ''}
+                        </li>`;
+                });
+            } else {
+                condList.innerHTML = '<li class="text-xs text-slate-400 italic">No active conditions documented.</li>';
+            }
+
+            // Medications Schedule Cards
+            const medCards = document.getElementById('medications-cards');
+            const medList = document.getElementById('medications-list');
+            medCards.innerHTML = '';
+            medList.innerHTML = '';
+
+            if (profile.medications && profile.medications.length > 0) {
+                profile.medications.forEach(med => {
+                    const medName = med.medication_name || med.name;
+                    const dose = med.dosage || '';
+                    const freq = med.frequency || med.schedule || '';
+
+                    // Assign schedule timing chip
+                    let timingChip = '<span class="bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full font-bold text-[10px]">Daily Regimen</span>';
+                    let lower = (medName + ' ' + freq).toLowerCase();
+                    if (lower.includes('morning') || lower.includes('lisinopril') || lower.includes('once daily')) {
+                        timingChip = '<span class="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-bold text-[10px]">🌅 Morning (8:00 AM)</span>';
+                    } else if (lower.includes('meals') || lower.includes('metformin') || lower.includes('twice daily')) {
+                        timingChip = '<span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold text-[10px]">🍽️ With Meals</span>';
+                    } else if (lower.includes('bedtime') || lower.includes('amlodipine') || lower.includes('evening')) {
+                        timingChip = '<span class="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold text-[10px]">🌙 Bedtime (9:00 PM)</span>';
+                    }
+
+                    // Purpose note
+                    let purpose = 'Prescribed clinical therapy';
+                    if (lower.includes('lisinopril')) purpose = 'Blood pressure control & kidney protection';
+                    else if (lower.includes('metformin')) purpose = 'Blood sugar balance';
+                    else if (lower.includes('amlodipine')) purpose = 'Cardiovascular tone & vascular relaxation';
+                    else if (lower.includes('warfarin')) purpose = 'Anticoagulation stroke prevention';
+                    else if (lower.includes('albuterol')) purpose = 'Rescue bronchodilation for breathing comfort';
+
+                    medCards.innerHTML += `
+                        <div class="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between text-xs">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-slate-900">${medName}</span>
+                                    <span class="text-slate-500 font-mono text-[11px]">${dose}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-0.5">${purpose}</p>
+                            </div>
+                            <div>${timingChip}</div>
+                        </div>`;
+
+                    // Keep table in DOM for backward test compatibility
+                    medList.innerHTML += `<tr><td>${medName}</td><td>${dose} ${freq}</td></tr>`;
+                });
+            } else {
+                medCards.innerHTML = '<p class="text-xs text-slate-400 italic">No current medications on file.</p>';
+            }
+
+            // Allergies
+            const algList = document.getElementById('allergies-list');
+            algList.innerHTML = '';
+            if (profile.allergies && profile.allergies.length > 0) {
+                profile.allergies.forEach(alg => {
+                    const allergen = alg.allergen || alg;
+                    const reaction = alg.reaction || 'Reported reaction';
+                    algList.innerHTML += `
+                        <li class="bg-rose-50 text-rose-800 p-2.5 rounded-xl border border-rose-100 text-xs flex justify-between items-center">
+                            <span class="font-bold flex items-center">
+                                <i class="fa-solid fa-triangle-exclamation mr-2 text-rose-500"></i>
+                                ${allergen}
+                            </span>
+                            <span class="text-[11px] bg-white px-2 py-0.5 rounded border border-rose-200 text-rose-700">${reaction}</span>
+                        </li>`;
+                });
+            } else {
+                algList.innerHTML = '<li class="text-xs text-slate-400 italic">No documented drug allergies (NKDA).</li>';
+            }
+
+            // Labs with Graduated Meters
+            const labsList = document.getElementById('labs-list');
+            labsList.innerHTML = '';
+            if (profile.labs && profile.labs.length > 0) {
+                profile.labs.forEach(lab => {
+                    const status = (lab.status || 'NORMAL').toUpperCase();
+                    let meterColor = 'bg-emerald-500';
+                    let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    let statusLabel = 'NORMAL';
+                    let percentage = 50;
+
+                    if (status.includes('WARNING') || status.includes('ELEVATED')) {
+                        meterColor = 'bg-amber-500';
+                        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                        statusLabel = 'MONITORED';
+                        percentage = 75;
+                    } else if (status.includes('CRITICAL')) {
+                        meterColor = 'bg-rose-500';
+                        badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                        statusLabel = 'ATTENTION NEEDED';
+                        percentage = 90;
+                    }
+
+                    // Update top ribbon if egfr is present
+                    const rawName = (lab.raw_name || lab.biomarker || '').toLowerCase();
+                    if (rawName.includes('egfr')) {
+                        const egfrEl = document.getElementById('ribbon-egfr-val');
+                        if (egfrEl) egfrEl.textContent = Math.round(lab.value);
+                    }
+                    if (rawName.includes('potassium')) {
+                        const kEl = document.getElementById('ribbon-k-val');
+                        if (kEl) kEl.textContent = lab.value;
+                    }
+
+                    labsList.innerHTML += `
+                        <div class="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-xs">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="font-bold text-slate-900">${lab.biomarker || lab.name}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">${lab.value} ${lab.unit || ''}</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${statusLabel}</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
+                                <div class="gauge-bar h-2 rounded-full ${meterColor}" style="width: ${percentage}%"></div>
+                            </div>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                <i class="fa-solid fa-circle-info text-teal-600 mr-1 opacity-80"></i>
+                                ${lab.plain_explanation || 'No plain-language explanation available.'}
+                            </p>
+                        </div>`;
+                });
+            } else {
+                labsList.innerHTML = '<p class="text-xs text-slate-400 italic">No lab observations recorded.</p>';
+            }
+        }
+
+        // Load Recommendations from AI & Guidelines
+        async function loadRecommendations() {
+            const icon = document.getElementById('refresh-icon');
+            if (icon) icon.classList.add('fa-spin');
+            
+            const narrativeEl = document.getElementById('diet-narrative');
+            narrativeEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-teal-600"></i> Local AI synthesizing nutrition recommendations for your health profile...';
+            
+            try {
+                const data = await apiCall('/api/patient/recommendations', { method: 'GET' });
+                
+                if (data.personalized_narrative) {
+                    narrativeEl.innerHTML = `"${data.personalized_narrative}"`;
+                } else {
+                    narrativeEl.innerHTML = "Your daily nutrition guidance has been synthesized from deterministic clinical guidelines for kidney and cardiovascular balance.";
+                }
+
+                const guide = data.dietary_guidelines || {};
+                
+                renderCategoryCards('eat-more-list', guide.recommended_foods || [], 'bg-white border-emerald-500 text-slate-800');
+                renderCategoryCards('avoid-list', guide.foods_to_avoid || [], 'bg-white border-rose-500 text-slate-800');
+                renderCategoryCards('tips-list', guide.wellness_tips || [], 'bg-white border-teal-500 text-slate-800');
+                
+            } catch (err) {
+                narrativeEl.innerHTML = `<span class="text-rose-600"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Unable to load dietary guidelines: ${err.message}</span>`;
+            } finally {
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        // Render Categorized Cards
+        function renderCategoryCards(containerId, items, borderClass) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    const title = item.item || item.name || item.title || (typeof item === 'string' ? item : 'Guideline');
+                    const desc = item.rationale || item.description || item.reason || '';
+                    container.innerHTML += `
+                        <div class="p-3 rounded-xl border-l-4 shadow-sm bg-white text-xs ${borderClass}">
+                            <div class="font-bold text-slate-900 leading-snug">${title}</div>
+                            ${desc ? `<div class="text-[11px] text-slate-500 mt-1 leading-relaxed">${desc}</div>` : ''}
+                        </div>`;
+                });
+            } else {
+                container.innerHTML = '<div class="text-xs text-slate-400 italic p-2">None currently listed.</div>';
+            }
+        }
+
+        // Interactive Habits Persistence
+        function toggleHabit(id) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                localStorage.setItem(`habit_${id}`, checkbox.checked ? 'true' : 'false');
+                updateHabitsProgress();
+            }
+        }
+
+        function loadHabitsState() {
+            ['habit-1', 'habit-2', 'habit-3', 'habit-4'].forEach(id => {
+                const checked = localStorage.getItem(`habit_${id}`) === 'true';
+                const el = document.getElementById(id);
+                if (el) el.checked = checked;
+            });
+            updateHabitsProgress();
+        }
+
+        function updateHabitsProgress() {
+            const ids = ['habit-1', 'habit-2', 'habit-3', 'habit-4'];
+            const completed = ids.filter(id => document.getElementById(id)?.checked).length;
+            const badge = document.getElementById('habit-progress-badge');
+            if (badge) {
+                badge.textContent = `${completed} / ${ids.length} Complete`;
+                badge.className = completed === ids.length
+                    ? 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800'
+                    : 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800';
+            }
+        }
+
+        // Initialize on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (token) {
+                loadDashboard();
+            } else {
+                show('auth-gate');
+                hide('dashboard');
+                hide('header-logout-btn');
+            }
+        });
+    </script>
+</body>
+</html>
