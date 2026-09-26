@@ -11,7 +11,7 @@
   <!-- Tailwind CSS & Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/chart.umd.min.js"></script>
   
   <!-- Clinical Fonts with Offline System Fallbacks -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -989,12 +989,58 @@
 
         <!-- Proposed Prescription Input Well -->
         <div class="clinical-card p-4 space-y-3.5 border-slate-800">
-          <div class="card-title text-xs">
-            <i class="fa-solid fa-prescription-bottle-medical text-teal-400"></i>
-            <span>Proposed Prescription Evaluation</span>
+          <div class="flex items-center justify-between">
+            <div class="card-title text-xs">
+              <i class="fa-solid fa-prescription-bottle-medical text-teal-400"></i>
+              <span>Proposed Prescription Evaluation</span>
+            </div>
+            <span class="text-[10px] text-teal-400 font-mono bg-teal-950/80 border border-teal-500/30 px-2 py-0.5 rounded">
+              Multi-Medicine Bundle
+            </span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Input Mode Tabs -->
+          <div class="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
+            <button id="presc-mode-text" type="button" onclick="switchPrescriptionMode('text')" class="flex-1 py-1.5 rounded bg-teal-700 text-white transition text-center">
+              <i class="fa-solid fa-file-lines mr-1"></i> Multi-Drug Text
+            </button>
+            <button id="presc-mode-file" type="button" onclick="switchPrescriptionMode('file')" class="flex-1 py-1.5 rounded text-slate-400 hover:text-slate-200 transition text-center">
+              <i class="fa-solid fa-file-arrow-up mr-1"></i> Upload Rx (.pdf/.txt)
+            </button>
+            <button id="presc-mode-single" type="button" onclick="switchPrescriptionMode('single')" class="flex-1 py-1.5 rounded text-slate-400 hover:text-slate-200 transition text-center">
+              <i class="fa-solid fa-pills mr-1"></i> Single Quick Drug
+            </button>
+          </div>
+
+          <!-- Mode 1: Multi-Drug Clinical Textarea -->
+          <div id="presc-box-text" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="clinical-label">Prescription Orders / Sig Formulations:</label>
+              <span id="presc-parsed-count" class="text-[10px] text-teal-400 font-mono">1 order parsed</span>
+            </div>
+            <textarea id="proposed-prescription-text" rows="3" class="clinical-input font-mono text-xs leading-relaxed" placeholder="e.g.&#10;1. Tab Augmentin 625mg PO 1-0-1 x 5 days&#10;2. Cap Omeprazole 20mg OD before breakfast&#10;3. Tab Paracetamol 650mg SOS&#10;or simple list: Advil 400mg TID, Lisinopril 20mg QD">Tab Ibuprofen 400mg PO TID</textarea>
+            <p class="text-[10px] text-slate-400">
+              <i class="fa-solid fa-wand-magic-sparkles text-teal-400 mr-1"></i> Supports natural clinical formats, dosage, route, frequency, and custom medications.
+            </p>
+          </div>
+
+          <!-- Mode 2: Prescription File Upload Dropzone -->
+          <div id="presc-box-file" class="space-y-2" style="display:none">
+            <label class="clinical-label">Upload E-Prescription Slip (.pdf or .txt):</label>
+            <div id="presc-file-dropzone" onclick="document.getElementById('presc-file-input').click()" class="border-2 border-dashed border-teal-500/40 hover:border-teal-400/80 bg-slate-900/60 rounded-xl p-4 text-center cursor-pointer transition group">
+              <input type="file" id="presc-file-input" accept=".pdf,.txt" class="hidden" onchange="handlePrescriptionFileUpload(event)" />
+              <i class="fa-solid fa-cloud-arrow-up text-2xl text-teal-400 group-hover:scale-110 transition-transform mb-1"></i>
+              <div class="text-xs font-semibold text-slate-200">Drop prescription file here or click to browse</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Supports PDF discharge slips &amp; plain text e-prescriptions · 100% Offline HIPAA Redacted</div>
+            </div>
+            <div id="presc-file-status" class="hidden p-2.5 rounded bg-teal-950/60 border border-teal-500/40 text-xs text-teal-200 flex items-center justify-between">
+              <span id="presc-file-filename" class="font-mono truncate"><i class="fa-solid fa-file-lines mr-1.5"></i> prescription.pdf</span>
+              <span id="presc-file-count" class="text-[10px] bg-teal-800 px-2 py-0.5 rounded font-mono">3 drugs extracted</span>
+            </div>
+          </div>
+
+          <!-- Mode 3: Single Quick Drug Input -->
+          <div id="presc-box-single" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" style="display:none">
             <div class="sm:col-span-2">
               <label class="clinical-label">Proposed Medication</label>
               <input type="text" id="proposed-med-input" value="Ibuprofen" class="clinical-input" placeholder="e.g. Ibuprofen, Propranolol" />
@@ -1005,27 +1051,24 @@
             </div>
           </div>
 
-          <!-- Preset Chips -->
+          <!-- Preset Multi-Drug Challenge Cases -->
           <div>
-            <div class="text-[11px] text-slate-400 mb-2">Preset Clinical Challenge Cases:</div>
+            <div class="text-[11px] text-slate-400 mb-2">Preset Clinical Challenge Bundles:</div>
             <div class="flex flex-wrap gap-1.5">
-              <button class="test-chip test-chip-danger" onclick="setProposedMed('Advil','400mg PO TID')">
-                <i class="fa-solid fa-triangle-exclamation"></i> Advil (Brand · Renal)
+              <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Triple Whammy (Renal)','Tab Lisinopril 20mg PO QD\nTab Furosemide 40mg PO QD\nTab Advil 400mg PO TID')">
+                <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy (Renal Crisis)
               </button>
-              <button class="test-chip test-chip-danger" onclick="setProposedMed('Propranolol','40mg PO BID')">
-                <i class="fa-solid fa-lungs"></i> Propranolol (Asthma)
+              <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Asthma + Bleed Risk','Tab Propranolol 40mg PO BID\nTab Aspirin 325mg PO QD')">
+                <i class="fa-solid fa-lungs"></i> Propranolol + Aspirin (Asthma)
               </button>
-              <button class="test-chip test-chip-warning" onclick="setProposedMed('Aspirin','81mg daily')">
-                <i class="fa-solid fa-droplet"></i> Aspirin (Bleed Risk)
+              <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Penicillin Allergy','Tab Augmentin 625mg PO TID\nTab Paracetamol 650mg PO SOS')">
+                <i class="fa-solid fa-shield-virus"></i> Augmentin + Paracetamol (Allergy)
               </button>
-              <button class="test-chip test-chip-purple" onclick="setProposedMed('Amoxicillin','500mg PO TID')">
-                <i class="fa-solid fa-shield-virus"></i> Amoxicillin (Penicillin)
+              <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Geriatric Polypharmacy','Tab Diphenhydramine 50mg PO QHS\nTab Diazepam 5mg PO QHS')">
+                <i class="fa-solid fa-person-cane"></i> Beers Criteria Bundle
               </button>
-              <button class="test-chip test-chip-purple" onclick="setProposedMed('Diphenhydramine','50mg PO QHS')">
-                <i class="fa-solid fa-person-cane"></i> Diphenhydramine (Beers)
-              </button>
-              <button class="test-chip test-chip-danger" onclick="setProposedMed('Ciprofloxacin','500mg PO BID')">
-                <i class="fa-solid fa-heart-pulse"></i> Ciprofloxacin (QTc)
+              <button type="button" class="test-chip test-chip-safe" onclick="setMultiPrescriptionPreset('Safe Complex Regimen','Tab Amoxicillin 500mg PO TID\nTab Paracetamol 650mg PO TID\nCap Omeprazole 20mg PO OD ac')">
+                <i class="fa-solid fa-circle-check"></i> Safe 3-Drug Care Plan
               </button>
             </div>
           </div>
@@ -1051,7 +1094,7 @@
             <i class="fa-solid fa-shield-halved text-4xl block text-teal-500/30"></i>
             <div class="text-xs font-semibold text-slate-400">Clinical Safety Engine Standing By</div>
             <p class="text-[11px] text-slate-500 max-w-sm mx-auto">
-              Select or type a proposed medication and click <strong>"Run Offline Contraindication Review"</strong> to verify safety against local deterministic SQLite pharmacology matrices.
+              Type or upload a multi-medicine prescription bundle and click <strong>"Run Offline Contraindication Review"</strong> to verify safety against local deterministic SQLite pharmacology matrices.
             </p>
           </div>
 
@@ -1070,6 +1113,15 @@
               </div>
             </div>
 
+            <!-- Itemized Per-Medication Breakdown Cards -->
+            <div id="itemized-medications-section" class="space-y-2">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span><i class="fa-solid fa-tablets text-teal-400 mr-1.5"></i> Prescribed Medication Breakdown</span>
+                <span id="prescribed-bundle-summary" class="text-[10px] font-mono text-slate-500"></span>
+              </div>
+              <div id="itemized-medications-cards" class="space-y-2.5"></div>
+            </div>
+
             <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
             <div id="polypharmacy-container" class="space-y-2"></div>
 
@@ -1078,6 +1130,7 @@
 
             <!-- Clinical Safe Alternatives Formulary (1-Click Swap) -->
             <div id="alternatives-container" class="space-y-2"></div>
+
 
             <!-- Cryptographic Proof Bar -->
             <div class="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
@@ -1357,6 +1410,9 @@
           </a>
         </div>
       </div>
+
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════════
        VIEW 5: CLINICAL ANALYTICS & SOVEREIGN INSIGHTS DASHBOARD
@@ -1738,6 +1794,6 @@
 
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=2.2"></script>
 </body>
 </html>

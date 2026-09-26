@@ -10,7 +10,7 @@ import os
 import sqlite3
 from typing import Dict, List, Any, Optional, Tuple
 
-from ai_engine.pharmacology import PharmacologyKnowledge
+from ai_engine.pharmacology import PharmacologyKnowledge, BRAND_TO_GENERIC
 from ai_engine.polypharmacy import PolypharmacyEngine
 from ai_engine.lab_evaluator import LabBiomarkerEvaluator
 from ai_engine.alternatives import SafeAlternativeRecommender
@@ -234,3 +234,180 @@ def analyze(redacted_text: str) -> dict:
         "drug": flagged_drug,
         "severity": severity
     }
+
+
+# ---------------------------------------------------------------------------
+# Multi-Medicine Prescription Bundle Evaluator (Person C)
+# ---------------------------------------------------------------------------
+def evaluate_prescription_set(
+    proposed_meds: List[Union[str, Dict[str, Any]]],
+    conditions: List[str],
+    existing_meds: List[str],
+    allergies: List[str],
+    labs: Optional[Dict[str, Any]] = None,
+    demographics: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Person C Multi-Medicine Evaluator:
+    1. Evaluates each prescribed drug against patient conditions, allergies, labs, and active baseline meds.
+    2. Evaluates intra-prescription drug-drug interactions between all newly prescribed items in the bundle.
+    3. Triggers Tier 2 offline SLM reasoning for unlisted/novel medications.
+    4. Provides safe alternatives and itemized triage status for each drug.
+    """
+    normalized_items: List[Dict[str, Any]] = []
+    
+    # Normalize input into uniform dicts
+    for item in proposed_meds:
+        if isinstance(item, str):
+            clean_item = item.strip()
+            if not clean_item:
+                continue
+            normalized_items.append({
+                "medication": clean_item,
+                "dosage": "Standard dose",
+                "route": "PO",
+                "frequency": "QD"
+            })
+        elif isinstance(item, dict):
+            med_name = item.get("medication") or item.get("drug_name") or item.get("name", "")
+            if not med_name:
+                continue
+            normalized_items.append({
+                "medication": med_name,
+                "dosage": item.get("dosage", "Standard dose"),
+                "route": item.get("route", "PO"),
+                "frequency": item.get("frequency", "QD"),
+                "duration": item.get("duration", "")
+            })
+
+    if not normalized_items:
+        return {
+            "overall_status": "SAFE",
+            "flagged": False,
+            "total_alerts": 0,
+            "medication_evaluations": [],
+            "summary_explanation": "No proposed medications provided to evaluate."
+        }
+
+    all_prescribed_drug_names = [it["medication"] for it in normalized_items]
+    evaluations: List[Dict[str, Any]] = []
+    bundle_overall_status = "SAFE"
+    total_alerts_count = 0
+
+    for idx, item in enumerate(normalized_items):
+        med_name = item["medication"]
+        dosage = item["dosage"]
+        route = item["route"]
+        freq = item["frequency"]
+
+        # Other proposed drugs in the SAME prescription bundle
+        co_prescribed = [
+            it["medication"] for j, it in enumerate(normalized_items) if j != idx
+        ]
+        
+        # Combined active medications = baseline active meds + other new meds in this prescription
+        combined_meds = list(set(existing_meds + co_prescribed))
+
+        # Run Tier 1 Evaluation
+        status, alerts, canonical_drug, alts = evaluate_full_safety(
+            med_name,
+            conditions,
+            combined_meds,
+            allergies,
+            labs,
+            demographics
+        )
+
+        # Distinguish intra-prescription alerts from baseline alerts
+        for a in alerts:
+            factor = a.get("conflicting_factor", "")
+            for co_med in co_prescribed:
+                if co_med.lower() in factor.lower() or PharmacologyKnowledge.normalize_drug_name(co_med)[0] in factor.lower():
+                    a["is_intra_prescription"] = True
+                    a["interaction_type"] = "INTRA_PRESCRIPTION_DDI"
+                    a["conflicting_factor"] = f"Co-Prescribed in this Visit: {co_med}"
+
+        # Tier 2 SLM Fallback for novel/unlisted drugs
+        is_known_drug = (
+            canonical_drug in BRAND_TO_GENERIC.values()
+            or canonical_drug in [m.lower() for m in BRAND_TO_GENERIC.keys()]
+            or status != "SAFE"
+        )
+
+        slm_assessment = None
+        if not is_known_drug:
+            # Query local SLM
+            slm_assessment = ai_bridge.evaluate_unlisted_drug_contraindications(
+                drug_name=med_name,
+                dosage_route=f"{dosage} {route} {freq}".strip(),
+                conditions=conditions,
+                active_medications=combined_meds,
+                allergies=allergies
+            )
+            if slm_assessment and slm_assessment.get("flagged"):
+                slm_sev = slm_assessment.get("status", "WARNING").upper()
+                if slm_sev not in ("CRITICAL", "WARNING"):
+                    slm_sev = "WARNING"
+                if slm_sev == "CRITICAL":
+                    status = "CRITICAL"
+                elif slm_sev == "WARNING" and status != "CRITICAL":
+                    status = "WARNING"
+
+                alerts.append({
+                    "severity": slm_sev,
+                    "interaction_type": "SLM_CLINICAL_REASONING",
+                    "conflicting_factor": f"Unlisted Medication Analysis: {med_name}",
+                    "clinical_mechanism": slm_assessment.get("mechanism", "Potential interaction detected by local SLM reasoning."),
+                    "recommendation": slm_assessment.get("recommendation", "Review pharmacology carefully.")
+                })
+
+        # Update bundle overall status
+        if status == "CRITICAL":
+            bundle_overall_status = "CRITICAL"
+        elif status == "WARNING" and bundle_overall_status != "CRITICAL":
+            bundle_overall_status = "WARNING"
+
+        total_alerts_count += len(alerts)
+
+        # Build drug-specific explanation
+        if status == "CRITICAL":
+            expl = f"CRITICAL CONTRAINDICATION: High clinical hazard identified with '{med_name}'. Alternative required."
+        elif status == "WARNING":
+            expl = f"CLINICAL CAUTION: Moderate interaction or monitoring required for '{med_name}'."
+        else:
+            expl = f"CLEARED: No documented contraindications detected for '{med_name}'."
+
+        evaluations.append({
+            "medication": med_name,
+            "canonical_drug": canonical_drug,
+            "dosage": dosage,
+            "route": route,
+            "frequency": freq,
+            "status": status,
+            "alerts_count": len(alerts),
+            "alerts": alerts,
+            "polypharmacy_alerts": [a for a in alerts if a.get("interaction_type") == "POLYPHARMACY"],
+            "intra_prescription_alerts": [a for a in alerts if a.get("interaction_type") == "INTRA_PRESCRIPTION_DDI"],
+            "recommended_alternatives": alts,
+            "explanation": expl,
+            "slm_evaluated": slm_assessment is not None
+        })
+
+    flagged_count = sum(1 for e in evaluations if e["status"] in ("CRITICAL", "WARNING"))
+    if bundle_overall_status == "CRITICAL":
+        summary_msg = f"CRITICAL CONTRAINDICATION: {flagged_count} of {len(evaluations)} prescribed medication(s) carry severe clinical hazards."
+    elif bundle_overall_status == "WARNING":
+        summary_msg = f"CLINICAL CAUTION: {flagged_count} of {len(evaluations)} prescribed medication(s) require dosage adjustment or close monitoring."
+    else:
+        summary_msg = f"PRESCRIPTION CLEARED: All {len(evaluations)} prescribed medication(s) are safe to administer against patient profile."
+
+    return {
+        "overall_status": bundle_overall_status,
+        "flagged": bundle_overall_status != "SAFE",
+        "total_alerts": total_alerts_count,
+        "total_prescribed": len(evaluations),
+        "flagged_count": flagged_count,
+        "medication_evaluations": evaluations,
+        "summary_explanation": summary_msg
+    }
+

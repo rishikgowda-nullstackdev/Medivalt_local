@@ -1,0 +1,14 @@
+HOSPITAL OUTPATIENT PRESCRIPTION SLIP
+Date: 2026-09-26
+Prescribing Physician: Dr. Allison Cameron, MD (NPI-77201)
+Hospital: Princeton Plainsboro Teaching Hospital
+
+Patient Name: [REDACTED]
+MRN / Token: ANON_PT-101
+
+PRESCRIPTION ORDERS:
+1. Tab Amoxicillin 500mg PO TID x 7 days (Take 1 tablet every 8 hours)
+2. Tab Paracetamol (Acetaminophen) 650mg PO TID PRN (Take 1 tablet for fever or pain)
+3. Cap Omeprazole 20mg PO OD ac (Take 1 capsule daily before breakfast)
+
+Dispense as written. Refills: 1.

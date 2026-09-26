@@ -4,6 +4,8 @@ Connects to offline local SLM (llama3.2:3b / phi3.5:3.8b) on loopback (127.0.0.1
 Provides resilient timeouts and automatic fallback to deterministic synthesis if Ollama is offline.
 """
 
+import re
+import json
 import httpx
 import logging
 from typing import Dict, Any, Optional, List
@@ -151,17 +153,69 @@ class OllamaBridge:
             }
         }
 
+    @classmethod
+    def evaluate_unlisted_drug_contraindications(
+        cls,
+        drug_name: str,
+        dosage_route: str,
+        conditions: List[str],
+        active_medications: List[str],
+        allergies: List[str]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Tier 2 SLM fallback: Evaluates a novel, unlisted, or complex medication against
+        patient clinical context using the local offline SLM.
+        Returns parsed risk assessment or None if Ollama is offline.
+        """
+        if not cls.is_online():
+            return None
+
+        cond_str = ", ".join(conditions) if conditions else "None documented"
+        meds_str = ", ".join(active_medications) if active_medications else "None documented"
+        allergies_str = ", ".join(allergies) if allergies else "NKDA (None)"
+
+        prompt = (
+            f"You are a clinical pharmacology AI evaluating the safety of a proposed prescription.\n"
+            f"Proposed Medication: '{drug_name}' ({dosage_route})\n"
+            f"Patient Diagnoses: {cond_str}\n"
+            f"Current Active Medications: {meds_str}\n"
+            f"Documented Allergies: {allergies_str}\n\n"
+            f"Is prescribing '{drug_name}' safe or contraindicated for this patient?\n"
+            f"Respond with a JSON object ONLY, formatted as:\n"
+            f"{{\n"
+            f'  "status": "CRITICAL" | "WARNING" | "SAFE",\n'
+            f'  "flagged": true | false,\n'
+            f'  "mechanism": "Brief clinical reasoning explanation",\n'
+            f'  "recommendation": "Actionable clinical recommendation or alternative"\n'
+            f"}}"
+        )
+
+        payload = {
+            "model": DEFAULT_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 256
+            }
+        }
+
         try:
-            with httpx.Client(timeout=8.0) as client:
+            with httpx.Client(timeout=REQUEST_TIMEOUT_SECONDS) as client:
                 res = client.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
                 if res.status_code == 200:
-                    text = res.json().get("response", "").strip()
-                    if text:
-                        return text
+                    raw_resp = res.json().get("response", "").strip()
+                    # Try to parse JSON from SLM response
+                    import json
+                    json_match = re.search(r"\{.*\}", raw_resp, re.DOTALL)
+                    if json_match:
+                        parsed = json.loads(json_match.group(0))
+                        return parsed
         except Exception as e:
-            logger.info("Ollama wellness guide skipped (using deterministic fallback): %s", str(e))
+            logger.info("Ollama novel drug evaluation skipped: %s", str(e))
 
         return None
 
 
 ai_bridge = OllamaBridge()
+

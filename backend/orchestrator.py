@@ -53,6 +53,30 @@ def call_person_c_full_safety(
     except (ImportError, AttributeError):
         return None
 
+def call_person_b_prescription_bundle(file_source: Any, filename: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Dynamically calls Person B's multi-medicine prescription extractor."""
+    try:
+        from ingestion.pipeline import extract_prescription_bundle
+        return extract_prescription_bundle(file_source, filename)
+    except (ImportError, AttributeError):
+        return None
+
+def call_person_c_prescription_set(
+    proposed_meds: List[Any],
+    conditions: List[str],
+    medications: List[str],
+    allergies: List[str],
+    labs: Optional[Dict[str, Any]] = None,
+    demographics: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
+    """Dynamically calls Person C's multi-medicine prescription bundle evaluator."""
+    try:
+        from ai_engine.engine import evaluate_prescription_set
+        return evaluate_prescription_set(proposed_meds, conditions, medications, allergies, labs, demographics)
+    except (ImportError, AttributeError):
+        return None
+
+
 
 class ClinicalOrchestrator:
     """
@@ -343,6 +367,170 @@ class ClinicalOrchestrator:
             "execution_time_ms": exec_time_ms
         }
 
+    @classmethod
+    def process_prescription_review(
+        cls,
+        proposed_meds: List[Any],
+        patient_id: Optional[str] = None,
+        raw_notes: Optional[str] = None,
+        practitioner: Optional[Dict[str, Any]] = None,
+        demographics: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Executes complete multi-medicine prescription bundle evaluation.
+        Evaluates intra-prescription and baseline contraindications.
+        Logs cryptographic SHA-256 audit entry for the entire prescription bundle.
+        """
+        start_time = time.time()
+        conditions = []
+        medications = []
+        allergies = []
+        labs: Dict[str, Any] = {}
+        patient_token = "ANON_DEMO"
+        demo_data = demographics or {}
+
+        if patient_id and not raw_notes:
+            conn = cls.get_db()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (patient_id,))
+                conditions = [r["condition_name"] for r in cursor.fetchall()]
+
+                cursor.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (patient_id,))
+                medications = [r["medication_name"] for r in cursor.fetchall()]
+
+                cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
+                allergies = [r["allergen"] for r in cursor.fetchall()]
+
+                if not demo_data:
+                    if patient_id == "PT-101":
+                        demo_data = {"age": 64, "gender": "male", "weight_kg": 78.0}
+                    elif patient_id == "PT-102":
+                        demo_data = {"age": 32, "gender": "female", "weight_kg": 58.0}
+                    elif patient_id == "PT-103":
+                        demo_data = {"age": 74, "gender": "male", "weight_kg": 82.0}
+
+                try:
+                    cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+                    for r in cursor.fetchall():
+                        b_name = r["biomarker_name"]
+                        labs[b_name] = {
+                            "value": r["value"],
+                            "unit": r["unit"],
+                            "display": f"{r['value']} {r['unit']}"
+                        }
+                except Exception:
+                    pass
+            finally:
+                conn.close()
+
+            patient_token = f"ANON_{patient_id}"
+
+        elif raw_notes:
+            try:
+                from ingestion.pipeline import process_clinical_note
+                processed = process_clinical_note(raw_notes)
+            except (ImportError, AttributeError):
+                processed = ClinicalRedactor.process_clinical_note(raw_notes)
+
+            patient_token = processed["patient_token"]
+            conditions = processed["entities"]["diagnosed_conditions"]
+            medications = processed["entities"]["current_medications"]
+            allergies = processed["entities"]["allergies"]
+            labs = processed["entities"].get("biomarkers", {})
+            if not demo_data and "demographics" in processed:
+                demo_data = processed["demographics"]
+
+        # Call Person C's prescription set evaluator
+        c_bundle = call_person_c_prescription_set(
+            proposed_meds, conditions, medications, allergies, labs, demo_data
+        )
+
+        if not c_bundle:
+            # Fallback if Person C function unavailable
+            evaluations = []
+            bundle_status = "SAFE"
+            total_alerts = 0
+            for item in proposed_meds:
+                m_name = item if isinstance(item, str) else item.get("medication", "")
+                st, al, can = cls.check_contraindications(m_name, conditions, medications, allergies)
+                if st == "CRITICAL":
+                    bundle_status = "CRITICAL"
+                elif st == "WARNING" and bundle_status != "CRITICAL":
+                    bundle_status = "WARNING"
+                total_alerts += len(al)
+                evaluations.append({
+                    "medication": m_name,
+                    "canonical_drug": can,
+                    "dosage": item.get("dosage", "Standard dose") if isinstance(item, dict) else "Standard dose",
+                    "route": item.get("route", "PO") if isinstance(item, dict) else "PO",
+                    "frequency": item.get("frequency", "QD") if isinstance(item, dict) else "QD",
+                    "status": st,
+                    "alerts_count": len(al),
+                    "alerts": al,
+                    "polypharmacy_alerts": [],
+                    "intra_prescription_alerts": [],
+                    "recommended_alternatives": [],
+                    "explanation": cls.synthesize_explanation(m_name, can, st, al)
+                })
+            c_bundle = {
+                "overall_status": bundle_status,
+                "flagged": bundle_status != "SAFE",
+                "total_alerts": total_alerts,
+                "total_prescribed": len(evaluations),
+                "flagged_count": sum(1 for e in evaluations if e["status"] != "SAFE"),
+                "medication_evaluations": evaluations,
+                "summary_explanation": f"Prescription evaluated: {len(evaluations)} items."
+            }
+
+        exec_time_ms = round((time.time() - start_time) * 1000, 2)
+
+        # Resolve practitioner attribution
+        prac = practitioner or {}
+        prac_id = prac.get("practitioner_id", "PRAC-103")
+        prac_name = prac.get("full_name", "Dr. Gregory House, MD")
+        hosp_name = prac.get("hospital_name", "Princeton Plainsboro Teaching Hospital")
+
+        all_med_names = [
+            e["medication"] for e in c_bundle.get("medication_evaluations", [])
+        ]
+        med_summary_str = ", ".join(all_med_names) or "Prescription Bundle"
+
+        # Log cryptographic audit entry
+        log_entry = audit_logger.log_review(
+            patient_token=patient_token,
+            proposed_medication=med_summary_str,
+            overall_status=c_bundle["overall_status"],
+            alerts_count=c_bundle["total_alerts"],
+            execution_time_ms=exec_time_ms,
+            practitioner_id=prac_id,
+            practitioner_name=prac_name,
+            hospital_name=hosp_name
+        )
+
+        return {
+            "event_id": log_entry["event_id"],
+            "patient_id": patient_id or "ANONYMOUS",
+            "patient_token": patient_token,
+            "practitioner_id": prac_id,
+            "practitioner_name": prac_name,
+            "hospital_name": hosp_name,
+            "prescribed_medications": all_med_names,
+            "overall_status": c_bundle["overall_status"],
+            "flagged": c_bundle["flagged"],
+            "total_alerts": c_bundle["total_alerts"],
+            "total_prescribed": c_bundle["total_prescribed"],
+            "flagged_count": c_bundle["flagged_count"],
+            "medication_evaluations": c_bundle["medication_evaluations"],
+            "summary_explanation": c_bundle["summary_explanation"],
+            "biomarkers": labs,
+            "demographics": demo_data,
+            "zero_cloud_verified": True,
+            "audit_hash": log_entry["audit_hash"],
+            "execution_time_ms": exec_time_ms
+        }
+
     # Backward compatibility alias
     run_review = process_review
+
 

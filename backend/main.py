@@ -157,9 +157,12 @@ class UploadRecordResponse(BaseModel):
 
 class ReviewRequest(BaseModel):
     patient_id: Optional[str] = "PT-101"
-    proposed_medication: str = Field(..., example="Ibuprofen")
-    dosage: Optional[str] = "400mg PO TID"
+    proposed_medication: Optional[str] = None
+    proposed_medications: Optional[List[Any]] = None
+    prescription_text: Optional[str] = None
+    dosage: Optional[str] = "Standard dose"
     raw_notes_override: Optional[str] = None
+
 
 class RedactRequest(BaseModel):
     text: str
@@ -723,15 +726,36 @@ def logout_endpoint(response: Response):
     return {"status": "LOGGED_OUT", "message": "Session terminated."}
 
 
+@app.post("/api/upload-prescription")
+async def upload_prescription_endpoint(file: UploadFile = File(...)):
+    """
+    Person B Prescription File Intake:
+    Accepts multipart prescription file (PDF or TXT).
+    De-identifies patient PHI and extracts structured medication lines.
+    """
+    content = await file.read()
+    InputValidator.validate_upload_file(file, content)
+    filename = file.filename or "prescription.txt"
+    try:
+        from ingestion.pipeline import extract_prescription_bundle
+        result = extract_prescription_bundle(content, filename=filename)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to process prescription file: {str(e)}"
+        )
+
+
 @app.post("/api/review")
+@app.post("/api/review-prescription")
 def review_prescription(req: ReviewRequest, request: Request):
     """
-    Main Clinical Verification Engine.
+    Main Clinical Verification Engine (Single or Multi-Medicine Prescriptions).
     Cross-checks proposed prescription against patient diagnostic history & active medications.
+    Evaluates intra-prescription drug-drug interactions and polypharmacy cascades.
     Binds the authenticated physician & hospital to the SHA-256 audit ledger.
     """
-    validated_med = InputValidator.validate_medication_name(req.proposed_medication)
-
     # Resolve authenticated practitioner
     current_doctor = get_current_practitioner(request)
 
@@ -748,14 +772,59 @@ def review_prescription(req: ReviewRequest, request: Request):
             )
         conn.close()
 
-    result = ClinicalOrchestrator.process_review(
-        proposed_med=validated_med,
-        patient_id=req.patient_id if not req.raw_notes_override else None,
-        raw_notes=req.raw_notes_override,
-        practitioner=current_doctor
+    # Determine if this is a multi-drug request or freeform prescription text
+    proposed_list = []
+
+    if req.prescription_text:
+        try:
+            from ingestion.pipeline import extract_prescription_bundle
+            bundle = extract_prescription_bundle(req.prescription_text)
+            proposed_list = bundle.get("prescriptions", [])
+        except Exception:
+            lines = [l.strip() for l in req.prescription_text.splitlines() if l.strip()]
+            proposed_list = lines
+
+    elif req.proposed_medications and isinstance(req.proposed_medications, list) and len(req.proposed_medications) > 0:
+        proposed_list = req.proposed_medications
+
+    elif req.proposed_medication:
+        # Check if comma-separated or newline-separated multiple drugs
+        if "\n" in req.proposed_medication or "," in req.proposed_medication:
+            try:
+                from ingestion.pipeline import extract_prescription_bundle
+                bundle = extract_prescription_bundle(req.proposed_medication)
+                proposed_list = bundle.get("prescriptions", [])
+            except Exception:
+                split_items = [m.strip() for m in re.split(r"[\n,]+", req.proposed_medication) if m.strip()]
+                proposed_list = split_items
+        else:
+            # Single drug review (Legacy/Direct mode)
+            validated_med = InputValidator.validate_medication_name(req.proposed_medication)
+            result = ClinicalOrchestrator.process_review(
+                proposed_med=validated_med,
+                patient_id=req.patient_id if not req.raw_notes_override else None,
+                raw_notes=req.raw_notes_override,
+                practitioner=current_doctor
+            )
+            result["timestamp"] = datetime.now(timezone.utc).isoformat()
+            return result
+
+    if proposed_list:
+        # Process multi-medicine prescription bundle
+        result = ClinicalOrchestrator.process_prescription_review(
+            proposed_meds=proposed_list,
+            patient_id=req.patient_id if not req.raw_notes_override else None,
+            raw_notes=req.raw_notes_override,
+            practitioner=current_doctor
+        )
+        result["timestamp"] = datetime.now(timezone.utc).isoformat()
+        return result
+
+    raise HTTPException(
+        status_code=400,
+        detail="Please provide at least one proposed medication or prescription document text."
     )
-    result["timestamp"] = datetime.now(timezone.utc).isoformat()
-    return result
+
 
 
 @app.get("/api/audit-logs")

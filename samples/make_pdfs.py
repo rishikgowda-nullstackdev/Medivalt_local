@@ -84,3 +84,16 @@ if __name__ == "__main__":
     pdf2 = os.path.join(samples_dir, "patient_2_asthma_consult.pdf")
     create_simple_pdf(txt2, pdf2)
     print(f"Generated: {pdf2}")
+
+    # Generate prescription triple whammy PDF
+    p_txt1 = open(os.path.join(samples_dir, "prescription_triple_whammy.txt"), "r").read()
+    p_pdf1 = os.path.join(samples_dir, "prescription_triple_whammy.pdf")
+    create_simple_pdf(p_txt1, p_pdf1)
+    print(f"Generated: {p_pdf1}")
+
+    # Generate prescription safe regimen PDF
+    p_txt2 = open(os.path.join(samples_dir, "prescription_safe_regimen.txt"), "r").read()
+    p_pdf2 = os.path.join(samples_dir, "prescription_safe_regimen.pdf")
+    create_simple_pdf(p_txt2, p_pdf2)
+    print(f"Generated: {p_pdf2}")
+

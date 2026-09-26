@@ -1,0 +1,63 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 617 >>
+stream
+BT
+/F1 10 Tf
+50 750 Td
+14 TL
+(HOSPITAL OUTPATIENT PRESCRIPTION SLIP) Tj
+T*
+(Date: 2026-09-26) Tj
+T*
+(Prescribing Physician: Dr. Gregory House, MD \(NPI-89104\)) Tj
+T*
+(Hospital: Princeton Plainsboro Teaching Hospital) Tj
+T*
+() Tj
+T*
+(Patient Name: [REDACTED]) Tj
+T*
+(MRN / Token: ANON_PT-101) Tj
+T*
+() Tj
+T*
+(PRESCRIPTION ORDERS:) Tj
+T*
+(1. Tab Lisinopril 20mg PO QD \(Take 1 tablet daily in the morning\)) Tj
+T*
+(2. Tab Furosemide 40mg PO QD \(Take 1 tablet daily\)) Tj
+T*
+(3. Tab Advil \(Ibuprofen\) 400mg PO TID pc x 7 days \(Take 1 tablet three times daily) Tj
+T*
+() Tj
+T*
+(Dispense as written. Refills: 0.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000909 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+979
+%%EOF

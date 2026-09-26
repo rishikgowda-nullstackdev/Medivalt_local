@@ -338,7 +338,7 @@ def extract_entities(text: str) -> Dict[str, Any]:
                         extracted_allergies.append(allergen_name.title())
 
         # Check multiline bullet patterns under ALLERGIES:
-        bullet_block_match = re.search( r"(?is)^\s*allergies(?:\s*&\s*adverse\s*reactions)?\s*:\s*\n" r"((?:\s*[-*•]\s*[^\n]+\n?)+)",text )
+        bullet_block_match = re.search(r"(?is)^\s*allergies(?:\s*&\s*adverse\s*reactions)?\s*:\s*\n" r"((?:\s*[-*•]\s*[^\n]+\n?)+)", text)
         if bullet_block_match:
             block = bullet_block_match.group(1)
             for line in block.splitlines():
@@ -766,3 +766,150 @@ def parse_optical_qr_payload(qr_string: str) -> Dict[str, Any]:
         }
     except Exception:
         return process_clinical_note(json_str)
+
+
+# ---------------------------------------------------------------------------
+# Multi-Medicine Prescription Document Ingestion (Person B)
+# ---------------------------------------------------------------------------
+def extract_prescription_bundle(
+    file_source_or_text: Union[str, bytes, Path],
+    filename: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Person B Multi-Medicine Prescription Extractor.
+    Takes an uploaded file (PDF/TXT) or freeform multiline prescription string.
+    De-identifies patient PHI using HIPAA Safe Harbor.
+    Extracts individual prescribed medications, dosages, routes, frequencies, and durations.
+    Works 100% offline with zero cloud dependency.
+    """
+    raw_text = ""
+    # Extract raw text from source
+    if isinstance(file_source_or_text, (bytes, Path)):
+        raw_text = extract_text(file_source_or_text, filename=filename)
+    elif isinstance(file_source_or_text, str):
+        # Check if it is a file path that exists on disk
+        if (len(file_source_or_text) < 260 and "\n" not in file_source_or_text and Path(file_source_or_text).exists()):
+            raw_text = extract_text(file_source_or_text, filename=filename)
+        else:
+            raw_text = file_source_or_text
+    else:
+        raw_text = str(file_source_or_text)
+
+    # Redact PHI from raw text
+    redacted_text, detected_phi, patient_token = redact_phi(raw_text)
+
+    # Regex patterns for clinical elements
+    dose_pattern = r"\b(\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|iu|units|meq|%|tablets?|capsules?|puffs?))\b"
+    route_pattern = r"\b(PO|oral|IV|IM|SC|subcut|PR|SL|sublingual|topical|inhaled|inhalation|nasal|eye\s+drops|ear\s+drops|ophthalmic|otic)\b"
+    freq_pattern = r"\b(QD|BID|TID|QID|QHS|QAM|PRN|stat|OD|BD|TDS|SOS|AC|PC|daily|every\s+\d+\s*(?:hours|hrs|h)|1-0-0|0-1-0|0-0-1|1-0-1|1-1-1|1-1-0|0-1-1|q\d+h)\b"
+    duration_pattern = r"\b(?:for\s+)?(?:x\s*)?(\d+\s*(?:days|weeks|months|d|wks|mo))\b"
+    formulation_pattern = r"\b(Tab|Tablet|Cap|Capsule|Inj|Injection|Syrup|Syr|Susp|Suspension|Ointment|Cream|Inhaler|Drops)\.?\b"
+
+    # Known pharmacology imports for canonical normalization
+    try:
+        from ai_engine.pharmacology import PharmacologyKnowledge, BRAND_TO_GENERIC
+    except Exception:
+        BRAND_TO_GENERIC = {}
+        PharmacologyKnowledge = None
+
+    parsed_prescriptions: List[Dict[str, Any]] = []
+    seen_drugs = set()
+
+    # Split text into lines/sentences
+    lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+    if not lines or len(lines) == 1 and "," in raw_text:
+        # Check if comma-separated
+        lines = [item.strip() for item in raw_text.split(",") if item.strip()]
+
+    for line in lines:
+        # Skip header lines that don't contain drug info
+        line_clean = re.sub(r"^[0-9]+[\.\)\-:]\s*", "", line).strip()
+        line_clean = re.sub(r"^(?:Rx|Prescription|Prescribe|Medication|Med|Take|Give)\s*[:=-]?\s*", "", line_clean, flags=re.I).strip()
+        if not line_clean or len(line_clean) < 2:
+            continue
+
+        # Check for non-prescription metadata headers
+        if re.match(r"(?i)^(Patient|Age|Sex|Gender|Date|Diagnosis|Doctor|Hospital|Phone|Address|Allergies)\s*:", line_clean):
+            continue
+
+        dose_match = re.search(dose_pattern, line_clean, re.I)
+        route_match = re.search(route_pattern, line_clean, re.I)
+        freq_match = re.search(freq_pattern, line_clean, re.I)
+        dur_match = re.search(duration_pattern, line_clean, re.I)
+
+        dosage = dose_match.group(1) if dose_match else ""
+        route = route_match.group(1).upper() if route_match else "PO"
+        frequency = freq_match.group(1).upper() if freq_match else "QD"
+        duration = dur_match.group(1) if dur_match else ""
+
+        # Identify drug name
+        drug_candidate = ""
+        # Remove formulation prefix
+        line_no_form = re.sub(formulation_pattern, "", line_clean, flags=re.I).strip()
+
+        # Strategy A: Check known brand or generic dictionary
+        line_words = re.findall(r"[a-zA-Z-]+", line_no_form)
+        for word in line_words:
+            w_low = word.lower()
+            if w_low in BRAND_TO_GENERIC or w_low in BRAND_TO_GENERIC.values() or w_low in MEDICATION_LEXICON:
+                drug_candidate = word.title()
+                break
+
+        # Strategy B: If no known word, take leading words before dosage or route
+        if not drug_candidate and line_words:
+            # Filter out non-drug words
+            filtered = [w for w in line_words if w.lower() not in (
+                "mg", "mcg", "g", "ml", "po", "oral", "iv", "im", "sc", "qd", "bid", "tid", "qid",
+                "daily", "stat", "prn", "take", "tab", "cap", "inj", "syrup", "for", "days", "weeks",
+                "before", "after", "food", "meals", "sos", "od", "bd", "tds", "hs", "pc", "ac"
+            )]
+            if filtered:
+                drug_candidate = filtered[0].title()
+
+        if drug_candidate:
+            canonical_drug = drug_candidate.lower()
+            if PharmacologyKnowledge:
+                canonical, _ = PharmacologyKnowledge.normalize_drug_name(drug_candidate)
+                canonical_drug = canonical
+
+            if drug_candidate.lower() not in seen_drugs:
+                seen_drugs.add(drug_candidate.lower())
+                parsed_prescriptions.append({
+                    "raw_line": line.strip(),
+                    "medication": drug_candidate,
+                    "canonical_drug": canonical_drug,
+                    "dosage": dosage or "Standard dose",
+                    "route": route,
+                    "frequency": frequency,
+                    "duration": duration
+                })
+
+    # If no lines were structured, fallback to lexicon scan
+    if not parsed_prescriptions:
+        for med in MEDICATION_LEXICON:
+            if re.search(r"\b" + re.escape(med) + r"\b", raw_text.lower()):
+                if med.lower() not in seen_drugs:
+                    seen_drugs.add(med.lower())
+                    parsed_prescriptions.append({
+                        "raw_line": med.title(),
+                        "medication": med.title(),
+                        "canonical_drug": med.lower(),
+                        "dosage": "Standard dose",
+                        "route": "PO",
+                        "frequency": "QD",
+                        "duration": ""
+                    })
+
+    # Also extract existing patient entities if this was a full medical document
+    entities = extract_entities(raw_text)
+
+    return {
+        "raw_text": raw_text,
+        "redacted_text": redacted_text,
+        "patient_token": patient_token,
+        "prescriptions": parsed_prescriptions,
+        "extracted_medication_names": [p["medication"] for p in parsed_prescriptions],
+        "entities": entities,
+        "phi_detected": detected_phi
+    }
+
