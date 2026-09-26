@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediVault Local - Patient Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                        },
+                        green: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                        },
+                        amber: {
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        rose: {
+                            50: '#fff1f2',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #334155; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #14b8a6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Add some specific gauge animations */
+        .gauge-bar { transition: width 1s ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <!-- Auth Gate -->
+    <div id="auth-gate" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in mt-10">
+        <div class="bg-teal-600 text-white p-6 text-center">
+            <h1 class="text-3xl font-bold mb-2"><i class="fa-solid fa-notes-medical mr-2"></i>MediVault Local</h1>
+            <p class="text-teal-100">Your health, securely in your hands.</p>
+        </div>
+        <div class="flex border-b border-gray-200">
+            <button id="tab-login" class="flex-1 py-4 text-center font-semibold text-teal-600 border-b-2 border-teal-600 focus:outline-none" onclick="switchTab('login')">Sign In</button>
+            <button id="tab-register" class="flex-1 py-4 text-center font-semibold text-gray-500 hover:text-teal-600 focus:outline-none" onclick="switchTab('register')">Register</button>
+        </div>
+        
+        <div class="p-6">
+            <div id="error-message" class="hidden mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm"></div>
+            
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="login-username">Username</label>
+                    <input type="text" id="login-username" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2" for="login-password">Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center">
+                    <span id="login-text">Sign In</span>
+                    <div id="login-spinner" class="spinner ml-2 hidden border-white"></div>
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-patient-id">Patient ID</label>
+                    <input type="text" id="reg-patient-id" placeholder="e.g. PT-101" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-fullname">Full Name</label>
+                    <input type="text" id="reg-fullname" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-dob">Date of Birth</label>
+                    <input type="date" id="reg-dob" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-username">Username</label>
+                    <input type="text" id="reg-username" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-password">Password</label>
+                    <input type="password" id="reg-password" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2" for="reg-confirm">Confirm Password</label>
+                    <input type="password" id="reg-confirm" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <button type="submit" id="btn-register" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center">
+                    <span id="register-text">Create Account</span>
+                    <div id="register-spinner" class="spinner ml-2 hidden border-white"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="w-full max-w-5xl hidden fade-in pb-12">
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+                <h2 id="welcome-msg" class="text-3xl font-bold text-teal-700">Welcome back! 👋</h2>
+                <p class="text-gray-500 mt-1">Here is your latest health overview.</p>
+            </div>
+            <button onclick="handleLogout()" class="px-5 py-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 font-medium transition flex items-center">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Log Out
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Health Summary & Labs -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Section A: Health Summary -->
+                <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-clipboard-user text-teal-500 mr-2"></i> My Health Summary</h3>
+                    
+                    <div class="mb-5">
+                        <h4 class="font-semibold text-gray-700 mb-2">Conditions</h4>
+                        <ul id="conditions-list" class="space-y-2">
+                            <!-- populated by js -->
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h4 class="font-semibold text-gray-700 mb-2">Medications</h4>
+                        <div class="bg-teal-50 rounded-lg overflow-hidden border border-teal-100">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-teal-100 text-teal-800">
+                                    <tr>
+                                        <th class="px-3 py-2">Name</th>
+                                        <th class="px-3 py-2">Dose/Freq</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="medications-list" class="divide-y divide-teal-100">
+                                    <!-- populated by js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Allergies</h4>
+                        <ul id="allergies-list" class="space-y-2">
+                            <!-- populated by js -->
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Section B: Lab Results -->
+                <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-vial text-teal-500 mr-2"></i> My Lab Results</h3>
+                    <div id="labs-list" class="space-y-6">
+                        <!-- populated by js -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Diet Guide -->
+            <div class="lg:col-span-2">
+                <!-- Section C: Food & Diet Guide -->
+                <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
+                    <div class="flex justify-between items-center mb-6 border-b pb-3">
+                        <h3 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-bowl-food text-teal-500 mr-2"></i> 🥗 My Food & Diet Guide</h3>
+                        <button onclick="loadRecommendations()" class="px-4 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 text-sm font-medium transition flex items-center">
+                            <i id="refresh-icon" class="fa-solid fa-rotate-right mr-2"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div id="diet-narrative-container" class="bg-gradient-to-r from-teal-50 to-green-50 p-5 rounded-xl border border-teal-100 mb-8 shadow-inner">
+                        <p id="diet-narrative" class="text-teal-900 leading-relaxed font-medium">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading your personalized guide...
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Column 1 -->
+                        <div>
+                            <h4 class="text-lg font-bold text-green-700 mb-4 flex items-center bg-green-50 p-2 rounded"><i class="fa-solid fa-check-circle mr-2"></i> Foods to Eat More</h4>
+                            <div id="eat-more-list" class="space-y-3">
+                                <!-- populated by js -->
+                            </div>
+                        </div>
+                        
+                        <!-- Column 2 -->
+                        <div>
+                            <h4 class="text-lg font-bold text-rose-700 mb-4 flex items-center bg-rose-50 p-2 rounded"><i class="fa-solid fa-ban mr-2"></i> Foods to Avoid</h4>
+                            <div id="avoid-list" class="space-y-3">
+                                <!-- populated by js -->
+                            </div>
+                        </div>
+
+                        <!-- Column 3 -->
+                        <div>
+                            <h4 class="text-lg font-bold text-blue-700 mb-4 flex items-center bg-blue-50 p-2 rounded"><i class="fa-solid fa-lightbulb mr-2"></i> Wellness Tips</h4>
+                            <div id="tips-list" class="space-y-3">
+                                <!-- populated by js -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer" class="fixed bottom-0 w-full text-center p-3 bg-white/80 backdrop-blur border-t hidden">
+        <p class="text-sm font-medium text-gray-600"><i class="fa-solid fa-lock text-teal-600 mr-1"></i> Powered by MediVault Local — Your health data never leaves this device</p>
+    </div>
+
+<script>
+    // --- State ---
+    let token = localStorage.getItem('patient_token');
+    
+    // --- UI Helpers ---
+    const show = id => document.getElementById(id).classList.remove('hidden');
+    const hide = id => document.getElementById(id).classList.add('hidden');
+    const showError = msg => {
+        const el = document.getElementById('error-message');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    };
+    const hideError = () => document.getElementById('error-message').classList.add('hidden');
+
+    function switchTab(tab) {
+        hideError();
+        if (tab === 'login') {
+            show('login-form');
+            hide('register-form');
+            document.getElementById('tab-login').className = 'flex-1 py-4 text-center font-semibold text-teal-600 border-b-2 border-teal-600 focus:outline-none';
+            document.getElementById('tab-register').className = 'flex-1 py-4 text-center font-semibold text-gray-500 hover:text-teal-600 focus:outline-none';
+        } else {
+            hide('login-form');
+            show('register-form');
+            document.getElementById('tab-login').className = 'flex-1 py-4 text-center font-semibold text-gray-500 hover:text-teal-600 focus:outline-none';
+            document.getElementById('tab-register').className = 'flex-1 py-4 text-center font-semibold text-teal-600 border-b-2 border-teal-600 focus:outline-none';
+        }
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        if (token) {
+            loadDashboard();
+        } else {
+            show('auth-gate');
+        }
+    };
+
+    // --- API Calls ---
+    async function apiCall(endpoint, options = {}) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        try {
+            const res = await fetch(endpoint, { ...options, headers: { ...headers, ...options.headers } });
+            
+            // If returning 401, token expired/invalid
+            if (res.status === 401 && endpoint !== '/api/patient/login') {
+                handleLogout();
+                throw new Error("Session expired. Please log in again.");
+            }
+            
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || data.message || "An error occurred");
+            }
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // --- Auth ---
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideError();
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        
+        const btnText = document.getElementById('login-text');
+        const spinner = document.getElementById('login-spinner');
+        const btn = document.getElementById('btn-login');
+        
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.textContent = 'Signing In...';
+
+        try {
+            const data = await apiCall('/api/patient/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            token = data.access_token || data.token;
+            localStorage.setItem('patient_token', token);
+            if(data.patient_id) localStorage.setItem('patient_id', data.patient_id);
+            loadDashboard();
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Sign In';
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        hideError();
+        const patient_id = document.getElementById('reg-patient-id').value;
+        const full_name = document.getElementById('reg-fullname').value;
+        const date_of_birth = document.getElementById('reg-dob').value;
+        const username = document.getElementById('reg-username').value;
+        const password = document.getElementById('reg-password').value;
+        const confirm_password = document.getElementById('reg-confirm').value;
+
+        if (password !== confirm_password) {
+            return showError("Passwords do not match");
+        }
+
+        const btnText = document.getElementById('register-text');
+        const spinner = document.getElementById('register-spinner');
+        const btn = document.getElementById('btn-register');
+
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.textContent = 'Creating...';
+
+        try {
+            const data = await apiCall('/api/patient/register', {
+                method: 'POST',
+                body: JSON.stringify({ patient_id, full_name, date_of_birth, username, password })
+            });
+            // Try to login automatically or switch tab
+            if (data.access_token || data.token) {
+                token = data.access_token || data.token;
+                localStorage.setItem('patient_token', token);
+                if(data.patient_id) localStorage.setItem('patient_id', data.patient_id);
+                loadDashboard();
+            } else {
+                switchTab('login');
+                document.getElementById('login-username').value = username;
+                showError("Registration successful. Please log in.");
+                document.getElementById('error-message').className = "mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm";
+            }
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Create Account';
+        }
+    }
+
+    async function handleLogout() {
+        if(token) {
+            try {
+                await apiCall('/api/patient/logout', { method: 'POST' });
+            } catch(e) {} // ignore error
+        }
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('patient_id');
+        token = null;
+        hide('dashboard');
+        hide('footer');
+        show('auth-gate');
+        document.getElementById('login-form').reset();
+        document.getElementById('register-form').reset();
+    }
+
+    // --- Dashboard Data Loading ---
+    async function loadDashboard() {
+        hide('auth-gate');
+        show('dashboard');
+        show('footer');
+        
+        try {
+            // Load Profile
+            const profile = await apiCall('/api/patient/profile', { method: 'GET' });
+            renderProfile(profile);
+            
+            // Load Recommendations
+            await loadRecommendations();
+        } catch(err) {
+            if(err.message.includes('expired') || err.message.includes('Unauthorized')) {
+                handleLogout();
+            } else {
+                console.error("Dashboard load error:", err);
+            }
+        }
+    }
+
+    function renderProfile(profile) {
+        // Welcome
+        document.getElementById('welcome-msg').textContent = `Welcome back, ${profile.full_name || 'Patient'}! 👋`;
+
+        // Conditions
+        const condList = document.getElementById('conditions-list');
+        condList.innerHTML = '';
+        if (profile.conditions && profile.conditions.length > 0) {
+            profile.conditions.forEach(cond => {
+                let icon = '💊';
+                let lowerCond = (cond.name || cond).toLowerCase();
+                if(lowerCond.includes('kidney') || lowerCond.includes('renal')) icon = '🫘';
+                else if(lowerCond.includes('lung') || lowerCond.includes('asthma') || lowerCond.includes('copd')) icon = '🫁';
+                else if(lowerCond.includes('heart') || lowerCond.includes('cardio') || lowerCond.includes('hypertension')) icon = '❤️';
+                
+                condList.innerHTML += `<li class="flex items-center bg-gray-50 p-2 rounded border border-gray-100"><span class="mr-3 text-lg">${icon}</span> <span class="text-gray-700">${cond.name || cond}</span></li>`;
+            });
+        } else {
+            condList.innerHTML = '<li class="text-sm text-gray-500 italic">No active conditions recorded.</li>';
+        }
+
+        // Medications
+        const medList = document.getElementById('medications-list');
+        medList.innerHTML = '';
+        if (profile.medications && profile.medications.length > 0) {
+            profile.medications.forEach(med => {
+                medList.innerHTML += `
+                    <tr class="bg-white">
+                        <td class="px-3 py-2 font-medium text-gray-800 border-b border-teal-50">${med.name}</td>
+                        <td class="px-3 py-2 text-gray-600 border-b border-teal-50">${med.dosage || ''} ${med.schedule || ''}</td>
+                    </tr>`;
+            });
+        } else {
+            medList.innerHTML = '<tr><td colspan="2" class="px-3 py-2 text-sm text-gray-500 italic text-center">No current medications recorded.</td></tr>';
+        }
+
+        // Allergies
+        const algList = document.getElementById('allergies-list');
+        algList.innerHTML = '';
+        if (profile.allergies && profile.allergies.length > 0) {
+            profile.allergies.forEach(alg => {
+                algList.innerHTML += `
+                    <li class="bg-rose-50 text-rose-800 p-2 rounded border border-rose-100 text-sm flex justify-between">
+                        <span class="font-bold">${alg.allergen || alg}</span>
+                        <span>${alg.reaction || ''}</span>
+                    </li>`;
+            });
+        } else {
+            algList.innerHTML = '<li class="text-sm text-gray-500 italic">No known allergies.</li>';
+        }
+
+        // Labs
+        const labsList = document.getElementById('labs-list');
+        labsList.innerHTML = '';
+        if (profile.labs && profile.labs.length > 0) {
+            profile.labs.forEach(lab => {
+                let statusColor = 'bg-green-500';
+                let statusBg = 'bg-green-50';
+                let statusBorder = 'border-green-200';
+                let status = (lab.status || 'normal').toLowerCase();
+                
+                if (status === 'warning' || status === 'abnormal') {
+                    statusColor = 'bg-amber-500';
+                    statusBg = 'bg-amber-50';
+                    statusBorder = 'border-amber-200';
+                } else if (status === 'critical' || status === 'high' || status === 'low') {
+                    statusColor = 'bg-rose-500';
+                    statusBg = 'bg-rose-50';
+                    statusBorder = 'border-rose-200';
+                }
+
+                // mock percentage based on status for the gauge bar visually
+                let barWidth = status === 'normal' ? '50%' : (status === 'warning' ? '80%' : '95%');
+                if(status === 'low') barWidth = '15%';
+
+                labsList.innerHTML += `
+                    <div class="${statusBg} p-4 rounded-xl border ${statusBorder}">
+                        <div class="flex justify-between items-center mb-2">
+                            <h5 class="font-bold text-gray-800">${lab.biomarker || lab.name}</h5>
+                            <span class="font-mono text-sm bg-white px-2 py-1 rounded shadow-sm">${lab.value} ${lab.unit || ''}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2 overflow-hidden">
+                            <div class="gauge-bar h-2.5 rounded-full ${statusColor}" style="width: ${barWidth}"></div>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2"><i class="fa-solid fa-circle-info mr-1 opacity-70"></i> ${lab.plain_explanation || 'No explanation provided.'}</p>
+                    </div>`;
+            });
+        } else {
+            labsList.innerHTML = '<p class="text-sm text-gray-500 italic">No recent lab results available.</p>';
+        }
+    }
+
+    async function loadRecommendations() {
+        const icon = document.getElementById('refresh-icon');
+        icon.classList.add('fa-spin');
+        
+        const narrativeEl = document.getElementById('diet-narrative');
+        narrativeEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Fetching your latest personalized guide...';
+        
+        try {
+            const data = await apiCall('/api/patient/recommendations', { method: 'GET' });
+            
+            if (data.personalized_narrative) {
+                narrativeEl.innerHTML = data.personalized_narrative;
+            } else {
+                narrativeEl.innerHTML = "Your personalized guide is being prepared by your care team.";
+            }
+
+            const guide = data.dietary_guidelines || {};
+            
+            renderCards('eat-more-list', guide.recommended_foods || [], 'bg-white border-l-4 border-green-500 text-gray-800');
+            renderCards('avoid-list', guide.foods_to_avoid || [], 'bg-white border-l-4 border-rose-500 text-gray-800');
+            renderCards('tips-list', guide.wellness_tips || [], 'bg-white border-l-4 border-blue-500 text-gray-800');
+            
+        } catch (err) {
+            narrativeEl.innerHTML = `<span class="text-rose-600"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Unable to load recommendations: ${err.message}</span>`;
+        } finally {
+            icon.classList.remove('fa-spin');
+        }
+    }
+
+    function renderCards(containerId, items, cardClasses) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        if (items.length > 0) {
+            items.forEach(item => {
+                const title = item.name || item.title || item.item || (typeof item === 'string' ? item : 'Item');
+                const desc = item.rationale || item.description || item.reason || '';
+                container.innerHTML += `
+                    <div class="p-3 shadow-sm rounded ${cardClasses}">
+                        <div class="font-bold text-sm mb-1">${title}</div>
+                        ${desc ? `<div class="text-xs text-gray-600">${desc}</div>` : ''}
+                    </div>`;
+            });
+        } else {
+            container.innerHTML = '<div class="text-sm text-gray-500 italic p-2">None currently listed.</div>';
+        }
+    }
+
+</script>
+</body>
+</html>

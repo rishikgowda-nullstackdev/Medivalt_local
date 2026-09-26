@@ -102,5 +102,66 @@ class OllamaBridge:
 
         return None
 
+    @classmethod
+    def generate_patient_wellness_guide(
+        cls,
+        patient_name: str,
+        conditions: list,
+        medications: list,
+        labs: dict,
+    ) -> Optional[str]:
+        """
+        Generates a warm, plain-English personalized dietary and wellness
+        guide for a patient using the local Ollama SLM.
+        Returns None if Ollama is offline (deterministic fallback used).
+        """
+        if not cls.is_online():
+            return None
+
+        conditions_str = ", ".join(conditions) if conditions else "no specific conditions"
+        meds_str = ", ".join(medications) if medications else "no current medications"
+        labs_parts = []
+        for name, info in labs.items():
+            if isinstance(info, dict):
+                labs_parts.append(f"{name}: {info.get('value', '?')} {info.get('unit', '')}")
+            else:
+                labs_parts.append(f"{name}: {info}")
+        labs_str = ", ".join(labs_parts) if labs_parts else "no recent labs available"
+
+        prompt = (
+            f"You are a compassionate clinical nutritionist speaking directly to a patient named {patient_name}.\n"
+            f"The patient has been diagnosed with: {conditions_str}.\n"
+            f"Their current lab results show: {labs_str}.\n"
+            f"They are currently taking: {meds_str}.\n\n"
+            f"Write a warm, encouraging, personalized dietary and wellness guide in 4-6 sentences.\n"
+            f"Use simple language that a non-medical person can easily understand.\n"
+            f"Include 3 specific foods they should eat more of and 2 foods to avoid, with brief reasons.\n"
+            f"End with one practical daily wellness habit they can start today.\n"
+            f"Do NOT use medical jargon. Be kind, supportive, and specific to their conditions.\n"
+            f"Address them by first name."
+        )
+
+        payload = {
+            "model": DEFAULT_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.3,
+                "num_predict": 300,
+            }
+        }
+
+        try:
+            with httpx.Client(timeout=8.0) as client:
+                res = client.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
+                if res.status_code == 200:
+                    text = res.json().get("response", "").strip()
+                    if text:
+                        return text
+        except Exception as e:
+            logger.info("Ollama wellness guide skipped (using deterministic fallback): %s", str(e))
+
+        return None
+
 
 ai_bridge = OllamaBridge()

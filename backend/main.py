@@ -27,6 +27,7 @@ from backend.validators import InputValidator
 from backend.ai_bridge import ai_bridge
 from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, call_person_c_ai_engine
 from backend.cds_hooks import cds_router
+from backend.patient_portal import patient_router
 from backend.auth import (
     hash_password,
     verify_password,
@@ -63,6 +64,9 @@ app.add_middleware(
 
 # Mount HL7 CDS Hooks v1.0 Service Router
 app.include_router(cds_router)
+
+# Mount Patient Portal API Router
+app.include_router(patient_router)
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +118,13 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+    # Initialize patient portal tables and demo accounts
+    try:
+        from backend.migrate_patient_portal import migrate_patient_portal
+        migrate_patient_portal()
+    except Exception as e:
+        pass
 
 init_db()
 
@@ -1235,3 +1246,11 @@ if os.path.exists(FRONTEND_DIR):
         if os.path.exists(index_file):
             return FileResponse(index_file)
         return JSONResponse({"message": "Frontend index.html not yet generated."})
+
+    @app.get("/patient-portal")
+    def serve_patient_portal():
+        """Serves the patient-facing portal page (separate from doctor dashboard)."""
+        portal_file = os.path.join(FRONTEND_DIR, "patient_portal.html")
+        if os.path.exists(portal_file):
+            return FileResponse(portal_file)
+        return JSONResponse({"message": "Patient Portal not yet generated."})
