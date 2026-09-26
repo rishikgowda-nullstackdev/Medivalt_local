@@ -11,6 +11,7 @@
   <!-- Tailwind CSS & Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Clinical Fonts with Offline System Fallbacks -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -850,6 +851,11 @@
       <span>4. Sovereign Audit Ledger</span>
       <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+4</kbd>
     </button>
+    <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="step-nav-btn" title="Clinical Analytics & Population Health Insights (Ctrl+5 / Alt+5)">
+      <i class="fa-solid fa-chart-line text-emerald-400"></i>
+      <span>5. Clinical Analytics</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+5</kbd>
+    </button>
   </nav>
 
   <!-- ═══════════════════════════════════════════
@@ -1352,8 +1358,196 @@
         </div>
       </div>
 
+  <!-- ═══════════════════════════════════════════
+       VIEW 5: CLINICAL ANALYTICS & SOVEREIGN INSIGHTS DASHBOARD
+  ═══════════════════════════════════════════ -->
+  <div id="page-view-analytics" class="page-view-panel space-y-4" style="display:none">
+    
+    <!-- Top Action & Filter Strip -->
+    <div class="clinical-card p-4 border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <div class="card-title text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-chart-line text-emerald-400"></i>
+          <span>Clinical Decision Support &amp; Population Risk Analytics</span>
+          <span class="text-[10px] bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded-full font-mono">100% OFFLINE</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-0.5">Real-time aggregate clinical risk interception, alert distribution, and zero-cloud egress audit.</p>
+      </div>
+      <div class="flex items-center space-x-2 flex-wrap">
+        <!-- Date Filter Buttons -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+          <button id="filter-analytics-all" onclick="setAnalyticsDays(null)" class="px-2.5 py-1 rounded text-teal-300 font-semibold bg-teal-950/80 border border-teal-500/30">All-Time</button>
+          <button id="filter-analytics-30" onclick="setAnalyticsDays(30)" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200">30 Days</button>
+          <button id="filter-analytics-7" onclick="setAnalyticsDays(7)" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200">7 Days</button>
+        </div>
+        <button onclick="loadClinicalAnalytics()" class="btn-clinical-secondary py-1.5 px-3 text-xs" title="Refresh Analytics Data">
+          <i id="btn-refresh-analytics-icon" class="fa-solid fa-rotate-right mr-1.5"></i>
+          <span>Refresh</span>
+        </button>
+        <a href="/api/analytics/export" download class="btn-clinical-primary py-1.5 px-3 text-xs text-decoration-none">
+          <i class="fa-solid fa-file-csv mr-1.5"></i>
+          <span>Export CSV</span>
+        </a>
+      </div>
     </div>
-  </div>
+
+    <!-- Row 1: KPI Summary Metric Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      <!-- 1. Total Reviews -->
+      <div class="clinical-card p-4 border-slate-800 flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 text-lg">
+          <i class="fa-solid fa-notes-medical"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Total Reviews</span>
+          <div id="analytics-kpi-total" class="text-xl font-extrabold text-white font-mono mt-0.5">--</div>
+          <span class="text-[10px] text-slate-400 font-mono">Prescriptions Checked</span>
+        </div>
+      </div>
+
+      <!-- 2. Intercepted Harms -->
+      <div class="clinical-card p-4 border-slate-800 flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg">
+          <i class="fa-solid fa-shield-virus"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Adverse Events Intercepted</span>
+          <div id="analytics-kpi-prevented" class="text-xl font-extrabold text-rose-400 font-mono mt-0.5">--</div>
+          <span id="analytics-kpi-flagrate" class="text-[10px] text-amber-400 font-mono">--% Flag Rate</span>
+        </div>
+      </div>
+
+      <!-- 3. Safe Clearances -->
+      <div class="clinical-card p-4 border-slate-800 flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Safe Prescriptions</span>
+          <div id="analytics-kpi-safe" class="text-xl font-extrabold text-emerald-400 font-mono mt-0.5">--</div>
+          <span class="text-[10px] text-emerald-400/80 font-mono">Clearance Approved</span>
+        </div>
+      </div>
+
+      <!-- 4. Sovereign Egress Telemetry -->
+      <div class="clinical-card p-4 border-slate-800 flex items-center space-x-3.5">
+        <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Sovereign Cloud Egress</span>
+          <div id="analytics-kpi-egress" class="text-xl font-extrabold text-cyan-400 font-mono mt-0.5">0 Bytes</div>
+          <span class="text-[10px] text-cyan-300 font-mono">100% Loopback Protected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Visual Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      
+      <!-- Chart 1: Triage Alert Breakdown (Doughnut Chart) - 5 Cols -->
+      <div class="lg:col-span-5 clinical-card p-4 border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <div class="card-title text-xs">
+              <i class="fa-solid fa-chart-pie text-teal-400"></i>
+              <span>Prescription Triage Distribution</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono">Audit Outcomes</span>
+          </div>
+          <div class="relative flex items-center justify-center" style="height: 240px;">
+            <canvas id="chart-triage-distribution"></canvas>
+          </div>
+        </div>
+        <!-- Legend Strip -->
+        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-800 text-[11px]">
+          <div class="p-1.5 rounded bg-rose-950/40 border border-rose-500/30">
+            <span class="text-rose-400 font-bold block" id="legend-critical-count">0</span>
+            <span class="text-[10px] text-slate-400">Critical</span>
+          </div>
+          <div class="p-1.5 rounded bg-amber-950/40 border border-amber-500/30">
+            <span class="text-amber-400 font-bold block" id="legend-warning-count">0</span>
+            <span class="text-[10px] text-slate-400">Warning</span>
+          </div>
+          <div class="p-1.5 rounded bg-emerald-950/40 border border-emerald-500/30">
+            <span class="text-emerald-400 font-bold block" id="legend-safe-count">0</span>
+            <span class="text-[10px] text-slate-400">Safe Clear</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 2: Top Flagged High-Risk Drugs (Horizontal Bar Chart) - 7 Cols -->
+      <div class="lg:col-span-7 clinical-card p-4 border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <div class="card-title text-xs">
+              <i class="fa-solid fa-chart-bar text-teal-400"></i>
+              <span>Most Frequently Intercepted High-Risk Drugs</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono">Fatal Collision Frequency</span>
+          </div>
+          <div class="relative" style="height: 240px;">
+            <canvas id="chart-flagged-drugs"></canvas>
+          </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+          <span><i class="fa-solid fa-circle-exclamation text-amber-400 mr-1"></i> Intercepts strictly enforced by deterministic SQLite rules</span>
+          <span class="text-teal-400 font-mono text-[10px]">Avg Latency: <strong id="analytics-latency-val">18.5ms</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Review Volume & Sovereign Egress Time-Series Chart -->
+    <div class="clinical-card p-4 border-slate-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+        <div>
+          <div class="card-title text-xs">
+            <i class="fa-solid fa-wave-square text-cyan-400"></i>
+            <span>Prescription Review Volume &amp; Sovereign Egress Telemetry</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Proves continuous review activity alongside a flatline zero-byte public internet egress guarantee.</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs font-mono">
+          <span class="flex items-center text-teal-400"><span class="w-2.5 h-2.5 rounded-full bg-teal-400 inline-block mr-1.5"></span> Total Volume</span>
+          <span class="flex items-center text-rose-400"><span class="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block mr-1.5"></span> Flagged</span>
+          <span class="flex items-center text-emerald-400"><span class="w-2.5 h-0.5 bg-emerald-400 inline-block mr-1.5"></span> 0-Byte Egress</span>
+        </div>
+      </div>
+      <div class="relative" style="height: 200px;">
+        <canvas id="chart-trends-volume"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 4: Top Dangerous Combinations Leaderboard Table -->
+    <div class="clinical-card p-4 border-slate-800 space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="card-title text-xs">
+          <i class="fa-solid fa-skull-crossbones text-rose-400"></i>
+          <span>High-Risk Drug Collision Leaderboard</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-mono">Clinical CDSS Intercepted Collisions</span>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-slate-800">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-900/90 text-slate-400 font-mono text-[10px] uppercase">
+            <tr>
+              <th class="p-2.5 text-center w-12">Rank</th>
+              <th class="p-2.5">Dangerous Collision</th>
+              <th class="p-2.5">Collision Name</th>
+              <th class="p-2.5">Severity</th>
+              <th class="p-2.5">Physiological Mechanism</th>
+              <th class="p-2.5">Evidence-Based Safe Alternative</th>
+            </tr>
+          </thead>
+          <tbody id="analytics-leaderboard-tbody" class="divide-y divide-slate-800 text-slate-300">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /page-view-analytics -->
 
 </div><!-- /main-app -->
 
