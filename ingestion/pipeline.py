@@ -105,8 +105,13 @@ MEDICATION_LEXICON: List[str] = [
 ]
 
 ALLERGY_LINE_PATTERNS = [
-    r"(?i)\ballerg(?:ies|y|ic\s+to)\s*[:=-]?\s*([^\n.;]+)",
-    r"(?i)\bknown\s+allergies\s*[:=-]?\s*([^\n.;]+)",
+    # Explicit allergy declarations only.
+    # Anchoring to the beginning of a line prevents headers such as
+    # "ALLERGY & IMMUNOLOGY CLINICAL PROFILE" from being misread.
+    r"(?im)^\s*allergies\s*[:=-]\s*([^\n.;]+)",
+    r"(?im)^\s*allergies\s*&\s*adverse\s*reactions\s*[:=-]\s*([^\n.;]+)",
+    r"(?im)^\s*known\s+allergies\s*[:=-]\s*([^\n.;]+)",
+    r"(?im)^\s*allergic\s+to\s*[:=-]?\s*([^\n.;]+)",
 ]
 
 
@@ -333,7 +338,7 @@ def extract_entities(text: str) -> Dict[str, Any]:
                         extracted_allergies.append(allergen_name.title())
 
         # Check multiline bullet patterns under ALLERGIES:
-        bullet_block_match = re.search(r"(?i)\ballergies\s*:\s*\n((?:\s*[-*•]\s*[^\n]+\n?)+)", text)
+        bullet_block_match = re.search( r"(?is)^\s*allergies(?:\s*&\s*adverse\s*reactions)?\s*:\s*\n" r"((?:\s*[-*•]\s*[^\n]+\n?)+)",text )
         if bullet_block_match:
             block = bullet_block_match.group(1)
             for line in block.splitlines():
