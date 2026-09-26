@@ -1930,7 +1930,6 @@ window.setAnalyticsDays = setAnalyticsDays;
 window.loadClinicalAnalytics = loadClinicalAnalytics;
 
 // ═══════════════════════════════════════════
-<<<<<<< HEAD
 //  🌌 SOVEREIGN 3D HOLOGRAPHIC VECTOR ENGINE
 //  Pure HTML5 Canvas 2D/3D Matrix Projection
 //  100% Offline · 0 Network Overhead · 60 FPS
