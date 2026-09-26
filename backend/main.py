@@ -29,6 +29,7 @@ from backend.orchestrator import ClinicalOrchestrator, call_person_b_ingestion, 
 from backend.cds_hooks import cds_router
 from backend.patient_portal import patient_router
 from backend.analytics import analytics_router
+from backend.demo_scenarios import demo_router
 from backend.auth import (
     hash_password,
     verify_password,

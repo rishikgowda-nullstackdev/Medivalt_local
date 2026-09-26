@@ -527,6 +527,41 @@
         transform: none !important;
       }
     }
+
+    /* ─── CLINICAL PRINT & PHYSICAL DISCHARGE EXPORT STYLES ─── */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 11pt !important;
+      }
+      #splash, #auth-gate, #toast-container, #settings-sidebar, #settings-backdrop,
+      #switch-patient-modal, #switch-doc-modal, #qr-modal,
+      header, nav, .btn-clinical-primary, .btn-clinical-secondary,
+      #btn-print-cert, #btn-export-fhir, #btn-export-qr, #btn-swap-drug {
+        display: none !important;
+      }
+      .page-view-panel {
+        display: block !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .clinical-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        margin-bottom: 12px !important;
+      }
+      .text-slate-400, .text-slate-500, .text-slate-300 {
+        color: #334155 !important;
+      }
+      .bg-slate-900, .bg-slate-950, .bg-slate-800 {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+      }
+      a { text-decoration: none !important; color: #0f172a !important; }
+    }
   </style>
 </head>
 <body>
