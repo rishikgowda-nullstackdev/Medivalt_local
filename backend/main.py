@@ -73,6 +73,9 @@ app.include_router(patient_router)
 # Mount Clinical Analytics & Insights Router
 app.include_router(analytics_router)
 
+# Mount Interactive Judge Demo & Clinical Crisis Simulator Router
+app.include_router(demo_router)
+
 
 # ---------------------------------------------------------------------------
 # Global Exception Handler (AGENTS.md Rule 4 Compliance)

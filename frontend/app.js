@@ -223,13 +223,17 @@ function updateSpeedLabel(val) {
 
 function dismissSplash() {
   const splash = document.getElementById('splash');
-  if (splash && !splash.classList.contains('dismissed')) {
-    splash.classList.add('dismissed');
+  if (splash && !splash.classList.contains('dismissed') && !splash.classList.contains('fadeaway-anim')) {
+    // Creative Sovereign Cryptographic Aperture Fadeaway Sequence
+    splash.classList.add('fadeaway-anim');
     setTimeout(() => {
-      if (splash && splash.parentNode) {
-        splash.parentNode.removeChild(splash);
-      }
-    }, 350);
+      splash.classList.add('dismissed');
+      setTimeout(() => {
+        if (splash && splash.parentNode) {
+          splash.parentNode.removeChild(splash);
+        }
+      }, 100);
+    }, 420);
   }
 }
 
@@ -1555,8 +1559,8 @@ document.addEventListener("DOMContentLoaded", () => {
   checkNetworkGuard();
   updateDoctorUI(currentDoctor);
 
-  // Initialize 3D Holographic Matrix and 3D Hover Tilt Physics
-  initHologramMatrix();
+  // Initialize 3D Isometric Brand Logo and 3D Card Hover Tilt Physics
+  init3DBrandLogo();
   init3DCardTilt();
 
   const selectEl = document.getElementById("patient-select");
@@ -1926,6 +1930,7 @@ window.setAnalyticsDays = setAnalyticsDays;
 window.loadClinicalAnalytics = loadClinicalAnalytics;
 
 // ═══════════════════════════════════════════
+<<<<<<< HEAD
 //  🌌 SOVEREIGN 3D HOLOGRAPHIC VECTOR ENGINE
 //  Pure HTML5 Canvas 2D/3D Matrix Projection
 //  100% Offline · 0 Network Overhead · 60 FPS
@@ -2630,11 +2635,37 @@ function dismissPresenterWidget() {
   if (widget) widget.style.display = 'none';
 }
 
-// Window Exports for Judge Demo Simulator
+// ═══════════════════════════════════════════
+//  🛡️ 3D ISOMETRIC BRAND LOGO INTERACTIVITY
+// ═══════════════════════════════════════════
+function init3DBrandLogo() {
+  const logoWrap = document.querySelector('.brand-logo-3d-wrap');
+  const logo = document.querySelector('.brand-logo-3d');
+  if (!logoWrap || !logo) return;
+
+  logoWrap.addEventListener('mousemove', (e) => {
+    const rect = logoWrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotX = -((y - cy) / cy) * 16;
+    const rotY = ((x - cx) / cx) * 16;
+
+    logo.style.transform = `perspective(600px) rotateX(${rotX.toFixed(1)}deg) rotateY(${rotY.toFixed(1)}deg) scale(1.1) translateZ(8px)`;
+  });
+
+  logoWrap.addEventListener('mouseleave', () => {
+    logo.style.transform = 'perspective(600px) rotateX(10deg) rotateY(-12deg) translateZ(0)';
+  });
+}
+
+// Window Exports for Judge Demo Simulator & 3D Logo
 window.openJudgeDemoModal = openJudgeDemoModal;
 window.closeJudgeDemoModal = closeJudgeDemoModal;
 window.executeDemoScenario = executeDemoScenario;
 window.togglePresenterDrawer = togglePresenterDrawer;
 window.dismissPresenterWidget = dismissPresenterWidget;
+window.init3DBrandLogo = init3DBrandLogo;
 
 
