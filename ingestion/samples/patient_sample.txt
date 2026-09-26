@@ -1,0 +1,28 @@
+ST. JUDE MEMORIAL HOSPITAL — INPATIENT DISCHARGE SUMMARY
+PATIENT NAME: Robert Vance | DOB: 08/14/1958 | MRN: 4892014
+SSN: 111-22-3333 | PHONE: (555) 432-8765 | ADDRESS: 742 Evergreen Terrace, Springfield, IL 62704
+ATTENDING PHYSICIAN: Dr. Jonathan Miller, MD | EMAIL: jmiller@stjude-hospital.org
+
+ADMISSION DIAGNOSIS: Acute on chronic renal failure exacerbation
+DISCHARGE DIAGNOSES:
+1. Stage 3 Chronic Kidney Disease (CKD) — baseline serum creatinine 2.2 mg/dL, baseline eGFR 36 mL/min/1.73m2
+2. Essential Hypertension
+3. Type 2 Diabetes Mellitus (non-insulin dependent)
+
+HOSPITAL COURSE:
+Patient is a 66-year-old male admitted with fluid retention and blood pressure elevation. 
+Renal ultrasound showed bilateral echogenic kidneys consistent with chronic medical renal disease.
+Discharge laboratory evaluation demonstrates serum creatinine 2.1 mg/dL, eGFR 38 mL/min/1.73m2, Potassium 4.6 mEq/L, BP 142/88 mmHg, Platelets 220,000.
+Patient complains of worsening bilateral knee osteoarthritis pain.
+
+CURRENT DISCHARGE MEDICATIONS:
+- Lisinopril 20mg PO daily
+- Metformin 500mg PO BID
+- Amlodipine 5mg PO daily
+
+ALLERGIES:
+- Sulfonamides (anaphylactic urticaria)
+- Penicillin (skin rash)
+
+PHYSICIAN ORDERS / DISCHARGE INSTRUCTIONS:
+Follow up with nephrology in 2 weeks. Avoid nephrotoxic agents. Proposing analgesia for joint pain.

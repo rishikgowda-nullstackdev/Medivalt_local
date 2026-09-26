@@ -1,12 +1,9 @@
 """
-MediVault Local - Clinical Ingestion, De-Identification & Lab Parser Pipeline (Person B)
-Regulatory Standard: HIPAA Safe Harbor § 164.514(b)(2) & India DPDP Act 2023.
-
-Provides:
-- PDF and TXT text extraction without cloud egress.
-- 18 HIPAA Safe Harbor PHI identifier de-identification.
-- Quantitative clinical lab and biomarker numerical parser (eGFR, Creatinine, K+, INR, Platelets).
-- Structured entity extraction (diagnosed conditions, active prescriptions, allergies).
+MediVault Local - Clinical Ingestion Pipeline (Person B)
+Zero-cloud HIPAA Safe Harbor (§ 164.514(b)) and India DPDP compliant.
+Performs in-memory document parsing, local PHI de-identification,
+clinical entity extraction, quantitative lab biomarker analysis,
+and sovereign hospital interoperability parsing (FHIR R4, HL7 v2, optical QR).
 """
 
 import os
@@ -17,290 +14,356 @@ import base64
 import sqlite3
 import hashlib
 from datetime import datetime
-from io import BytesIO
-from typing import Union, Optional, Tuple, List, Dict, Any
-from pypdf import PdfReader
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from .extractor import extract_text
+from .redactor import redact_phi, redact_pii
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "medivault.db")
 
 # ---------------------------------------------------------------------------
-# HIPAA 18 Safe Harbor PHI Redaction Patterns
+# Clinical Lexicons for Deterministic Entity Extraction
 # ---------------------------------------------------------------------------
-PHI_PATTERNS = [
-    # Social Security / National ID Numbers
-    (r"\b\d{3}-\d{2}-\d{4}\b", "[REDACTED_SSN]"),
-    (r"\b\d{9,12}\b", "[REDACTED_NATIONAL_ID]"),
-
-    # Phone & Fax Numbers
-    (r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "[REDACTED_PHONE]"),
-
-    # Email Addresses
-    (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "[REDACTED_EMAIL]"),
-
-    # Medical Record Numbers (MRN) & Account Numbers
-    (r"(?i)\b(?:MRN|MR#|Record\s*#?|Patient\s*ID|Acct\s*#?)\s*[:#]?\s*[A-Z0-9-]{4,15}\b", "[REDACTED_MRN]"),
-
-    # Dates of Birth
-    (r"(?i)\b(?:DOB|Date of Birth|Born)\s*[:#]?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", "[REDACTED_DOB]"),
-
-    # Street Addresses & ZIP codes
-    (r"\b\d{5}(?:-\d{4})?\b", "[REDACTED_ZIP]"),
-    (r"(?i)\b\d{1,5}\s+[A-Za-z0-9\s.,]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way)\b", "[REDACTED_ADDRESS]"),
-
-    # Explicit Doctor/Patient names with titles
-    (r"(?i)\b(?:Dr\.|Doctor|Physician|Patient|Pt\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "[REDACTED_NAME]"),
-
-    # IP Addresses
-    (r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[REDACTED_IP]")
-]
-
-# ---------------------------------------------------------------------------
-# Medical Entity Lexicon
-# ---------------------------------------------------------------------------
-CONDITION_LEXICON = {
-    "chronic kidney disease": ["chronic kidney disease", "ckd", "renal failure", "renal impairment", "renal insufficiency", "nephropathy"],
-    "hypertension": ["hypertension", "high blood pressure", "htn", "essential hypertension"],
-    "asthma": ["asthma", "bronchial asthma", "reactive airway disease", "wheezing disorder"],
-    "chronic obstructive pulmonary disease": ["copd", "chronic obstructive pulmonary disease", "emphysema", "chronic bronchitis"],
-    "diabetes mellitus": ["diabetes", "type 2 diabetes", "t2dm", "type 1 diabetes", "diabetic", "hyperglycemia"],
-    "diabetic ketoacidosis": ["dka", "diabetic ketoacidosis"],
-    "peptic ulcer disease": ["peptic ulcer", "gastric ulcer", "duodenal ulcer", "pud", "gi bleed", "gastritis"],
-    "atrial fibrillation": ["atrial fibrillation", "afib", "a-fib", "arrhythmia"],
-    "deep vein thrombosis": ["deep vein thrombosis", "dvt", "pulmonary embolism", "venous thromboembolism"],
-    "heart failure": ["heart failure", "chf", "congestive heart failure"],
-    "pregnancy": ["pregnant", "pregnancy", "gestation", "gravida"]
+CONDITION_LEXICON: Dict[str, List[str]] = {
+    "Chronic Kidney Disease": [
+        "chronic kidney disease", "ckd", "renal failure", "renal impairment",
+        "renal insufficiency", "nephropathy", "chronic medical renal disease", "esrd"
+    ],
+    "Hypertension": [
+        "hypertension", "high blood pressure", "htn", "essential hypertension"
+    ],
+    "Asthma": [
+        "asthma", "bronchial asthma", "reactive airway disease", "wheezing disorder"
+    ],
+    "Chronic Obstructive Pulmonary Disease": [
+        "copd", "chronic obstructive pulmonary disease", "emphysema", "chronic bronchitis"
+    ],
+    "Diabetes Mellitus": [
+        "diabetes", "type 2 diabetes", "t2dm", "type 1 diabetes", "diabetic", "hyperglycemia"
+    ],
+    "Diabetic Ketoacidosis": [
+        "dka", "diabetic ketoacidosis"
+    ],
+    "Peptic Ulcer Disease": [
+        "peptic ulcer", "gastric ulcer", "duodenal ulcer", "pud", "gi bleed", "gastritis"
+    ],
+    "Atrial Fibrillation": [
+        "atrial fibrillation", "afib", "a-fib", "arrhythmia"
+    ],
+    "Deep Vein Thrombosis": [
+        "deep vein thrombosis", "dvt", "pulmonary embolism", "venous thromboembolism"
+    ],
+    "Heart Failure": [
+        "heart failure", "chf", "congestive heart failure"
+    ],
+    "Pregnancy": [
+        "pregnant", "pregnancy", "gestation", "gravida"
+    ],
+    "Osteoarthritis": [
+        "osteoarthritis", "degenerative joint disease"
+    ],
+    "Allergic Rhinitis": [
+        "allergic rhinitis"
+    ],
+    "Migraine": [
+        "migraine", "migraine headaches"
+    ],
+    "Gastroesophageal Reflux Disease": [
+        "gerd", "gastroesophageal reflux"
+    ]
 }
 
-MEDICATION_LEXICON = [
+MEDICATION_LEXICON: List[str] = [
     # NSAIDs
-    "ibuprofen", "naproxen", "diclofenac", "meloxicam", "ketorolac", "indomethacin", "celecoxib", "aspirin",
+    "ibuprofen", "advil", "motrin", "naproxen", "aleve", "diclofenac", "voltaren",
+    "meloxicam", "mobic", "ketorolac", "toradol", "indomethacin", "indocin",
+    "celecoxib", "celebrex", "aspirin", "ecotrin",
     # Antihypertensives & Beta-blockers
-    "propranolol", "timolol", "nadolol", "labetalol", "metoprolol", "atenolol", "bisoprolol",
-    "lisinopril", "enalapril", "ramipril", "losartan", "valsartan", "amlodipine", "spironolactone",
+    "propranolol", "inderal", "timolol", "nadolol", "labetalol", "metoprolol", "lopressor", "toprol",
+    "atenolol", "bisoprolol", "lisinopril", "prinivil", "zestril", "enalapril", "vasotec", "ramipril",
+    "altace", "losartan", "cozaar", "valsartan", "diovan", "amlodipine", "norvasc",
+    "spironolactone", "aldactone",
     # Antidiabetics
-    "metformin", "empagliflozin", "dapagliflozin", "glipizide", "insulin", "linagliptin",
+    "metformin", "glucophage", "empagliflozin", "jardiance", "dapagliflozin", "farxiga",
+    "glipizide", "glucotrol", "insulin", "linagliptin",
     # Anticoagulants & Antiplatelets
-    "warfarin", "clopidogrel", "apixaban", "rivaroxaban", "ticagrelor", "enoxaparin", "heparin",
+    "warfarin", "coumadin", "clopidogrel", "plavix", "apixaban", "eliquis",
+    "rivaroxaban", "xarelto", "ticagrelor", "brilinta", "enoxaparin", "heparin",
     # GI & Analgesics
-    "omeprazole", "pantoprazole", "acetaminophen", "paracetamol", "tramadol", "codeine",
+    "omeprazole", "prilosec", "pantoprazole", "protonix", "acetaminophen", "tylenol",
+    "paracetamol", "tramadol", "ultram", "codeine",
     # Psychotropics & Antimicrobials
-    "fluoxetine", "sertraline", "selegiline", "clarithromycin", "amoxicillin", "ciprofloxacin", "azithromycin", "levofloxacin",
-    # Diuretics & Statins
-    "furosemide", "hydrochlorothiazide", "simvastatin", "atorvastatin", "gemfibrozil"
+    "fluoxetine", "prozac", "sertraline", "zoloft", "selegiline", "eldepryl",
+    "clarithromycin", "biaxin", "amoxicillin", "amoxil", "ciprofloxacin", "cipro", "penicillin",
+    "azithromycin", "levofloxacin",
+    # Respiratory Inhalers
+    "albuterol", "salbutamol", "ventolin", "proair", "fluticasone", "flonase", "flovent",
+    # Diuretics, Statins & Lipid Agents
+    "furosemide", "hydrochlorothiazide", "simvastatin", "zocor", "atorvastatin", "lipitor", "gemfibrozil", "lopid"
 ]
 
-ALLERGY_TRIGGERS = [
+ALLERGY_LINE_PATTERNS = [
     r"(?i)\ballerg(?:ies|y|ic\s+to)\s*[:=-]?\s*([^\n.;]+)",
     r"(?i)\bknown\s+allergies\s*[:=-]?\s*([^\n.;]+)",
-    r"(?i)\bNKDA\b"
 ]
 
 
-def extract_text(file_source: Union[str, bytes], filename: Optional[str] = None) -> str:
-    """
-    Extracts text from PDF or TXT input safely in-memory without temporary disk writes.
-    """
-    if isinstance(file_source, str):
-        if os.path.exists(file_source):
-            with open(file_source, "rb") as f:
-                content = f.read()
-            fname = filename or file_source
-        else:
-            return file_source.strip()
-    else:
-        content = file_source
-        fname = filename or "document.txt"
-
-    if fname.lower().endswith(".pdf"):
-        try:
-            reader = PdfReader(BytesIO(content))
-            pages = [p.extract_text() for p in reader.pages if p.extract_text()]
-            return "\n".join(pages).strip()
-        except Exception as e:
-            raise ValueError(f"Failed to parse PDF document: {str(e)}")
-    else:
-        try:
-            return content.decode("utf-8", errors="ignore").strip()
-        except Exception as e:
-            raise ValueError(f"Failed to read file content: {str(e)}")
-
-
-def redact_phi(text: str) -> Tuple[str, List[str], str]:
-    """
-    De-identifies 18 HIPAA Safe Harbor PHI elements.
-    Returns:
-        redacted_text: Text with PHI tokens replaced
-        detected_phi: List of detected PHI categories
-        patient_token: Cryptographic pseudonym (SHA-256 slice)
-    """
-    redacted = text
-    detected_phi = []
-
-    for pattern, replacement in PHI_PATTERNS:
-        matches = re.findall(pattern, redacted)
-        if matches:
-            detected_phi.append(replacement.strip("[]"))
-            redacted = re.sub(pattern, replacement, redacted)
-
-    hasher = hashlib.sha256(text.encode("utf-8"))
-    patient_token = f"ANON_{hasher.hexdigest()[:12].upper()}"
-
-    return redacted, sorted(list(set(detected_phi))), patient_token
-
-
+# ---------------------------------------------------------------------------
+# Lab Biomarker Quantitative Parser
+# ---------------------------------------------------------------------------
 def extract_lab_biomarkers(text: str) -> Dict[str, Dict[str, Any]]:
     """
-    Extracts quantitative numerical lab values and biomarkers from clinical notes.
-    Parses values for eGFR, Creatinine, Potassium (K+), Platelets, and INR.
-    """
-    labs: Dict[str, Dict[str, Any]] = {}
+    Parses numeric lab values and evaluates them against clinical safety thresholds.
 
-    # 1. eGFR (Estimated Glomerular Filtration Rate)
+    Supported keys:
+        - "eGFR":        "CRITICAL_LOW" (<30), "WARNING_LOW" (30-44), "NORMAL" (>=45)
+        - "Creatinine":  "HIGH" (>1.4), "NORMAL" (<=1.4)
+        - "Potassium":   "CRITICAL_HIGH" (>5.0), "LOW" (<3.5), "NORMAL" (3.5-5.0)
+        - "INR":         "CRITICAL_HIGH" (>3.5), "ELEVATED" (>3.0), "NORMAL" (<=3.0)
+        - "Platelets":   "CRITICAL_LOW" (<50k), "LOW" (<100k), "NORMAL" (>=100k)
+        - "BloodPressure": "CRITICAL_HIGH" (sys>=180 or dia>=120), "HIGH" (sys>=140 or dia>=90), "NORMAL"
+
+    Each biomarker value shape:
+        { "value": float, "unit": str, "display": str, "status": str }
+    """
+    biomarkers: Dict[str, Dict[str, Any]] = {}
+
+    # 1. eGFR
     egfr_match = re.search(r"(?i)\b(?:eGFR|GFR)\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\b", text)
     if egfr_match:
         val = float(egfr_match.group(1))
-        labs["eGFR"] = {
+        if val < 30.0:
+            status = "CRITICAL_LOW"
+        elif val < 45.0:
+            status = "WARNING_LOW"
+        else:
+            status = "NORMAL"
+        disp_num = int(val) if val.is_integer() else val
+        biomarkers["eGFR"] = {
             "value": val,
             "unit": "mL/min/1.73m2",
-            "display": f"{val} mL/min/1.73m2",
-            "status": "CRITICAL_LOW" if val < 30 else ("WARNING_LOW" if val <= 44 else "NORMAL")
+            "display": f"{disp_num} mL/min/1.73m2",
+            "status": status,
         }
 
-    # 2. Serum Creatinine
-    creat_match = re.search(r"(?i)\b(?:serum\s+)?creatinine\s*[:=]?\s*(\d+\.?\d*)\b", text)
+    # 2. Creatinine
+    creat_match = re.search(r"(?i)\b(?:serum\s+)?creatinine\s*[:=]?\s*(\d+(?:\.\d+)?)\b", text)
     if creat_match:
         val = float(creat_match.group(1))
-        labs["Creatinine"] = {
+        status = "HIGH" if val > 1.4 else "NORMAL"
+        biomarkers["Creatinine"] = {
             "value": val,
             "unit": "mg/dL",
             "display": f"{val} mg/dL",
-            "status": "HIGH" if val > 1.4 else "NORMAL"
+            "status": status,
         }
 
-    # 3. Serum Potassium (K+)
-    k_match = re.search(r"(?i)\b(?:potassium|serum\s+potassium|K\+)\s*[:=]?\s*(\d+\.?\d*)\b", text)
+    # 3. Potassium
+    k_match = re.search(
+        r"(?i)(?:\b(?:serum\s+)?potassium\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:mEq/L|mmol/L)?\b"
+        r"|\bK\+\s*[:=]?\s*(\d+(?:\.\d+)?)\b)",
+        text,
+    )
     if k_match:
-        val = float(k_match.group(1))
-        labs["Potassium"] = {
+        val_str = k_match.group(1) or k_match.group(2)
+        val = float(val_str)
+        if val > 5.0:
+            status = "CRITICAL_HIGH"
+        elif val < 3.5:
+            status = "LOW"
+        else:
+            status = "NORMAL"
+        biomarkers["Potassium"] = {
             "value": val,
             "unit": "mEq/L",
             "display": f"{val} mEq/L",
-            "status": "CRITICAL_HIGH" if val > 5.0 else ("LOW" if val < 3.5 else "NORMAL")
+            "status": status,
         }
 
-    # 4. INR (International Normalized Ratio)
-    inr_match = re.search(r"(?i)\b(?:current\s+)?INR\s*[:=]?\s*(\d+\.?\d*)\b", text)
+    # 4. INR
+    inr_match = re.search(r"(?i)\b(?:current\s+)?INR\s*[:=]?\s*(\d+(?:\.\d+)?)\b", text)
     if inr_match:
         val = float(inr_match.group(1))
-        labs["INR"] = {
+        if val > 3.5:
+            status = "CRITICAL_HIGH"
+        elif val > 3.0:
+            status = "ELEVATED"
+        else:
+            status = "NORMAL"
+        biomarkers["INR"] = {
             "value": val,
             "unit": "INR",
             "display": f"{val}",
-            "status": "CRITICAL_HIGH" if val > 3.5 else ("ELEVATED" if val > 3.0 else "NORMAL")
+            "status": status,
         }
 
-    # 5. Platelet Count
-    plt_match = re.search(r"(?i)\b(?:platelets|platelet\s+count|plt)\s*[:=]?\s*(\d{2,3})(?:\s*k|\s*,?000)?\b", text)
+    # 5. Platelets
+    plt_match = re.search(
+        r"(?i)\b(?:platelets|platelet\s+count|plt)\s*[:=]?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?k?)\b",
+        text,
+    )
     if plt_match:
-        val = float(plt_match.group(1))
-        # If value is in thousands (e.g. 45), keep as 45. If full number (e.g. 45000), divide by 1000
-        if val > 1000:
-            val = round(val / 1000.0, 1)
-        labs["Platelets"] = {
-            "value": val,
+        raw_str = plt_match.group(1).replace(",", "").lower()
+        if raw_str.endswith("k"):
+            count_k = float(raw_str[:-1])
+            actual_count = count_k * 1000.0
+        else:
+            raw_num = float(raw_str)
+            if raw_num < 1000.0:
+                count_k = raw_num
+                actual_count = raw_num * 1000.0
+            else:
+                actual_count = raw_num
+                count_k = round(raw_num / 1000.0, 1)
+
+        if count_k < 50.0:
+            status = "CRITICAL_LOW"
+        elif count_k < 100.0:
+            status = "LOW"
+        else:
+            status = "NORMAL"
+
+        biomarkers["Platelets"] = {
+            "value": count_k,
+            "raw_value": actual_count,
             "unit": "x10^3/uL",
-            "display": f"{val}k / uL",
-            "status": "CRITICAL_LOW" if val < 50.0 else ("LOW" if val < 100.0 else "NORMAL")
+            "display": f"{int(actual_count):,} /mcL" if actual_count >= 1000 else f"{count_k}k / uL",
+            "status": status,
         }
 
     # 6. Blood Pressure
-    bp_match = re.search(r"(?i)\b(?:BP|Blood\s+Pressure)\s*[:=]?\s*(\d{2,3})\s*/\s*(\d{2,3})\b", text)
+    bp_match = re.search(
+        r"(?i)\b(?:BP|Blood\s+Pressure)\s*[:=]?\s*(\d{2,3})\s*/\s*(\d{2,3})\s*(?:mmHg)?\b",
+        text,
+    )
     if bp_match:
-        sys_val = int(bp_match.group(1))
-        dia_val = int(bp_match.group(2))
-        labs["BloodPressure"] = {
-            "systolic": sys_val,
-            "diastolic": dia_val,
-            "display": f"{sys_val}/{dia_val} mmHg",
-            "status": "STAGE_2_HTN" if (sys_val >= 140 or dia_val >= 90) else "NORMAL"
+        sys_val = float(bp_match.group(1))
+        dia_val = float(bp_match.group(2))
+        if sys_val >= 180.0 or dia_val >= 120.0:
+            status = "CRITICAL_HIGH"
+        elif sys_val >= 140.0 or dia_val >= 90.0:
+            status = "HIGH"
+        elif sys_val < 90.0 or dia_val < 60.0:
+            status = "LOW"
+        else:
+            status = "NORMAL"
+
+        biomarkers["BloodPressure"] = {
+            "value": sys_val,
+            "systolic": int(sys_val),
+            "diastolic": int(dia_val),
+            "unit": "mmHg",
+            "display": f"{int(sys_val)}/{int(dia_val)} mmHg",
+            "status": status,
         }
 
-    return labs
+    return biomarkers
 
 
+# ---------------------------------------------------------------------------
+# Structured Clinical Entity Extraction
+# ---------------------------------------------------------------------------
 def extract_entities(text: str) -> Dict[str, Any]:
     """
-    Extracts clinical conditions, current medications, documented allergies,
-    and quantitative lab values.
+    Extracts structured clinical entities from plain or redacted text.
+    100% offline using deterministic medical vocabulary heuristics.
+
+    Returns:
+        {
+          "diagnosed_conditions": List[str],
+          "current_medications": List[str],
+          "allergies": List[str],
+          "clinical_labs": Dict[str, str],
+          "biomarkers": Dict[str, Dict[str, Any]]
+        }
     """
     text_lower = text.lower()
 
     # 1. Diagnosed Conditions
-    extracted_conditions = []
+    extracted_conditions: List[str] = []
     for canonical_name, aliases in CONDITION_LEXICON.items():
         for alias in aliases:
             pattern = r"\b" + re.escape(alias) + r"\b"
-            if re.search(pattern, text_lower):
-                extracted_conditions.append(canonical_name.title())
+            match = re.search(pattern, text_lower)
+            if match:
+                # Check for explicit negation immediately preceding (e.g., "no evidence of CKD")
+                start_pos = max(0, match.start() - 35)
+                preceding = text_lower[start_pos:match.start()]
+                if re.search(r"\b(?:no\s+evidence\s+of|denies|negative\s+for|ruled\s+out)\s*$", preceding):
+                    continue
+                extracted_conditions.append(canonical_name)
                 break
 
-    # 2. Current Medications
-    extracted_medications = []
+    # 2. Current Medications with captured dosages
+    extracted_medications: List[str] = []
     for med in MEDICATION_LEXICON:
-        med_pattern = r"\b(" + re.escape(med) + r")(?:\s+(\d+\s*(?:mg|mcg|g|ml)\b(?:\s+(?:daily|bid|tid|qid|prn))?))?"
+        med_pattern = (
+            r"\b(" + re.escape(med) + r")"
+            r"(?:\s+(\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|puffs?)\b"
+            r"(?:\s+(?:po|inhaled|iv|prn|daily|bid|tid|qid|q\d+h))*"
+            r"))?"
+        )
         match = re.search(med_pattern, text_lower)
         if match:
             med_name = match.group(1).title()
             dosage = match.group(2)
             if dosage:
-                extracted_medications.append(f"{med_name} {dosage}")
+                extracted_medications.append(f"{med_name} {dosage.strip()}")
             else:
                 extracted_medications.append(med_name)
 
-    # 3. Documented Allergies
-    extracted_allergies = []
-    allergy_block_match = re.search(r"(?i)\ballerg(?:ies|y|ic\s+to)[^\n:]*:\s*\n((?:\s*[-*•]\s*[^\n]+\n?)+)", text)
-    if allergy_block_match:
-        lines = allergy_block_match.group(1).strip().split("\n")
-        for line in lines:
-            cleaned = re.sub(r"^[-*•\s]+", "", line).strip()
-            allergen_name = re.split(r"[\(:;,]", cleaned)[0].strip()
-            if allergen_name:
-                extracted_allergies.append(allergen_name.title())
+    # 3. Allergies
+    extracted_allergies: List[str] = []
 
-    for trigger in ALLERGY_TRIGGERS:
-        for match in re.finditer(trigger, text):
-            if "NKDA" in match.group(0).upper():
-                extracted_allergies.append("No Known Drug Allergies (NKDA)")
-            else:
-                raw_allergies = match.group(1).split(",")
-                for a in raw_allergies:
-                    cleaned = a.strip().rstrip(".;")
-                    allergen_part = re.split(r"[\(:;,]", cleaned)[0].strip()
-                    if allergen_part and len(allergen_part) < 50 and not allergen_part.lower().startswith("adverse"):
-                        extracted_allergies.append(allergen_part.title())
+    # Check for NKDA
+    if re.search(r"(?i)\bNKDA\b|\bno\s+known\s+drug\s+allergies\b", text):
+        extracted_allergies.append("No Known Drug Allergies (NKDA)")
+    else:
+        # Check inline patterns: "Allergies: Penicillin, Sulfa"
+        for pattern in ALLERGY_LINE_PATTERNS:
+            match = re.search(pattern, text)
+            if match:
+                items = match.group(1).split(",")
+                for item in items:
+                    cleaned = re.sub(r"^[-\s*•]+", "", item).strip().rstrip(".;")
+                    allergen_name = re.split(r"[\(:;,]", cleaned)[0].strip()
+                    if allergen_name and len(allergen_name) < 50 and not allergen_name.lower().startswith("adverse"):
+                        extracted_allergies.append(allergen_name.title())
 
+        # Check multiline bullet patterns under ALLERGIES:
+        bullet_block_match = re.search(r"(?i)\ballergies\s*:\s*\n((?:\s*[-*•]\s*[^\n]+\n?)+)", text)
+        if bullet_block_match:
+            block = bullet_block_match.group(1)
+            for line in block.splitlines():
+                cleaned = re.sub(r"^[-\s*•]+", "", line).strip()
+                allergen_name = re.split(r"[\(:;,]", cleaned)[0].strip()
+                if allergen_name and len(allergen_name) < 50:
+                    extracted_allergies.append(allergen_name.title())
+
+    # Fallback keyword scan for common allergy triggers under allergic context
     if "allerg" in text_lower:
         for term in ["penicillin", "sulfa", "sulfonamides", "aspirin", "codeine", "cephalosporin"]:
             if re.search(r"(?i)\b" + re.escape(term) + r"\b", text_lower):
                 extracted_allergies.append(term.title())
 
-    # 4. Quantitative Lab Biomarkers
-    labs = extract_lab_biomarkers(text)
-
-    # Backward compatibility formatted dictionary for older UI cards
-    legacy_labs = {k: v["display"] for k, v in labs.items()}
+    # 4. Lab Biomarkers (rich & legacy map)
+    biomarkers = extract_lab_biomarkers(text)
+    clinical_labs = {key: data["display"] for key, data in biomarkers.items()}
 
     return {
         "diagnosed_conditions": sorted(list(set(extracted_conditions))),
         "current_medications": sorted(list(set(extracted_medications))),
         "allergies": sorted(list(set(extracted_allergies))),
-        "clinical_labs": legacy_labs,
-        "biomarkers": labs
+        "clinical_labs": clinical_labs,
+        "biomarkers": biomarkers,
     }
 
 
+# ---------------------------------------------------------------------------
+# Full Clinical Note Processing (Unified Pipeline Call)
+# ---------------------------------------------------------------------------
 def process_clinical_note(raw_text: str) -> Dict[str, Any]:
     """Runs full redaction and clinical extraction pipeline in one unified call."""
     redacted_text, detected_phi, patient_token = redact_phi(raw_text)
@@ -315,17 +378,31 @@ def process_clinical_note(raw_text: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Frozen Contract Implementation (CONTRACTS.md - Person B)
+# Primary Frozen Contract Pipeline Function
 # ---------------------------------------------------------------------------
-def process_file(file_path_or_bytes: Union[str, bytes], filename: Optional[str] = None) -> str:
+def process_file(
+    file_path_or_bytes: Union[str, bytes, Path],
+    filename: Optional[str] = None
+) -> str:
     """
-    Person B Ingestion Frozen Contract:
-    in: a file (PDF or .txt) or bytes
-    out: a single redacted plain-text string
+    Person B Primary Frozen Contract.
+    Takes file bytes or a file path (PDF or TXT).
+    Parses document in-memory without disk writes.
+    Returns plain-text string with 18 HIPAA Safe Harbor PHI replaced by [REDACTED_*] tokens.
+    Guarantees clinical data, labs, biomarkers, and medications remain intact.
     """
-    raw_text = extract_text(file_path_or_bytes, filename)
+    raw_text = extract_text(file_path_or_bytes, filename=filename)
     redacted_text, _, _ = redact_phi(raw_text)
     return redacted_text
+
+
+def ingest_record(file_path: Union[str, Path]) -> str:
+    """
+    Legacy Day 3 pipeline function returning [REDACTED] plain text.
+    Preserved for backward compatibility with test_ingestion.py.
+    """
+    raw_text = extract_text(file_path)
+    return redact_pii(raw_text)
 
 
 # ---------------------------------------------------------------------------
@@ -489,8 +566,8 @@ def parse_fhir_bundle(bundle_dict: Dict[str, Any]) -> Dict[str, Any]:
         c_low = c.lower().strip()
         matched = False
         for standard, syns in CONDITION_LEXICON.items():
-            if c_low in syns or standard in c_low or c_low in standard:
-                clean_conds.append(standard)
+            if c_low in [s.lower() for s in syns] or standard.lower() in c_low or c_low in standard.lower():
+                clean_conds.append(standard.lower())
                 matched = True
                 break
         if not matched:
@@ -682,4 +759,3 @@ def parse_optical_qr_payload(qr_string: str) -> Dict[str, Any]:
         }
     except Exception:
         return process_clinical_note(json_str)
-
