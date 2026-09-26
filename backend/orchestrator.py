@@ -83,78 +83,79 @@ class ClinicalOrchestrator:
         4. Deterministic Drug <-> Drug rules
         """
         conn = cls.get_db()
-        cursor = conn.cursor()
-
+        alerts = []
+        overall_status = "SAFE"
         canonical_drug, detected_brand = PharmacologyEngine.normalize_drug_name(proposed_med)
         search_drug = canonical_drug.lower()
 
-        alerts = []
-        overall_status = "SAFE"
+        try:
+            cursor = conn.cursor()
 
-        # Allergy Screening
-        allergy_alerts = PharmacologyEngine.check_drug_allergies(proposed_med, allergies)
-        for a in allergy_alerts:
-            overall_status = "CRITICAL"
-            alerts.append(a)
+            # Allergy Screening
+            allergy_alerts = PharmacologyEngine.check_drug_allergies(proposed_med, allergies)
+            for a in allergy_alerts:
+                overall_status = "CRITICAL"
+                alerts.append(a)
 
-        # Drug <-> Disease Contraindications
-        for cond in conditions:
-            cond_clean = cond.strip().lower()
-            cursor.execute("""
-                SELECT condition_name, severity, mechanism, recommendation
-                FROM contraindications_disease
-                WHERE (? LIKE '%' || drug_name || '%' OR drug_name = ?)
-                  AND (? LIKE '%' || condition_name || '%' OR condition_name LIKE '%' || ? || '%')
-            """, (search_drug, search_drug, cond_clean, cond_clean))
+            # Drug <-> Disease Contraindications
+            for cond in conditions:
+                cond_clean = cond.strip().lower()
+                cursor.execute("""
+                    SELECT condition_name, severity, mechanism, recommendation
+                    FROM contraindications_disease
+                    WHERE (? LIKE '%' || drug_name || '%' OR drug_name = ?)
+                      AND (? LIKE '%' || condition_name || '%' OR condition_name LIKE '%' || ? || '%')
+                """, (search_drug, search_drug, cond_clean, cond_clean))
 
-            for row in cursor.fetchall():
-                sev = row["severity"]
-                if sev == "CRITICAL":
-                    overall_status = "CRITICAL"
-                elif sev == "WARNING" and overall_status != "CRITICAL":
-                    overall_status = "WARNING"
+                for row in cursor.fetchall():
+                    sev = row["severity"]
+                    if sev == "CRITICAL":
+                        overall_status = "CRITICAL"
+                    elif sev == "WARNING" and overall_status != "CRITICAL":
+                        overall_status = "WARNING"
 
-                factor = f"Diagnosed Condition: {cond}"
-                if detected_brand:
-                    factor += f" (prescribed as '{detected_brand}', generic '{canonical_drug}')"
+                    factor = f"Diagnosed Condition: {cond}"
+                    if detected_brand:
+                        factor += f" (prescribed as '{detected_brand}', generic '{canonical_drug}')"
 
-                alerts.append({
-                    "severity": sev,
-                    "interaction_type": "DRUG_DISEASE",
-                    "conflicting_factor": factor,
-                    "clinical_mechanism": row["mechanism"],
-                    "recommendation": row["recommendation"]
-                })
+                    alerts.append({
+                        "severity": sev,
+                        "interaction_type": "DRUG_DISEASE",
+                        "conflicting_factor": factor,
+                        "clinical_mechanism": row["mechanism"],
+                        "recommendation": row["recommendation"]
+                    })
 
-        # Drug <-> Drug Interactions
-        for med in medications:
-            med_clean = med.strip().lower()
-            med_generic, _ = PharmacologyEngine.normalize_drug_name(med)
-            med_search = med_generic.lower()
+            # Drug <-> Drug Interactions
+            for med in medications:
+                med_clean = med.strip().lower()
+                med_generic, _ = PharmacologyEngine.normalize_drug_name(med)
+                med_search = med_generic.lower()
 
-            cursor.execute("""
-                SELECT drug_a, drug_b, severity, mechanism, recommendation
-                FROM contraindications_drug
-                WHERE (drug_a = ? AND (? LIKE '%' || drug_b || '%' OR drug_b = ?))
-                   OR (drug_b = ? AND (? LIKE '%' || drug_a || '%' OR drug_a = ?))
-            """, (search_drug, med_search, med_search, search_drug, med_search, med_search))
+                cursor.execute("""
+                    SELECT drug_a, drug_b, severity, mechanism, recommendation
+                    FROM contraindications_drug
+                    WHERE (drug_a = ? AND (? LIKE '%' || drug_b || '%' OR drug_b = ?))
+                       OR (drug_b = ? AND (? LIKE '%' || drug_a || '%' OR drug_a = ?))
+                """, (search_drug, med_search, med_search, search_drug, med_search, med_search))
 
-            for row in cursor.fetchall():
-                sev = row["severity"]
-                if sev == "CRITICAL":
-                    overall_status = "CRITICAL"
-                elif sev == "WARNING" and overall_status != "CRITICAL":
-                    overall_status = "WARNING"
+                for row in cursor.fetchall():
+                    sev = row["severity"]
+                    if sev == "CRITICAL":
+                        overall_status = "CRITICAL"
+                    elif sev == "WARNING" and overall_status != "CRITICAL":
+                        overall_status = "WARNING"
 
-                alerts.append({
-                    "severity": sev,
-                    "interaction_type": "DRUG_DRUG",
-                    "conflicting_factor": f"Active Prescription: {med}",
-                    "clinical_mechanism": row["mechanism"],
-                    "recommendation": row["recommendation"]
-                })
+                    alerts.append({
+                        "severity": sev,
+                        "interaction_type": "DRUG_DRUG",
+                        "conflicting_factor": f"Active Prescription: {med}",
+                        "clinical_mechanism": row["mechanism"],
+                        "recommendation": row["recommendation"]
+                    })
+        finally:
+            conn.close()
 
-        conn.close()
         return overall_status, alerts, canonical_drug
 
     @classmethod
@@ -215,9 +216,6 @@ class ClinicalOrchestrator:
         Includes practitioner and institutional attribution for HIPAA § 164.312(a)(2)(i).
         """
         start_time = time.time()
-        conn = cls.get_db()
-        cursor = conn.cursor()
-
         conditions = []
         medications = []
         allergies = []
@@ -226,36 +224,41 @@ class ClinicalOrchestrator:
         demo_data = demographics or {}
 
         if patient_id and not raw_notes:
-            cursor.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (patient_id,))
-            conditions = [r["condition_name"] for r in cursor.fetchall()]
-
-            cursor.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (patient_id,))
-            medications = [r["medication_name"] for r in cursor.fetchall()]
-
-            cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
-            allergies = [r["allergen"] for r in cursor.fetchall()]
-
-            # Preset synthetic demographics for demo patients
-            if not demo_data:
-                if patient_id == "PT-101":
-                    demo_data = {"age": 64, "gender": "male", "weight_kg": 78.0}
-                elif patient_id == "PT-102":
-                    demo_data = {"age": 32, "gender": "female", "weight_kg": 58.0}
-                elif patient_id == "PT-103":
-                    demo_data = {"age": 74, "gender": "male", "weight_kg": 82.0}
-
-            # Load quantitative patient labs if present
+            conn = cls.get_db()
             try:
-                cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
-                for r in cursor.fetchall():
-                    b_name = r["biomarker_name"]
-                    labs[b_name] = {
-                        "value": r["value"],
-                        "unit": r["unit"],
-                        "display": f"{r['value']} {r['unit']}"
-                    }
-            except Exception:
-                pass
+                cursor = conn.cursor()
+                cursor.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (patient_id,))
+                conditions = [r["condition_name"] for r in cursor.fetchall()]
+
+                cursor.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (patient_id,))
+                medications = [r["medication_name"] for r in cursor.fetchall()]
+
+                cursor.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
+                allergies = [r["allergen"] for r in cursor.fetchall()]
+
+                # Preset synthetic demographics for demo patients
+                if not demo_data:
+                    if patient_id == "PT-101":
+                        demo_data = {"age": 64, "gender": "male", "weight_kg": 78.0}
+                    elif patient_id == "PT-102":
+                        demo_data = {"age": 32, "gender": "female", "weight_kg": 58.0}
+                    elif patient_id == "PT-103":
+                        demo_data = {"age": 74, "gender": "male", "weight_kg": 82.0}
+
+                # Load quantitative patient labs if present
+                try:
+                    cursor.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+                    for r in cursor.fetchall():
+                        b_name = r["biomarker_name"]
+                        labs[b_name] = {
+                            "value": r["value"],
+                            "unit": r["unit"],
+                            "display": f"{r['value']} {r['unit']}"
+                        }
+                except Exception:
+                    pass
+            finally:
+                conn.close()
 
             patient_token = f"ANON_{patient_id}"
 
@@ -273,8 +276,6 @@ class ClinicalOrchestrator:
             labs = processed["entities"].get("biomarkers", {})
             if not demo_data and "demographics" in processed:
                 demo_data = processed["demographics"]
-
-        conn.close()
 
         # Step: Execute comprehensive safety evaluation via Person C's AI Engine
         full_result = call_person_c_full_safety(proposed_med, conditions, medications, allergies, labs, demo_data)
@@ -297,7 +298,7 @@ class ClinicalOrchestrator:
         # Synthesize explanation
         explanation = cls.synthesize_explanation(proposed_med, canonical_drug, overall_status, alerts)
 
-        exec_time_ms = round((time.time() - start_time) * 1000 + 8.5, 2)
+        exec_time_ms = round((time.time() - start_time) * 1000, 2)
 
         # Resolve practitioner attribution
         prac = practitioner or {}

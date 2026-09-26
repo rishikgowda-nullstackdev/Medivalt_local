@@ -12,7 +12,7 @@ from fastapi import HTTPException, UploadFile
 # Limits
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 MAX_TEXT_LENGTH = 250_000               # 250k characters
-ALLOWED_EXTENSIONS = {".pdf", ".txt", ".text", ".md"}
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".text", ".md", ".json", ".hl7"}
 
 
 class InputValidator:
