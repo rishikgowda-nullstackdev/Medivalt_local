@@ -442,119 +442,95 @@
       font-weight: 700; font-size: 13px; color: white;
       flex-shrink: 0;
     }
+
+    /* ─── TOAST NOTIFICATION CONTAINER (NON-BLOCKING STACK) ─── */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 420px;
+      width: calc(100vw - 40px);
+      pointer-events: none;
+    }
+    .toast-item {
+      pointer-events: auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .toast-item.toast-leave {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    /* ─── PROGRESSIVE TRIAGE & MICRO-ANIMATIONS ─── */
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes scanRipple {
+      0% { opacity: 0.4; transform: scale(0.99); }
+      50% { opacity: 1; transform: scale(1.01); }
+      100% { opacity: 0.4; transform: scale(0.99); }
+    }
+    @keyframes badgePopSafe {
+      0% { transform: scale(0.92); opacity: 0; }
+      60% { transform: scale(1.03); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes badgePopCritical {
+      0% { transform: scale(0.96); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes swapGlow {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .scanning-pulse {
+      animation: scanRipple 0.8s ease-in-out infinite;
+      border-color: var(--teal-bright) !important;
+    }
+    .swap-glow-highlight {
+      animation: swapGlow 0.9s ease-out;
+      border-color: #10b981 !important;
+    }
+    .animate-badge-pop {
+      animation: badgePopSafe 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .animate-badge-critical {
+      animation: badgePopCritical 0.2s ease-out forwards;
+    }
+
+    /* ─── ACCESSIBILITY: REDUCED MOTION ─── */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+      .scanning-pulse, .swap-glow-highlight, .animate-badge-pop, .animate-badge-critical, .toast-item {
+        animation: none !important;
+        transform: none !important;
+      }
+    }
   </style>
-
-  <!-- Immediate Early UI Controller (Always Ready on Click) -->
-  <script>
-    window.switchMainTab = function(tabKey) {
-      const tabs = ['review', 'intake', 'fhir', 'audit'];
-      tabs.forEach(function(t) {
-        const btn = document.getElementById('nav-btn-' + t);
-        const panel = document.getElementById('page-view-' + t);
-        if (btn) {
-          if (t === tabKey) {
-            btn.classList.add('active');
-            btn.setAttribute('aria-selected', 'true');
-          } else {
-            btn.classList.remove('active');
-            btn.setAttribute('aria-selected', 'false');
-          }
-        }
-        if (panel) {
-          if (t === tabKey) {
-            panel.classList.add('active');
-            panel.style.display = 'block';
-          } else {
-            panel.classList.remove('active');
-            panel.style.display = 'none';
-          }
-        }
-      });
-    };
-
-    window.toggleSettingsSidebar = function(open) {
-      const sidebar = document.getElementById('settings-sidebar');
-      const backdrop = document.getElementById('settings-backdrop');
-      if (!sidebar || !backdrop) return;
-      if (open) {
-        sidebar.classList.add('open');
-        backdrop.classList.add('open');
-        sidebar.style.display = 'flex';
-        sidebar.style.transform = 'translateX(0)';
-        backdrop.style.display = 'block';
-        backdrop.style.opacity = '1';
-        backdrop.style.visibility = 'visible';
-        backdrop.style.pointerEvents = 'auto';
-      } else {
-        sidebar.classList.remove('open');
-        backdrop.classList.remove('open');
-        sidebar.style.transform = 'translateX(100%)';
-        backdrop.style.opacity = '0';
-        backdrop.style.visibility = 'hidden';
-        backdrop.style.pointerEvents = 'none';
-        setTimeout(function() {
-          if (!sidebar.classList.contains('open')) {
-            sidebar.style.display = 'none';
-            backdrop.style.display = 'none';
-          }
-        }, 250);
-      }
-    };
-
-    window.openPatientModal = function() {
-      const modal = document.getElementById('switch-patient-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        if (typeof window.refreshPatientModalCards === 'function') {
-          window.refreshPatientModalCards();
-        }
-      }
-    };
-
-    window.closePatientModal = function() {
-      const modal = document.getElementById('switch-patient-modal');
-      if (modal) modal.style.display = 'none';
-    };
-
-    window.showChangeDocModal = function() {
-      const modal = document.getElementById('switch-doc-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        if (typeof window.renderDocList === 'function') {
-          window.renderDocList();
-        }
-      }
-    };
-
-    window.closeChangeDocModal = function() {
-      const modal = document.getElementById('switch-doc-modal');
-      if (modal) modal.style.display = 'none';
-    };
-
-    window.openClearanceQrModal = function() {
-      const modal = document.getElementById('qr-modal');
-      if (modal) modal.style.display = 'flex';
-    };
-
-    window.closeClearanceQrModal = function() {
-      const modal = document.getElementById('qr-modal');
-      if (modal) modal.style.display = 'none';
-    };
-
-    window.dismissSplash = function() {
-      const splash = document.getElementById('splash');
-      if (splash && !splash.classList.contains('dismissed')) {
-        splash.classList.add('dismissed');
-        setTimeout(function() {
-          if (splash && splash.parentNode) {
-            splash.parentNode.removeChild(splash);
-          }
-        }, 350);
-      }
-    };
-  </script>
 </head>
 <body>
+  <!-- Toast Notification Stack (Non-blocking) -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ═══════════════════════════════════════════
      SOVEREIGN BOOT SPLASH SCREEN (Self-Dismissing Diagnostics)
@@ -1074,7 +1050,7 @@
           </div>
 
           <!-- Live Results Container -->
-          <div id="result-content" style="display:none" class="space-y-3.5">
+          <div id="result-content" style="display:none" class="space-y-3.5" role="region" aria-live="polite" aria-label="Clinical Decision Support Results">
             
             <!-- Triage Status Banner -->
             <div id="status-banner" class="triage-banner danger">
@@ -1567,339 +1543,7 @@
 </div>
 
 
-<!-- Application Controller Script -->
+<!-- Application Controller Script (Single Source of Truth) -->
 <script src="/static/app.js"></script>
-
-<script>
-// ═══════════════════════════════════════════
-//  THEME CONTROLLER (Dark ↔ Light)
-// ═══════════════════════════════════════════
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  updateThemeUI(isLight);
-}
-
-function updateThemeUI(isLight) {
-  const title = document.getElementById('sidebar-theme-title');
-  const btn = document.getElementById('sidebar-theme-btn');
-  const icon = document.getElementById('sidebar-theme-icon');
-  if (title && btn && icon) {
-    if (isLight) {
-      title.textContent = 'Light Mode Active';
-      btn.textContent = 'Switch to Dark';
-      icon.className = 'fa-solid fa-moon text-teal-400 mr-1';
-    } else {
-      title.textContent = 'Dark Mode Active';
-      btn.textContent = 'Switch to Light';
-      icon.className = 'fa-solid fa-sun text-amber-400 mr-1';
-    }
-  }
-}
-
-// Restore saved theme on load
-(function() {
-  const saved = localStorage.getItem('theme');
-  if (saved === 'light') {
-    document.documentElement.classList.add('light');
-    updateThemeUI(true);
-  }
-})();
-
-// ═══════════════════════════════════════════
-//  MULTI-PAGE NAVIGATION CONTROLLER
-// ═══════════════════════════════════════════
-function switchMainTab(tabKey) {
-  const tabs = ['review', 'intake', 'fhir', 'audit'];
-  tabs.forEach(t => {
-    const btn = document.getElementById(`nav-btn-${t}`);
-    const panel = document.getElementById(`page-view-${t}`);
-    if (btn) {
-      if (t === tabKey) {
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-      } else {
-        btn.classList.remove('active');
-        btn.setAttribute('aria-selected', 'false');
-      }
-    }
-    if (panel) {
-      if (t === tabKey) {
-        panel.classList.add('active');
-        panel.style.display = 'block';
-      } else {
-        panel.classList.remove('active');
-        panel.style.display = 'none';
-      }
-    }
-  });
-}
-
-// ═══════════════════════════════════════════
-//  GLOBAL KEYBOARD SHORTCUTS
-// ═══════════════════════════════════════════
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'Enter') {
-    e.preventDefault();
-    const activeReview = document.getElementById('page-view-review').classList.contains('active');
-    const activeIntake = document.getElementById('page-view-intake').classList.contains('active');
-    if (activeReview) runSafetyCheck();
-    else if (activeIntake) triggerRedaction();
-  } else if ((e.ctrlKey || e.altKey) && e.key === '1') {
-    e.preventDefault(); switchMainTab('review');
-  } else if ((e.ctrlKey || e.altKey) && e.key === '2') {
-    e.preventDefault(); switchMainTab('intake');
-  } else if ((e.ctrlKey || e.altKey) && e.key === '3') {
-    e.preventDefault(); switchMainTab('fhir');
-  } else if ((e.ctrlKey || e.altKey) && e.key === '4') {
-    e.preventDefault(); switchMainTab('audit');
-  } else if (e.key === 'Escape') {
-    toggleSettingsSidebar(false);
-    closeChangeDocModal();
-    closeClearanceQrModal();
-    if (typeof closePatientModal === 'function') closePatientModal();
-  }
-});
-
-// ═══════════════════════════════════════════
-//  SETTINGS SIDEBAR TOGGLE
-// ═══════════════════════════════════════════
-function toggleSettingsSidebar(open) {
-  const sidebar = document.getElementById('settings-sidebar');
-  const backdrop = document.getElementById('settings-backdrop');
-  if (!sidebar || !backdrop) return;
-  if (open) {
-    sidebar.classList.add('open');
-    backdrop.classList.add('open');
-    sidebar.style.display = 'flex';
-    sidebar.style.transform = 'translateX(0)';
-    backdrop.style.display = 'block';
-    backdrop.style.opacity = '1';
-    backdrop.style.visibility = 'visible';
-    backdrop.style.pointerEvents = 'auto';
-  } else {
-    sidebar.classList.remove('open');
-    backdrop.classList.remove('open');
-    sidebar.style.transform = 'translateX(100%)';
-    backdrop.style.opacity = '0';
-    backdrop.style.visibility = 'hidden';
-    backdrop.style.pointerEvents = 'none';
-    setTimeout(() => {
-      if (!sidebar.classList.contains('open')) {
-        sidebar.style.display = 'none';
-        backdrop.style.display = 'none';
-      }
-    }, 250);
-  }
-}
-
-// ═══════════════════════════════════════════
-//  TYPING SPEED CONTROLLER
-// ═══════════════════════════════════════════
-function updateSpeedLabel(val) {
-  const speed = parseInt(val);
-  const label = document.getElementById('speed-label');
-  if (label) {
-    if (speed <= 5) label.textContent = `Fast (${speed}ms)`;
-    else if (speed <= 15) label.textContent = `Normal (${speed}ms)`;
-    else label.textContent = `Deliberate (${speed}ms)`;
-  }
-}
-
-// ═══════════════════════════════════════════
-//  DOCTOR / AUTHENTICATION MANAGEMENT
-// ═══════════════════════════════════════════
-const DEMO_DOCTORS = [
-  { key: 'house', name: 'Dr. Gregory House, MD', hospital: 'Princeton Plainsboro Hospital', license: 'NPI-1999887766', initials: 'GH' },
-  { key: 'patel', name: 'Dr. Anika Patel, MBBS', hospital: 'Metro General Hospital', license: 'NPI-2345678901', initials: 'AP' },
-  { key: 'chen', name: 'Dr. Robert Chen, MD', hospital: 'City Medical Center', license: 'NPI-3456789012', initials: 'RC' }
-];
-let currentDoctor = DEMO_DOCTORS[0];
-
-function activateDoctor(doc) {
-  currentDoctor = doc;
-  updateDoctorUI(doc);
-  const gate = document.getElementById('auth-gate');
-  if (gate) {
-    gate.classList.add('dismissed');
-    gate.style.display = 'none';
-  }
-}
-
-function updateDoctorUI(doc) {
-  const pill = document.getElementById('current-doctor-pill');
-  if (pill) pill.textContent = doc.name;
-  const badge = document.getElementById('current-hospital-badge');
-  if (badge) badge.textContent = doc.hospital.split(' ')[0] + ' Hospital';
-  const avatar = document.getElementById('header-avatar');
-  if (avatar) avatar.textContent = doc.initials;
-
-  const profName = document.getElementById('profile-name');
-  if (profName) profName.textContent = doc.name;
-  const profHosp = document.getElementById('profile-hospital');
-  if (profHosp) profHosp.textContent = doc.hospital;
-  const profLic = document.getElementById('profile-license');
-  if (profLic) profLic.textContent = doc.license;
-  const profAv = document.getElementById('profile-avatar');
-  if (profAv) profAv.textContent = doc.initials;
-}
-
-function showChangeDocModal() {
-  const modal = document.getElementById('switch-doc-modal');
-  const list = document.getElementById('switch-doc-list');
-  if (!modal || !list) return;
-  list.innerHTML = '';
-  DEMO_DOCTORS.forEach(doc => {
-    const card = document.createElement('div');
-    card.className = 'p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer hover:border-teal-500/50 transition';
-    const isActive = currentDoctor.key === doc.key;
-    card.innerHTML = `
-      <div class="flex items-center space-x-2.5">
-        <div class="doc-avatar text-xs">${doc.initials}</div>
-        <div>
-          <div class="text-xs font-bold text-white">${doc.name}</div>
-          <div class="text-[10px] text-slate-400">${doc.hospital}</div>
-        </div>
-      </div>
-      ${isActive
-        ? '<span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">ACTIVE</span>'
-        : '<button class="btn-clinical-secondary py-1 px-2 text-xs">Switch</button>'}
-    `;
-    if (!isActive) {
-      card.addEventListener('click', () => {
-        activateDoctor(doc);
-        closeChangeDocModal();
-      });
-    }
-    list.appendChild(card);
-  });
-  modal.style.display = 'flex';
-}
-
-function closeChangeDocModal() {
-  const modal = document.getElementById('switch-doc-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-function handleLogout() {
-  toggleSettingsSidebar(false);
-  const gate = document.getElementById('auth-gate');
-  if (gate) {
-    gate.classList.remove('dismissed');
-    gate.style.display = 'flex';
-  }
-}
-
-
-// ═══════════════════════════════════════════
-//  INTAKE MODE SWITCHER
-// ═══════════════════════════════════════════
-function switchIntakeMode(mode) {
-  const tabDemo = document.getElementById('itab-demo');
-  const tabRaw = document.getElementById('itab-raw');
-  const secDemo = document.getElementById('section-demo');
-  const secRaw = document.getElementById('section-raw');
-
-  if (tabDemo && tabRaw && secDemo && secRaw) {
-    tabDemo.classList.toggle('bg-teal-700', mode === 'demo');
-    tabDemo.classList.toggle('text-white', mode === 'demo');
-    tabDemo.classList.toggle('text-slate-400', mode !== 'demo');
-
-    tabRaw.classList.toggle('bg-teal-700', mode === 'raw');
-    tabRaw.classList.toggle('text-white', mode === 'raw');
-    tabRaw.classList.toggle('text-slate-400', mode !== 'raw');
-
-    secDemo.style.display = mode === 'demo' ? 'block' : 'none';
-    secRaw.style.display = mode === 'raw' ? 'grid' : 'none';
-  }
-}
-
-// ═══════════════════════════════════════════
-//  GATE LOGIN / DEMO SELECTION
-// ═══════════════════════════════════════════
-function switchAuthGateTab(tab) {
-  ['demo','login','register'].forEach(t => {
-    const btn = document.getElementById(`gtab-${t}`);
-    const content = document.getElementById(`gtab-content-${t}`);
-    if (btn) {
-      btn.className = (t === tab)
-        ? 'flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30'
-        : 'flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200';
-    }
-    if (content) content.classList.toggle('hidden', t !== tab);
-  });
-}
-
-function gateSelectDemo(key) {
-  const doc = DEMO_DOCTORS.find(d => d.key === key) || DEMO_DOCTORS[0];
-  activateDoctor(doc);
-}
-
-function handleGateLogin() {
-  activateDoctor(DEMO_DOCTORS[0]);
-}
-
-function handleGateRegister() {
-  const name = document.getElementById('reg-name').value || 'Dr. Practitioner';
-  activateDoctor({
-    key: 'custom',
-    name: name,
-    hospital: 'Registered Hospital',
-    license: 'NPI-CUSTOM',
-    initials: name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
-  });
-}
-
-function handleGateOtp() {
-  activateDoctor(DEMO_DOCTORS[0]);
-}
-
-function handleGateResend() {}
-function onRegHospitalChange() {}
-
-// ═══════════════════════════════════════════
-//  OPTICAL QR CLEARANCE MODAL
-// ═══════════════════════════════════════════
-function openClearanceQrModal() {
-  const modal = document.getElementById('qr-modal');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeClearanceQrModal() {
-  const modal = document.getElementById('qr-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-// ═══════════════════════════════════════════
-//  AUDIT CHAIN VERIFICATION HELPER
-// ═══════════════════════════════════════════
-async function verifyAuditChain() {
-  const wrap = document.getElementById('integrity-banner-wrap');
-  if (!wrap) return;
-  wrap.innerHTML = `<div class="p-3 bg-teal-950/60 border border-teal-500/40 rounded-lg text-teal-300 text-xs font-mono flex items-center space-x-2">
-    <i class="fa-solid fa-spinner fa-spin"></i><span>Verifying SHA-256 Merkle chain integrity across all blocks...</span>
-  </div>`;
-  try {
-    const res = await fetch('/api/audit-verify');
-    const data = await res.json();
-    if (data.valid) {
-      wrap.innerHTML = `<div class="p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-lg text-emerald-300 text-xs font-mono flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-check-double text-emerald-400"></i>
-          <span><strong>CRYPTOGRAPHIC PROOF:</strong> All ${data.total_blocks} blocks verified intact. Zero tampering detected.</span>
-        </div>
-        <span class="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-bold uppercase">HIPAA § 164.312(b)</span>
-      </div>`;
-    } else {
-      wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-red-300 text-xs font-mono flex items-center space-x-2">
-        <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
-        <span><strong>TAMPER DETECTED:</strong> ${data.error}</span>
-      </div>`;
-    }
-  } catch(e) {
-    wrap.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-red-300 text-xs font-mono">Verification error: ${e.message}</div>`;
-  }
-}
-</script>
 </body>
 </html>
