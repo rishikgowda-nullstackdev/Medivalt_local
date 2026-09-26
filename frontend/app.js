@@ -223,13 +223,17 @@ function updateSpeedLabel(val) {
 
 function dismissSplash() {
   const splash = document.getElementById('splash');
-  if (splash && !splash.classList.contains('dismissed')) {
-    splash.classList.add('dismissed');
+  if (splash && !splash.classList.contains('dismissed') && !splash.classList.contains('fadeaway-anim')) {
+    // Creative Sovereign Cryptographic Aperture Fadeaway Sequence
+    splash.classList.add('fadeaway-anim');
     setTimeout(() => {
-      if (splash && splash.parentNode) {
-        splash.parentNode.removeChild(splash);
-      }
-    }, 350);
+      splash.classList.add('dismissed');
+      setTimeout(() => {
+        if (splash && splash.parentNode) {
+          splash.parentNode.removeChild(splash);
+        }
+      }, 100);
+    }, 420);
   }
 }
 
@@ -1473,11 +1477,23 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault(); switchMainTab('audit');
   } else if ((e.ctrlKey || e.altKey) && e.key === '5') {
     e.preventDefault(); switchMainTab('analytics');
+  } else if ((e.ctrlKey || e.altKey) && (e.key === '6' || e.key === 'd' || e.key === 'D')) {
+    e.preventDefault(); openJudgeDemoModal();
   } else if (e.key === 'Escape') {
     toggleSettingsSidebar(false);
     closeChangeDocModal();
     closeClearanceQrModal();
     closePatientModal();
+    closeJudgeDemoModal();
+  }
+
+  // Hotkeys 1-4 when Judge Demo Modal is active
+  const demoModal = document.getElementById('modal-judge-demo');
+  if (demoModal && demoModal.style.display !== 'none' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (e.key === '1') { e.preventDefault(); executeDemoScenario('renal_collapse'); }
+    else if (e.key === '2') { e.preventDefault(); executeDemoScenario('triple_whammy'); }
+    else if (e.key === '3') { e.preventDefault(); executeDemoScenario('hidden_anaphylaxis'); }
+    else if (e.key === '4') { e.preventDefault(); executeDemoScenario('anticoagulant_hemorrhage'); }
   }
 });
 
@@ -1499,6 +1515,9 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAiStatus();
   checkNetworkGuard();
   updateDoctorUI(currentDoctor);
+
+  // Initialize 3D Isometric Brand Logo
+  init3DBrandLogo();
 
   const selectEl = document.getElementById("patient-select");
   if (selectEl) {
@@ -1865,4 +1884,226 @@ function renderLeaderboard(combos) {
 
 window.setAnalyticsDays = setAnalyticsDays;
 window.loadClinicalAnalytics = loadClinicalAnalytics;
+
+// ═══════════════════════════════════════════
+//  INTERACTIVE JUDGE DEMO & CLINICAL CRISIS SIMULATOR
+// ═══════════════════════════════════════════
+let demoScenariosCache = null;
+let activeDemoScenario = null;
+let presenterDrawerCollapsed = false;
+
+async function openJudgeDemoModal() {
+  lastFocusedElement = document.activeElement;
+  const modal = document.getElementById('modal-judge-demo');
+  if (!modal) return;
+  modal.style.display = 'flex';
+
+  if (demoScenariosCache) {
+    renderDemoScenariosGrid(demoScenariosCache);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/demo/scenarios');
+    if (!res.ok) throw new Error('Failed to load scenarios');
+    const data = await res.json();
+    demoScenariosCache = data.scenarios || [];
+    renderDemoScenariosGrid(demoScenariosCache);
+  } catch (err) {
+    console.error('Demo scenarios loading error:', err);
+    const grid = document.getElementById('judge-demo-grid');
+    if (grid) {
+      grid.innerHTML = `<div class="p-6 text-center text-rose-400 col-span-2">Failed to load demo scenarios. Ensure backend is running.</div>`;
+    }
+  }
+}
+
+function closeJudgeDemoModal() {
+  const modal = document.getElementById('modal-judge-demo');
+  if (modal) modal.style.display = 'none';
+  if (lastFocusedElement) {
+    try { lastFocusedElement.focus(); } catch (_) {}
+  }
+}
+
+function renderDemoScenariosGrid(scenarios) {
+  const grid = document.getElementById('judge-demo-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  scenarios.forEach((s, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-xl p-4 flex flex-col justify-between transition group shadow-md hover:shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
+    
+    let badgeBg = 'bg-rose-950/80 text-rose-300 border-rose-500/40';
+    if (s.badge_color === 'orange') badgeBg = 'bg-amber-950/80 text-amber-300 border-amber-500/40';
+
+    card.innerHTML = `
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg">
+            ${s.icon || '⚠️'}
+          </span>
+          <span class="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${badgeBg}">
+            ${escapeHtml(s.badge)}
+          </span>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-xs font-mono text-amber-400 font-bold">Case #${idx + 1}</span>
+          <h3 class="text-sm font-bold text-white font-heading group-hover:text-amber-300 transition">${escapeHtml(s.title)}</h3>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono mt-0.5">${escapeHtml(s.subtitle)}</p>
+        <div class="mt-2.5 p-2 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-300 leading-relaxed font-sans">
+          <strong class="text-amber-300 font-mono">Prescribed:</strong> <span class="text-white font-semibold">${escapeHtml(s.proposed_medication)} (${escapeHtml(s.dosage)})</span> for ${escapeHtml(s.patient_name)}
+        </div>
+        <p class="text-[10.5px] text-slate-400 mt-2 leading-relaxed">
+          ${escapeHtml(s.hazard_summary)}
+        </p>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+        <span class="text-[10px] font-mono text-slate-500">Hotkey: <kbd class="px-1.5 py-0.5 rounded bg-black/40 border border-slate-700 text-slate-300 font-bold">${idx + 1}</kbd></span>
+        <button type="button" onclick="executeDemoScenario('${escapeHtml(s.id)}')" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-sm">
+          <span>▶ 1-Click Run &amp; Present</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+async function executeDemoScenario(scenarioId) {
+  closeJudgeDemoModal();
+  showToast('⚡ Running Live Simulation', `Executing sovereign safety pipeline for ${scenarioId}...`, 'info', 2500);
+
+  // Switch to Tab 1 (Clinical Review)
+  switchMainTab('review');
+
+  try {
+    const res = await fetch(`/api/demo/run/${scenarioId}`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Demo run failed with status ${res.status}`);
+    const data = await res.json();
+    activeDemoScenario = data;
+
+    // 1. Update form inputs to match scenario
+    const medInput = document.getElementById("proposed-med-input");
+    const doseInput = document.getElementById("proposed-dose-input");
+    if (medInput) medInput.value = data.scenario.proposed_medication;
+    if (doseInput) doseInput.value = data.scenario.dosage;
+
+    // 2. Select patient if available
+    if (data.scenario.patient_id) {
+      currentPatientId = data.scenario.patient_id;
+      const select = document.getElementById("patient-select");
+      const selectHeader = document.getElementById("patient-select-header");
+      if (select) select.value = data.scenario.patient_id;
+      if (selectHeader) selectHeader.value = data.scenario.patient_id;
+      
+      // Update patient display details
+      const nameEl = document.getElementById("display-patient-name");
+      const metaEl = document.getElementById("display-patient-meta");
+      const tokenEl = document.getElementById("display-patient-token");
+      if (nameEl) nameEl.textContent = data.scenario.patient_name;
+      if (metaEl) metaEl.textContent = `ID: ${data.scenario.patient_id} · Age: ${data.scenario.demographics?.age || 65}y · ${data.scenario.demographics?.gender || 'Unknown'}`;
+      if (tokenEl) tokenEl.textContent = `ANON_${data.scenario.patient_id}`;
+    }
+
+    // 3. Render review results
+    if (typeof renderReviewResults === 'function') {
+      renderReviewResults(data.review);
+    }
+
+    // 4. Update and display Floating Live Presenter Cheatsheet
+    const widget = document.getElementById('presenter-floating-widget');
+    const titleEl = document.getElementById('presenter-active-title');
+    const bulletsEl = document.getElementById('presenter-bullets');
+
+    if (titleEl) {
+      titleEl.innerHTML = `<span class="text-amber-400 font-mono mr-1">${data.scenario.icon || '⚡'}</span> ${escapeHtml(data.presenter_cheatsheet.title)}: <span class="text-slate-300 font-normal text-xs">${escapeHtml(data.scenario.subtitle)}</span>`;
+    }
+
+    if (bulletsEl) {
+      bulletsEl.innerHTML = '';
+      (data.presenter_cheatsheet.talking_points || []).forEach(pt => {
+        const li = document.createElement('li');
+        li.className = 'leading-snug';
+        li.innerHTML = escapeHtml(pt);
+        bulletsEl.appendChild(li);
+      });
+    }
+
+    if (widget) {
+      widget.style.display = 'block';
+      const drawer = document.getElementById('presenter-drawer-content');
+      if (drawer) drawer.style.display = 'block';
+      presenterDrawerCollapsed = false;
+      const chevron = document.getElementById('presenter-chevron');
+      if (chevron) chevron.className = 'fa-solid fa-chevron-down';
+    }
+
+    // 5. Scroll smoothly to review card
+    const reviewCard = document.getElementById('review-results-card') || document.getElementById('result-content');
+    if (reviewCard) {
+      reviewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    showToast('Simulation Complete', `Case: ${data.scenario.title} evaluated with 0 bytes cloud egress.`, 'success', 3500);
+
+  } catch (err) {
+    console.error('Error executing demo scenario:', err);
+    showToast('Simulation Error', err.message, 'error', 4000);
+  }
+}
+
+function togglePresenterDrawer() {
+  const drawer = document.getElementById('presenter-drawer-content');
+  const chevron = document.getElementById('presenter-chevron');
+  if (!drawer) return;
+  presenterDrawerCollapsed = !presenterDrawerCollapsed;
+  drawer.style.display = presenterDrawerCollapsed ? 'none' : 'block';
+  if (chevron) {
+    chevron.className = presenterDrawerCollapsed ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+}
+
+function dismissPresenterWidget() {
+  const widget = document.getElementById('presenter-floating-widget');
+  if (widget) widget.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+//  🛡️ 3D ISOMETRIC BRAND LOGO INTERACTIVITY
+// ═══════════════════════════════════════════
+function init3DBrandLogo() {
+  const logoWrap = document.querySelector('.brand-logo-3d-wrap');
+  const logo = document.querySelector('.brand-logo-3d');
+  if (!logoWrap || !logo) return;
+
+  logoWrap.addEventListener('mousemove', (e) => {
+    const rect = logoWrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotX = -((y - cy) / cy) * 16;
+    const rotY = ((x - cx) / cx) * 16;
+
+    logo.style.transform = `perspective(600px) rotateX(${rotX.toFixed(1)}deg) rotateY(${rotY.toFixed(1)}deg) scale(1.1) translateZ(8px)`;
+  });
+
+  logoWrap.addEventListener('mouseleave', () => {
+    logo.style.transform = 'perspective(600px) rotateX(10deg) rotateY(-12deg) translateZ(0)';
+  });
+}
+
+// Window Exports for Judge Demo Simulator & 3D Logo
+window.openJudgeDemoModal = openJudgeDemoModal;
+window.closeJudgeDemoModal = closeJudgeDemoModal;
+window.executeDemoScenario = executeDemoScenario;
+window.togglePresenterDrawer = togglePresenterDrawer;
+window.dismissPresenterWidget = dismissPresenterWidget;
+window.init3DBrandLogo = init3DBrandLogo;
+
+
 

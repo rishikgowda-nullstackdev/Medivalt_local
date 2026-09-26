@@ -149,47 +149,47 @@ CLINICAL_SCENARIOS: Dict[str, Dict[str, Any]] = {
         }
     },
 
-    "cumulative_qtc": {
-        "id": "cumulative_qtc",
-        "title": "Cumulative QTc Arrhythmia Risk",
-        "subtitle": "Amiodarone + Azithromycin Synergy (Torsades de Pointes)",
-        "badge": "TORSADES DE POINTES HAZARD",
-        "badge_color": "orange",
-        "icon": "⚡",
-        "category": "Cardiac Electrophysiology Guardrail",
+    "anticoagulant_hemorrhage": {
+        "id": "anticoagulant_hemorrhage",
+        "title": "Fatal Anticoagulant Hemorrhage",
+        "subtitle": "Chronic Warfarin + High-Dose Aspirin Synergy",
+        "badge": "MAJOR BLEEDING EMERGENCY",
+        "badge_color": "red",
+        "icon": "🩸",
+        "category": "Hemostasis & Anticoagulation Guardrail",
         "patient_id": "PT-103",
         "patient_name": "Robert Hayes",
-        "demographics": {"age": 61, "gender": "Male"},
-        "conditions": ["Atrial Fibrillation", "Community-Acquired Pneumonia"],
-        "active_medications": ["Amiodarone 200mg daily", "Warfarin 5mg daily"],
+        "demographics": {"age": 74, "gender": "Male"},
+        "conditions": ["Non-Valvular Atrial Fibrillation", "Gastroesophageal Reflux Disease"],
+        "active_medications": ["Warfarin 5mg daily", "Pantoprazole 40mg daily"],
         "allergies": ["Codeine (Severe nausea)"],
         "labs": {
-            "INR": {"value": 2.4, "unit": "INR", "status": "NORMAL", "display": "2.4 (Target 2.0-3.0)"},
-            "Platelets": {"value": 185.0, "unit": "x10^3/uL", "status": "NORMAL", "display": "185 x10^3/uL"}
+            "INR": {"value": 2.8, "unit": "INR", "status": "NORMAL", "display": "2.8 (Target 2.0-3.0)"},
+            "Platelets": {"value": 165.0, "unit": "x10^3/uL", "status": "NORMAL", "display": "165 x10^3/uL"}
         },
-        "proposed_medication": "Azithromycin",
-        "dosage": "500mg IV QD",
+        "proposed_medication": "Aspirin",
+        "dosage": "325mg PO Daily",
         "clinical_note": (
-            "PATIENT: Robert Hayes | AGE: 61 | SEX: Male | MRN: MGH-901-72\n"
-            "DIAGNOSES: Atrial Fibrillation, Community-Acquired Pneumonia, History of Ventricular Ectopy\n"
+            "PATIENT: Robert Hayes | AGE: 74 | SEX: Male | MRN: PPTH-108-99\n"
+            "DIAGNOSES: Chronic Non-Valvular Atrial Fibrillation, GERD\n"
             "ACTIVE MEDICATIONS:\n"
-            "  - Amiodarone 200mg PO QD\n"
-            "  - Warfarin 5mg PO QD\n"
+            "  - Warfarin 5mg PO QD (target INR 2.0-3.0)\n"
+            "  - Pantoprazole 40mg PO QD\n"
             "ALLERGIES: Codeine\n"
-            "LABS: INR: 2.4 | Platelets: 185 x10^3/uL\n"
-            "CLINICAL NOTE: Patient with baseline atrial fibrillation on chronic Amiodarone presents with fever, productive cough, and right lower lobe consolidation. "
-            "Prescribe Azithromycin 500mg IV QD for atypical coverage."
+            "LABS: INR: 2.8 | Platelets: 165 x10^3/uL\n"
+            "CLINICAL NOTE: 74yo male presenting with transient left arm numbness and chest heaviness. "
+            "Attending physician orders Aspirin 325mg PO Daily for secondary vascular prevention."
         ),
-        "hazard_summary": "Both Amiodarone and Azithromycin inhibit the cardiac hERG potassium channel, delaying myocardial ventricular repolarization. Concurrent use causes additive QTc prolongation (>500ms), precipitating polymorphic ventricular tachycardia (Torsades de Pointes) and sudden cardiac arrest.",
+        "hazard_summary": "Concurrent antiplatelet (Aspirin) and oral anticoagulant (Warfarin) therapy synergistically impairs primary platelet plug formation and coagulation cascade, dramatically multiplying risk of massive intracranial and gastrointestinal hemorrhage.",
         "talking_points": [
-            "Amiodarone has a massive half-life (over 50 days) and potent baseline QT prolongation.",
-            "Adding a macrolide like Azithromycin or antiemetic like Ondansetron creates lethal synergistic cardiac repolarization delay.",
-            "MediVault highlights the cumulative cardiac hazard and suggests non-QTc prolonging options like Doxycycline or Cefuroxime."
+            "Co-prescribing Aspirin with Warfarin without an absolute structural indication increases fatal major bleeding risk by more than 300%.",
+            "MediVault identifies the multi-pathway hemostatic breakdown immediately from the patient's active medication record.",
+            "Recommends immediate cardiology consultation for anticoagulation monotherapy or non-ulcerogenic alternative."
         ],
         "safe_alternative": {
-            "drug": "Doxycycline",
-            "dosage": "100mg IV Q12H",
-            "rationale": "Atypical coverage for pneumonia with zero cardiac hERG potassium channel affinity."
+            "drug": "Cardiology Monotherapy Re-evaluation",
+            "dosage": "Continue Warfarin monotherapy without antiplatelet",
+            "rationale": "Avoid duplicate antithrombotic therapy unless indicated by recent drug-eluting coronary stenting."
         }
     }
 }
@@ -247,6 +247,8 @@ def execute_demo_scenario(scenario_id: str, request: Request):
         raw_notes=scenario["clinical_note"],
         demographics=scenario.get("demographics")
     )
+    if "flagged" not in review_result:
+        review_result["flagged"] = review_result.get("overall_status") in ("CRITICAL", "WARNING")
 
     return {
         "scenario": scenario,
