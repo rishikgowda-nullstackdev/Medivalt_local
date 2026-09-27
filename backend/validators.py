@@ -12,6 +12,7 @@ from fastapi import HTTPException, UploadFile
 # Limits
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 MAX_TEXT_LENGTH = 250_000               # 250k characters
+MAX_MED_NAME_LENGTH = 150               # Realistic ceiling for any pharmaceutical name
 ALLOWED_EXTENSIONS = {
     ".pdf", ".txt", ".text", ".md", ".json", ".hl7",
     ".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"
@@ -84,6 +85,7 @@ class InputValidator:
     def validate_medication_name(cls, med_name: Optional[str]) -> str:
         """
         Validates proposed medication name for clinical review.
+        Enforces minimum length, maximum length, and blocks injection characters.
         """
         cleaned = cls.validate_clinical_text(med_name, field_name="proposed_medication")
 
@@ -93,8 +95,16 @@ class InputValidator:
                 detail="Medication name is too short. Please enter a valid drug name (e.g., 'Ibuprofen', 'Advil')."
             )
 
-        # Check for invalid control characters or script injections
-        if any(char in cleaned for char in "<>{}\\\0"):
+        # Enforce realistic drug name length ceiling — no valid pharmaceutical name exceeds 150 chars
+        if len(cleaned) > MAX_MED_NAME_LENGTH:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Medication name exceeds maximum allowed length ({MAX_MED_NAME_LENGTH} chars). "
+                       "Please use a standard pharmaceutical name."
+            )
+
+        # Block XSS, script injection, control characters, and SQL fragments (;)
+        if any(char in cleaned for char in "<>{}\\;\0"):
             raise HTTPException(
                 status_code=400,
                 detail="Medication name contains invalid characters. Please use standard alphanumeric drug names."

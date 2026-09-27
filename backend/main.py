@@ -132,7 +132,7 @@ def init_db():
         from backend.migrate_patient_portal import migrate_patient_portal
         migrate_patient_portal()
     except Exception as e:
-        pass
+        print(f"[WARN] Patient portal migration non-fatal error: {e}")
 
 init_db()
 
@@ -605,8 +605,13 @@ def verify_email_endpoint(req: VerifyEmailRequest, response: Response):
             if datetime.now(timezone.utc) > exp_dt:
                 conn.close()
                 raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new code.")
-        except Exception:
-            pass
+        except (ValueError, TypeError):
+            # Unparseable timestamp — treat as expired to be safe (fail closed)
+            conn.close()
+            raise HTTPException(
+                status_code=400,
+                detail="Verification code has expired or is invalid. Please request a new code."
+            )
 
     # Activate
     cursor.execute("""
