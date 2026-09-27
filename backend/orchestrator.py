@@ -358,6 +358,29 @@ class ClinicalOrchestrator:
         except Exception:
             pass
 
+        # Calculate Pharmacokinetic (PK) clearance curve simulation
+        pk_simulation = None
+        try:
+            from ai_engine.pk_model import simulate_pk_curve, resolve_pk_drug
+            can_k, _ = resolve_pk_drug(canonical_drug or proposed_med)
+            if can_k:
+                egfr_val = 90.0
+                egfr_data = labs.get("eGFR") or labs.get("egfr")
+                if egfr_data:
+                    egfr_val = float(egfr_data.get("value") if isinstance(egfr_data, dict) else egfr_data)
+                
+                weight_val = 70.0
+                if demo_data and demo_data.get("weight_kg"):
+                    weight_val = float(demo_data["weight_kg"])
+
+                pk_simulation = simulate_pk_curve(
+                    drug_name=canonical_drug or proposed_med,
+                    egfr=egfr_val,
+                    weight_kg=weight_val
+                )
+        except Exception:
+            pass
+
         return {
             "event_id": log_entry["event_id"],
             "patient_id": patient_id or "ANONYMOUS",
@@ -378,6 +401,7 @@ class ClinicalOrchestrator:
             "biomarkers": labs,
             "demographics": demo_data,
             "hazard_index": hazard_result,
+            "pk_simulation": pk_simulation,
             "explanation": explanation,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
@@ -546,6 +570,34 @@ class ClinicalOrchestrator:
         except Exception:
             pass
 
+        # Compute PK clearance curve for the primary/flagged medication or first matching med
+        pk_simulation = None
+        try:
+            from ai_engine.pk_model import simulate_pk_curve, resolve_pk_drug
+            egfr_val = 90.0
+            egfr_data = labs.get("eGFR") or labs.get("egfr")
+            if egfr_data:
+                egfr_val = float(egfr_data.get("value") if isinstance(egfr_data, dict) else egfr_data)
+            weight_val = 70.0
+            if demo_data and demo_data.get("weight_kg"):
+                weight_val = float(demo_data["weight_kg"])
+
+            target_pk_med = None
+            for me in c_bundle.get("medication_evaluations", []):
+                med_n = me.get("medication", "")
+                if resolve_pk_drug(med_n)[0]:
+                    if me.get("status") in ("CONTRAINDICATED", "WARNING") or target_pk_med is None:
+                        target_pk_med = med_n
+
+            if target_pk_med:
+                pk_simulation = simulate_pk_curve(
+                    drug_name=target_pk_med,
+                    egfr=egfr_val,
+                    weight_kg=weight_val
+                )
+        except Exception:
+            pass
+
         return {
             "event_id": log_entry["event_id"],
             "patient_id": patient_id or "ANONYMOUS",
@@ -564,6 +616,7 @@ class ClinicalOrchestrator:
             "biomarkers": labs,
             "demographics": demo_data,
             "hazard_index": hazard_result,
+            "pk_simulation": pk_simulation,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
             "execution_time_ms": exec_time_ms

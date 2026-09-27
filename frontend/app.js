@@ -1259,6 +1259,14 @@ function renderReviewResults(data) {
 
   // 6. Update Pharmacodynamic eGFR Trajectory & Hemodynamic Telemetry
   renderEgfrTrajectory(data);
+
+  // 7. Update Pharmacokinetic (PK) Drug Elimination & Accumulation Simulator
+  if (data && data.pk_simulation) {
+    renderPKSimulation(data.pk_simulation);
+  } else {
+    const pkSec = document.getElementById("pk-simulation-section");
+    if (pkSec) pkSec.style.display = "none";
+  }
 }
 
 function renderEgfrTrajectory(data) {
@@ -1468,6 +1476,273 @@ function renderEgfrTrajectory(data) {
     }
   });
 }
+
+// ═══════════════════════════════════════════
+//  PHARMACOKINETIC (PK) CLEARANCE SIMULATOR
+// ═══════════════════════════════════════════
+function renderPKSimulation(pk) {
+  const pkSec = document.getElementById("pk-simulation-section");
+  if (!pkSec || !pk) {
+    if (pkSec) pkSec.style.display = "none";
+    return;
+  }
+
+  currentPKSimulationData = pk;
+  currentPKDoseFactor = 1.0;
+  currentPKInterval = pk.interval_hours || 6;
+  pkSec.style.display = "block";
+
+  updatePKDisplay(pk);
+}
+
+function updatePKDisplay(pk) {
+  const drugTag = document.getElementById("pk-drug-tag");
+  const statusBadge = document.getElementById("pk-status-badge");
+  const statHalfLife = document.getElementById("pk-stat-halflife");
+  const statHalfLifeMult = document.getElementById("pk-stat-halflife-mult");
+  const statRacc = document.getElementById("pk-stat-racc");
+  const statCpeak = document.getElementById("pk-stat-cpeak");
+  const statCtoxic = document.getElementById("pk-stat-ctoxic");
+  const statCtrough = document.getElementById("pk-stat-ctrough");
+  const statCmec = document.getElementById("pk-stat-cmec");
+  const titrationText = document.getElementById("pk-titration-text");
+  const safeFlag = document.getElementById("pk-titration-live-flag");
+
+  if (drugTag) {
+    drugTag.textContent = `${pk.display_name.toUpperCase()} (${pk.dose_mg}mg q${pk.interval_hours}h)`;
+  }
+
+  if (statusBadge) {
+    if (pk.toxic_exceeded) {
+      statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40 font-bold animate-pulse";
+      statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> ${escapeHtml(pk.severity_label)}`;
+    } else if (pk.half_life_multiplier > 1.5) {
+      statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold";
+      statusBadge.innerHTML = `<i class="fa-solid fa-clock mr-1"></i> ${escapeHtml(pk.severity_label)}`;
+    } else {
+      statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold";
+      statusBadge.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${escapeHtml(pk.severity_label)}`;
+    }
+  }
+
+  if (statHalfLife) statHalfLife.textContent = `${pk.half_life_patient_h}h (vs ${pk.half_life_normal_h}h)`;
+  if (statHalfLifeMult) statHalfLifeMult.textContent = `${pk.half_life_multiplier}x Normal Half-Life`;
+  if (statRacc) statRacc.textContent = pk.accumulation_ratio;
+  if (statCpeak) statCpeak.textContent = `${pk.peak_patient_mg_l} mg/L`;
+  if (statCtoxic) statCtoxic.textContent = `Ceiling: ${pk.c_toxic_mg_l} mg/L`;
+  if (statCtrough) statCtrough.textContent = `${pk.trough_patient_mg_l} mg/L`;
+  if (statCmec) statCmec.textContent = `MEC: ${pk.c_mec_mg_l} mg/L`;
+  if (titrationText) titrationText.textContent = pk.titration_advice;
+
+  if (safeFlag) {
+    if (!pk.toxic_exceeded && pk.half_life_multiplier > 1.0) {
+      safeFlag.classList.remove("hidden");
+    } else {
+      safeFlag.classList.add("hidden");
+    }
+  }
+
+  renderPKChart(pk);
+}
+
+function renderPKChart(pk) {
+  const canvas = document.getElementById("chart-pk-clearance");
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  const ctx = canvas.getContext("2d");
+  if (chartPKClearanceInstance) {
+    chartPKClearanceInstance.destroy();
+  }
+
+  const labels = pk.time_points.map(t => (t % 6 === 0 ? `${t}h` : ''));
+  const toxicLine = Array(pk.time_points.length).fill(pk.c_toxic_mg_l);
+  const mecLine = Array(pk.time_points.length).fill(pk.c_mec_mg_l);
+
+  const patientColor = pk.toxic_exceeded ? '#ef4444' : (pk.half_life_multiplier > 1.5 ? '#f59e0b' : '#38bdf8');
+  const patientBg = pk.toxic_exceeded ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.1)';
+
+  chartPKClearanceInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: `Patient Concentration (eGFR ${pk.egfr})`,
+          data: pk.patient_curve,
+          borderColor: patientColor,
+          backgroundColor: patientBg,
+          borderWidth: 2.2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.2
+        },
+        {
+          label: 'Normal Baseline (eGFR 90)',
+          data: pk.normal_curve,
+          borderColor: '#10b981',
+          borderWidth: 1.8,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: `Toxic Ceiling (${pk.c_toxic_mg_l} mg/L)`,
+          data: toxicLine,
+          borderColor: 'rgba(239, 68, 68, 0.7)',
+          borderWidth: 1.5,
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          label: `Min Effective (${pk.c_mec_mg_l} mg/L)`,
+          data: mecLine,
+          borderColor: 'rgba(148, 163, 184, 0.4)',
+          borderWidth: 1.2,
+          borderDash: [2, 2],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 2,
+            color: '#cbd5e1',
+            font: { size: 9, family: 'sans-serif' }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#38bdf8',
+          bodyColor: '#e2e8f0',
+          borderColor: '#334155',
+          borderWidth: 1,
+          padding: 8,
+          callbacks: {
+            title: function(items) {
+              if (items.length > 0) {
+                const idx = items[0].dataIndex;
+                return `Time: ${pk.time_points[idx]} hours`;
+              }
+              return '';
+            },
+            label: function(c) {
+              if (c.parsed.y === null || c.parsed.y === undefined) return '';
+              return ` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} mg/L`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(51, 65, 85, 0.25)' },
+          ticks: { color: '#94a3b8', font: { size: 9, family: 'monospace' }, maxTicksLimit: 13 }
+        },
+        y: {
+          min: 0,
+          grid: { color: 'rgba(51, 65, 85, 0.3)' },
+          ticks: {
+            color: '#94a3b8',
+            font: { size: 9, family: 'monospace' },
+            callback: function(v) { return v + ' mg/L'; }
+          }
+        }
+      }
+    }
+  });
+}
+
+async function setPKDoseFactor(factor, btn) {
+  currentPKDoseFactor = factor;
+  document.querySelectorAll(".btn-pk-dose").forEach(b => {
+    b.className = "btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200";
+  });
+  if (btn) {
+    btn.className = "btn-pk-dose active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold";
+  }
+  await recalculatePKTitration();
+}
+
+async function setPKInterval(interval, btn) {
+  currentPKInterval = interval;
+  document.querySelectorAll(".btn-pk-interval").forEach(b => {
+    b.className = "btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200";
+  });
+  if (btn) {
+    btn.className = "btn-pk-interval active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold";
+  }
+  await recalculatePKTitration();
+}
+
+async function recalculatePKTitration() {
+  if (!currentPKSimulationData) return;
+  const baseDose = currentPKSimulationData.standard_dose_mg || currentPKSimulationData.dose_mg || 10;
+  const targetDose = baseDose * currentPKDoseFactor;
+
+  try {
+    const res = await fetch("/api/pk/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        drug_name: currentPKSimulationData.drug_key,
+        egfr: currentPKSimulationData.egfr,
+        weight_kg: currentPKSimulationData.weight_kg,
+        dose_mg: targetDose,
+        interval_hours: currentPKInterval || currentPKSimulationData.interval_hours,
+        total_hours: 72
+      })
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      updatePKDisplay(updated);
+      showToast('Titration Recalculated', `${updated.display_name}: ${targetDose}mg q${currentPKInterval}h simulated.`, 'info', 2000);
+    }
+  } catch (err) {
+    console.warn("Titration calculation failed:", err);
+  }
+}
+
+async function resetPKTitration() {
+  if (!currentPKSimulationData) return;
+  currentPKDoseFactor = 1.0;
+  currentPKInterval = currentPKSimulationData.standard_interval_h || currentPKSimulationData.interval_hours || 6;
+
+  document.querySelectorAll(".btn-pk-dose").forEach(b => {
+    if (parseFloat(b.dataset.fraction) === 1.0) {
+      b.className = "btn-pk-dose active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold";
+    } else {
+      b.className = "btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200";
+    }
+  });
+
+  document.querySelectorAll(".btn-pk-interval").forEach(b => {
+    if (parseInt(b.dataset.interval) === currentPKInterval) {
+      b.className = "btn-pk-interval active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold";
+    } else {
+      b.className = "btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200";
+    }
+  });
+
+  await recalculatePKTitration();
+}
+
+window.renderPKSimulation = renderPKSimulation;
+window.setPKDoseFactor = setPKDoseFactor;
+window.setPKInterval = setPKInterval;
+window.resetPKTitration = resetPKTitration;
 
 function swapMedicationInPrescription(oldDrug, newDrug) {
   const prescText = document.getElementById("proposed-prescription-text");
@@ -1942,6 +2217,10 @@ let chartTriageInstance = null;
 let chartDrugsInstance = null;
 let chartTrendsInstance = null;
 let chartEgfrTrajectoryInstance = null;
+let chartPKClearanceInstance = null;
+let currentPKSimulationData = null;
+let currentPKDoseFactor = 1.0;
+let currentPKInterval = null;
 
 function setAnalyticsDays(days) {
   currentAnalyticsDays = days;
