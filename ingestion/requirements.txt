@@ -1,3 +1,6 @@
 # MediVault Local - Data Ingestion & Privacy Dependencies (Person B)
 pypdf>=4.1.0
 pymupdf>=1.23.0
+# Sovereign On-Device Offline Optical Character Recognition (Zero Cloud Egress)
+rapidocr-onnxruntime>=1.2.0
+pillow>=10.0.0

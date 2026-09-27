@@ -11,7 +11,7 @@ import json
 import sqlite3
 from io import BytesIO, StringIO
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -158,6 +158,12 @@ class AnalyzeResponse(BaseModel):
 
 class UploadRecordResponse(BaseModel):
     redacted_text: str
+    filename: Optional[str] = None
+    patient_token: Optional[str] = None
+    phi_detected: Optional[Union[Dict[str, Any], List[Any]]] = None
+    entities: Optional[Dict[str, Any]] = None
+    ocr_performed: Optional[bool] = False
+    extraction_mode: Optional[str] = None
 
 class ReviewRequest(BaseModel):
     patient_id: Optional[str] = "PT-101"
@@ -202,33 +208,37 @@ class SwitchDemoRequest(BaseModel):
 async def upload_record_endpoint(file: UploadFile = File(...)):
     """
     Person A Backend Contract:
-    in: multipart file (PDF or TXT)
+    in: multipart file (PDF, TXT, PNG, JPG, WEBP)
     out: { "redacted_text": str }
     """
     content = await file.read()
     InputValidator.validate_upload_file(file, content)
 
     filename = file.filename or "record.txt"
+    ext = os.path.splitext(filename)[1].lower()
+    is_image = ext in {".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"}
 
     raw_text = ""
     try:
         from ingestion.pipeline import extract_text, process_clinical_note
         raw_text = extract_text(content, filename)
         processed = process_clinical_note(raw_text)
-    except Exception:
-        # Built-in pure-Python fallback
+    except Exception as e:
+        if is_image:
+            raise HTTPException(status_code=400, detail=f"Failed to extract text from scanned image: {str(e)}")
+        # Built-in pure-Python fallback for PDF / TXT
         if filename.lower().endswith(".pdf"):
             try:
                 reader = PdfReader(BytesIO(content))
                 pages = [p.extract_text() for p in reader.pages if p.extract_text()]
                 raw_text = "\n".join(pages).strip()
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(e)}")
+            except Exception as pdf_err:
+                raise HTTPException(status_code=400, detail=f"Failed to parse PDF document: {str(pdf_err)}")
         else:
             try:
                 raw_text = content.decode("utf-8", errors="ignore").strip()
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+            except Exception as txt_err:
+                raise HTTPException(status_code=400, detail=f"Failed to read file: {str(txt_err)}")
 
         if not raw_text:
             raise HTTPException(
@@ -241,9 +251,11 @@ async def upload_record_endpoint(file: UploadFile = File(...)):
     return {
         "redacted_text": processed["redacted_text"],
         "filename": filename,
-        "patient_token": processed["patient_token"],
-        "phi_detected": processed["phi_detected"],
-        "entities": processed["entities"]
+        "patient_token": processed.get("patient_token"),
+        "phi_detected": processed.get("phi_detected"),
+        "entities": processed.get("entities"),
+        "ocr_performed": is_image,
+        "extraction_mode": "Sovereign On-Device OCR (RapidOCR)" if is_image else "Direct Text Parsing"
     }
 
 
@@ -743,6 +755,10 @@ async def upload_prescription_endpoint(file: UploadFile = File(...)):
     try:
         from ingestion.pipeline import extract_prescription_bundle
         result = extract_prescription_bundle(content, filename=filename)
+        ext = os.path.splitext(filename)[1].lower()
+        if ext in {".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"}:
+            result["ocr_performed"] = True
+            result["extraction_mode"] = "Sovereign On-Device OCR (RapidOCR)"
         return result
     except Exception as e:
         raise HTTPException(
