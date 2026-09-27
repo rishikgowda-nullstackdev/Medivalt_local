@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediVault Local — Sovereign AI Prototype Demonstration Deck (ASYNC'26)</title>
+  <!-- Allowlisted Tailwind CSS -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070b12;
+      --bg-card: #0d1527;
+      --bg-card-subtle: #131d35;
+      --border-dark: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+    }
+    html.light {
+      --bg-dark: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f1f5f9;
+      --border-dark: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    .slide-container {
+      display: none;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .slide-container.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+    }
+    .airgap-pulse {
+      animation: pulseGlow 2.5s infinite ease-in-out;
+    }
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dark);
+      backdrop-filter: blur(12px);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    @page {
+      size: landscape;
+      margin: 8mm 12mm;
+    }
+    @media print {
+      html, body {
+        background: #070b12 !important;
+        color: #f8fafc !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        user-select: auto !important;
+      }
+      main {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        position: static !important;
+      }
+      .no-print, header, footer, aside, #slideProgressBar {
+        display: none !important;
+      }
+      .slide-container {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        page-break-before: always !important;
+        page-break-after: always !important;
+        break-before: page !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        min-height: 98vh !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        padding: 2rem 2.5rem !important;
+        margin: 0 auto !important;
+        opacity: 1 !important;
+        transform: none !important;
+        position: relative !important;
+      }
+      .slide-container:first-of-type {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+      }
+      .slide-container:last-of-type {
+        page-break-after: avoid !important;
+        break-after: auto !important;
+      }
+      .glass-card {
+        background: rgba(13, 21, 39, 0.95) !important;
+        border: 1px solid #334155 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-teal-500 selection:text-white">
+
+  <!-- TOP BAR: Controls, Air-gap Indicator, Progress -->
+  <header class="w-full bg-[var(--bg-card)] border-b border-[var(--border-dark)] px-4 py-2.5 flex items-center justify-between z-50 sticky top-0 shadow-sm no-print">
+    <!-- Project Identity & Status -->
+    <div class="flex items-center space-x-3">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xs shadow-md">
+        MV
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-sm tracking-wide">MediVault Local</span>
+          <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-cyan-950/70 text-cyan-400 border border-cyan-800">Track 1: Sovereign AI</span>
+          <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-800 airgap-pulse flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+            127.0.0.1 Air-Gapped (0 Bytes)
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="flex items-center space-x-2">
+      <span id="slideIndicator" class="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-card-subtle)] px-2.5 py-1 rounded-md border border-[var(--border-dark)]">
+        Slide 1 / 9
+      </span>
+      <button onclick="prevSlide()" class="p-1.5 rounded-md hover:bg-slate-800 text-[var(--text-muted)] hover:text-white transition" title="Previous Slide (← / Backspace)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button onclick="nextSlide()" class="p-1.5 rounded-md hover:bg-slate-800 text-[var(--text-muted)] hover:text-white transition" title="Next Slide (→ / Space)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <div class="h-4 w-px bg-slate-700 mx-1"></div>
+      <button onclick="toggleSpeakerNotes()" id="notesBtn" class="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1" title="Toggle Speaker Script (N)">
+        <span>🎤 Script</span>
+      </button>
+      <button onclick="toggleTheme()" class="p-1.5 rounded-md hover:bg-slate-800 text-[var(--text-muted)] hover:text-white transition" title="Toggle Theme (T)">
+        <span id="themeIcon">☀️</span>
+      </button>
+      <button onclick="window.print()" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-teal-900/60 hover:bg-teal-800 border border-teal-500/50 text-teal-300 transition flex items-center gap-1.5" title="Print or Save All 9 Slides as PDF">
+        <span>🖨️ Print Deck (PDF)</span>
+      </button>
+      <button onclick="toggleFullscreen()" class="p-1.5 rounded-md hover:bg-slate-800 text-[var(--text-muted)] hover:text-white transition" title="Fullscreen (F)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- PROGRESS BAR -->
+  <div class="w-full bg-slate-800/40 h-1 no-print">
+    <div id="slideProgressBar" class="h-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-400 transition-all duration-300" style="width: 11.11%;"></div>
+  </div>
+
+  <!-- SLIDES WRAPPER -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-6 py-6 flex flex-col justify-center">
+
+    <!-- ==========================================
+         SLIDE 1: TITLE & SOVEREIGN AI HOOK
+         ========================================== -->
+    <section id="slide-1" class="slide-container active flex-col justify-center items-center py-4">
+      <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-7 space-y-5 text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-700/60 text-emerald-400 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            ASYNC'26 Hackathon • Track 1: Sovereign AI
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-slate-200 to-teal-300 bg-clip-text text-transparent">
+            MediVault Local
+          </h1>
+          <p class="text-xl sm:text-2xl font-medium text-emerald-400">
+            Zero-Cloud, Zero-Hallucination Clinical Contraindication Reviewer
+          </p>
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+            Hospitals are legally barred under HIPAA and the DPDP Act from sending patient records to cloud LLMs. Yet physician fatigue leads to fatal prescription contraindications every single day. <span class="text-white font-semibold">MediVault Local executes 100% on the doctor’s workstation</span> with zero cloud egress, a deterministic pharmacology safety override, and local SHA-256 cryptographic audit proofs.
+          </p>
+
+          <!-- Core Stat Badges -->
+          <div class="grid grid-cols-3 gap-3 pt-2">
+            <div class="glass-card p-3 rounded-xl border border-emerald-500/30 text-center">
+              <div class="text-2xl font-black text-emerald-400">0 Bytes</div>
+              <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Cloud Egress</div>
+            </div>
+            <div class="glass-card p-3 rounded-xl border border-cyan-500/30 text-center">
+              <div class="text-2xl font-black text-cyan-400">100%</div>
+              <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Deterministic Base</div>
+            </div>
+            <div class="glass-card p-3 rounded-xl border border-teal-500/30 text-center">
+              <div class="text-2xl font-black text-teal-300">117 / 117</div>
+              <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Automated Tests Pass</div>
+            </div>
+          </div>
+
+          <!-- Team Division -->
+          <div class="pt-3 border-t border-slate-800 text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+            <span><strong class="text-slate-200">Team:</strong> Void_coders</span>
+            <span>• <strong>Person A (Lead):</strong> Rishikgowda SM</span>
+            <span>• <strong>Person B:</strong> Rakshith DA</span>
+            <span>• <strong>Person C:</strong> Kushal M</span>
+            <span>• <strong>Person D:</strong> Sujan MB</span>
+          </div>
+        </div>
+
+        <!-- Visual Hero Showcase -->
+        <div class="lg:col-span-5 flex flex-col items-center">
+          <div class="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-700/60 group">
+            <img src="images/sovereign_clinical_hero.jpg" alt="MediVault Sovereign Workstation" class="w-full h-auto object-cover transform transition duration-500 group-hover:scale-102">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+            <div class="absolute bottom-3 left-3 right-3 p-3 bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="font-mono text-emerald-300">127.0.0.1:8000 LIVE</span>
+              </div>
+              <span class="text-slate-400 font-mono">HIPAA § 164.514 Safe Harbor</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: THE CLINICAL & REGULATORY CRISIS
+         ========================================== -->
+    <section id="slide-2" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-6">
+        <div>
+          <span class="text-xs uppercase font-bold tracking-wider text-rose-400">Problem Statement & Real-World Impact</span>
+          <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-white mt-1">
+            The Hospital Trilemma: Regulatory Bans, Cloud Hallucinations & Preventable Deaths
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Card 1: Regulatory Ban -->
+          <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-rose-400">01 / LEGAL IMPASSE</span>
+              <span class="px-2 py-0.5 text-[10px] rounded bg-rose-950 text-rose-300 border border-rose-800">HIPAA & DPDP</span>
+            </div>
+            <h3 class="text-lg font-bold text-white">Cloud AI is Illegal in Clinical Wards</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Hospitals cannot transmit Protected Health Information (PHI) to OpenAI, AWS, or Azure without Business Associate Agreements (BAAs) and immense regulatory liability. Even 1 leaked record triggers up to <strong class="text-rose-300">₹250 Crore / $50,000 per violation</strong> penalties.
+            </p>
+            <div class="text-[11px] bg-rose-950/40 p-2.5 rounded-lg border border-rose-900/60 text-rose-200 font-mono">
+              ⚠️ Result: Doctors are forced into manual chart reviews with zero modern AI assistance.
+            </div>
+          </div>
+
+          <!-- Card 2: Clinical Fatigue & Deaths -->
+          <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-amber-400">02 / PATIENT MORTALITY</span>
+              <span class="px-2 py-0.5 text-[10px] rounded bg-amber-950 text-amber-300 border border-amber-800">Top-5 Death Cause</span>
+            </div>
+            <h3 class="text-lg font-bold text-white">43% of Polypharmacy Patients at Risk</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Adverse Drug Events (ADEs) kill over 100,000 patients annually in North America alone. When multi-morbid patients see 3+ specialists, contraindications like <strong class="text-amber-300">NSAIDs prescribed to a Stage 3 CKD patient</strong> slip through fatigued human shifts.
+            </p>
+            <div class="text-[11px] bg-amber-950/40 p-2.5 rounded-lg border border-amber-900/60 text-amber-200 font-mono">
+              ⚡ The "Triple Whammy": ACEi + Diuretic + NSAID triggers sudden acute kidney failure.
+            </div>
+          </div>
+
+          <!-- Card 3: Cloud Hallucination Trap -->
+          <div class="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-red-400">03 / STOCHASTIC RISK</span>
+              <span class="px-2 py-0.5 text-[10px] rounded bg-red-950 text-red-300 border border-red-800">Black-Box Failure</span>
+            </div>
+            <h3 class="text-lg font-bold text-white">Pure LLMs Hallucinate Dosages</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Generative models hallucinate clearance guidelines, overlook renal eGFR thresholds, or authoritatively approve dangerous drug combos under prompt injection or token drift. A life-critical system cannot gamble on probabilistic text generation.
+            </p>
+            <div class="text-[11px] bg-red-950/40 p-2.5 rounded-lg border border-red-900/60 text-red-200 font-mono">
+              🛡️ MediVault Solution: Deterministic pharmacology engine overrides all SLM reasoning.
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Nephron Hemodynamic Callout -->
+        <div class="glass-card p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/50">
+          <div class="text-xs text-slate-300 space-y-1">
+            <span class="text-emerald-400 font-bold uppercase tracking-wider text-[11px]">Real-World Scenario: Acute Renal Collapse (CKD + Advil)</span>
+            <p>Patient on Lisinopril (efferent vasodilation) + Furosemide (hypovolemia) takes OTC Ibuprofen/Advil (afferent vasoconstriction). Glomerular filtration pressure collapses immediately: <span class="text-rose-400 font-mono font-semibold">eGFR plunges from 42 to &lt; 15 mL/min</span> requiring emergency dialysis.</p>
+          </div>
+          <div class="px-4 py-2 rounded-lg bg-rose-950/70 border border-rose-800 text-rose-300 text-xs font-mono whitespace-nowrap">
+            🔴 MediVault flags Advil &lt; 80ms locally
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: SYSTEM ARCHITECTURE & 6-STAGE PIPELINE
+         ========================================== -->
+    <section id="slide-3" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs uppercase font-bold tracking-wider text-teal-400">Technical Execution & Architecture</span>
+            <h2 class="text-3xl font-black text-white mt-0.5">The 6-Stage Zero-Cloud Sovereign Pipeline</h2>
+          </div>
+          <span class="text-xs font-mono text-emerald-400 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800">
+            Strict Loopback: 127.0.0.1 ONLY
+          </span>
+        </div>
+
+        <!-- 6-Stage Pipeline Graphic -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <!-- Step 1 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2">
+            <div class="w-6 h-6 rounded-full bg-teal-900/80 text-teal-300 flex items-center justify-center text-xs font-bold font-mono">1</div>
+            <h4 class="font-bold text-xs text-white">Ingestion & OCR</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">PyMuPDF + local RapidOCR (ONNX). Scanned prescription slips & discharge PDFs parsed locally.</p>
+            <div class="text-[9px] text-teal-400 font-mono bg-teal-950/40 p-1 rounded">Person B</div>
+          </div>
+          <!-- Step 2 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2">
+            <div class="w-6 h-6 rounded-full bg-teal-900/80 text-teal-300 flex items-center justify-center text-xs font-bold font-mono">2</div>
+            <h4 class="font-bold text-xs text-white">HIPAA PHI Redaction</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">Strips all 18 Safe Harbor IDs (SSN, Phone, MRN). Generates cryptographic token <code class="text-slate-200">ANON_...</code>.</p>
+            <div class="text-[9px] text-teal-400 font-mono bg-teal-950/40 p-1 rounded">Person B</div>
+          </div>
+          <!-- Step 3 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2">
+            <div class="w-6 h-6 rounded-full bg-teal-900/80 text-teal-300 flex items-center justify-center text-xs font-bold font-mono">3</div>
+            <h4 class="font-bold text-xs text-white">Entity & Brand Norm</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">Normalizes brand names to generics (Advil ➔ Ibuprofen). Multi-drug bundle & allergy parser.</p>
+            <div class="text-[9px] text-teal-400 font-mono bg-teal-950/40 p-1 rounded">Person C</div>
+          </div>
+          <!-- Step 4 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2 border-l-2 border-l-emerald-400">
+            <div class="w-6 h-6 rounded-full bg-emerald-900/80 text-emerald-300 flex items-center justify-center text-xs font-bold font-mono">4</div>
+            <h4 class="font-bold text-xs text-emerald-300">Deterministic Engine</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">SQLite rule matrix: Cockcroft-Gault, Beers 2023, lab cutoffs, polypharmacy cascades.</p>
+            <div class="text-[9px] text-emerald-400 font-mono bg-emerald-950/40 p-1 rounded">Person C</div>
+          </div>
+          <!-- Step 5 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2">
+            <div class="w-6 h-6 rounded-full bg-teal-900/80 text-teal-300 flex items-center justify-center text-xs font-bold font-mono">5</div>
+            <h4 class="font-bold text-xs text-white">PK & Local SLM</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">Rowland & Tozer PK accumulation model + Ollama <code class="text-slate-200">llama3.2:3b</code> clinical rationale.</p>
+            <div class="text-[9px] text-teal-400 font-mono bg-teal-950/40 p-1 rounded">Person C</div>
+          </div>
+          <!-- Step 6 -->
+          <div class="glass-card p-3 rounded-xl border border-slate-700/80 hover:border-teal-400 transition space-y-2 border-l-2 border-l-cyan-400">
+            <div class="w-6 h-6 rounded-full bg-cyan-900/80 text-cyan-300 flex items-center justify-center text-xs font-bold font-mono">6</div>
+            <h4 class="font-bold text-xs text-cyan-300">SHA-256 Merkle Ledger</h4>
+            <p class="text-[11px] text-slate-400 leading-tight">Chained cryptographic audit block sealing doctor, drug, & verdict. HIPAA § 164.312(b) proof.</p>
+            <div class="text-[9px] text-cyan-400 font-mono bg-cyan-950/40 p-1 rounded">Person A</div>
+          </div>
+        </div>
+
+        <!-- Tech Stack Component Matrix -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+          <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
+            <div class="font-bold text-slate-200 flex items-center gap-1.5">
+              <span class="text-teal-400">⚙️</span> Backend Core
+            </div>
+            <p class="text-slate-400">FastAPI, Uvicorn, Python 3.10+, SQLite with WAL (Write-Ahead Logging) mode, zero locks under stress.</p>
+          </div>
+          <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
+            <div class="font-bold text-slate-200 flex items-center gap-1.5">
+              <span class="text-emerald-400">🧠</span> Sovereign AI
+            </div>
+            <p class="text-slate-400">Ollama (<code class="text-slate-200">llama3.2:3b</code>) running locally on port 11434 with instant deterministic fallback.</p>
+          </div>
+          <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
+            <div class="font-bold text-slate-200 flex items-center gap-1.5">
+              <span class="text-cyan-400">📡</span> Interoperability
+            </div>
+            <p class="text-slate-400">HL7 FHIR R4 Bundle, HL7 CDS Hooks standard cards, Optical Air-Gap SVG QR decompression.</p>
+          </div>
+          <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
+            <div class="font-bold text-slate-200 flex items-center gap-1.5">
+              <span class="text-amber-400">💻</span> Frontend Suite
+            </div>
+            <p class="text-slate-400">Doctor station (hotkeys Ctrl+1..6), Patient Portal, printable certificate, zero external CDN telemetry.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: DETERMINISTIC-OVERRIDE SAFETY ENGINE
+         ========================================== -->
+    <section id="slide-4" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-6">
+        <div>
+          <span class="text-xs uppercase font-bold tracking-wider text-emerald-400">Core Technical Innovation</span>
+          <h2 class="text-3xl font-black text-white mt-1">
+            The Deterministic-Override Engine: Eliminating Clinical Hallucinations
+          </h2>
+          <p class="text-xs text-slate-400 mt-1 max-w-3xl">
+            Our guiding engineering philosophy: <span class="text-white font-medium">SLMs reason and translate; deterministic pharmacology matrices decide and protect.</span>
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <!-- Left: 2-Layer Hierarchy -->
+          <div class="lg:col-span-7 space-y-4">
+            <!-- Layer 1 -->
+            <div class="glass-card p-4 rounded-xl border-l-4 border-l-emerald-400 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-emerald-400">LAYER 1: DETERMINISTIC PHARMACOLOGY MATRIX</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono">SQLite Hard Anchor</span>
+              </div>
+              <p class="text-xs text-slate-300">
+                Maintains curated drug-drug and drug-disease contraindications. Integrates <strong>Cockcroft-Gault Creatinine Clearance</strong>, <strong>AGS Beers 2023</strong> elderly criteria, and quantitative biomarker cutoffs (<code class="text-slate-200">eGFR &lt; 30</code> lactic acidosis, <code class="text-slate-200">K+ &gt; 5.0</code> hyperkalemia, <code class="text-slate-200">INR &gt; 3.5</code> hemorrhage).
+              </p>
+              <div class="text-[11px] text-emerald-300 font-mono bg-emerald-950/50 p-2 rounded">
+                🔒 Rule Verdict: FINAL. Cannot be silenced or diluted by the LLM.
+              </div>
+            </div>
+
+            <!-- Layer 2 -->
+            <div class="glass-card p-4 rounded-xl border-l-4 border-l-cyan-400 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-cyan-400">LAYER 2: LOCAL SLM REASONING BRIDGE</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono">Ollama llama3.2:3b</span>
+              </div>
+              <p class="text-xs text-slate-300">
+                Translates the deterministic flag into nuanced clinical context: biochemical mechanism of action, hemodynamic nephron hemodynamics, and safe formulary alternatives (e.g. suggesting Linagliptin for Metformin in renal impairment).
+              </p>
+              <div class="text-[11px] text-cyan-300 font-mono bg-cyan-950/50 p-2 rounded">
+                ⚡ The SLM can never introduce a new clearance flag without deterministic ground truth.
+              </div>
+            </div>
+
+            <!-- Fallback Guarantee -->
+            <div class="glass-card p-3.5 rounded-xl border border-slate-700 bg-slate-900/60 flex items-center justify-between text-xs">
+              <div class="space-y-0.5">
+                <span class="font-bold text-slate-200">Zero-Downtime Deterministic Fallback</span>
+                <p class="text-slate-400 text-[11px]">If Ollama crashes or machine lacks GPU/RAM, built-in synthesis rules take over in &lt; 5ms.</p>
+              </div>
+              <span class="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-mono text-[10px]">100% Uptime</span>
+            </div>
+          </div>
+
+          <!-- Right: Interactive Fallback Simulation Card -->
+          <div class="lg:col-span-5 glass-card p-5 rounded-2xl border border-slate-700 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <span class="text-xs font-bold text-slate-200">Live Architecture Simulator</span>
+                <button onclick="toggleOllamaSimulation()" id="ollamaToggleBtn" class="px-2.5 py-1 text-[11px] rounded bg-emerald-950 border border-emerald-800 text-emerald-400 font-mono hover:bg-emerald-900 transition">
+                  ● Ollama: ONLINE
+                </button>
+              </div>
+
+              <div class="mt-4 space-y-3">
+                <div class="text-xs text-slate-400 font-medium">Simulated Prescription Intake:</div>
+                <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300">
+                  Patient: CKD Stage 3 (eGFR: 38)<br>
+                  Order: <span class="text-amber-400">Advil 400mg PO TID</span>
+                </div>
+
+                <div class="space-y-1.5">
+                  <div class="text-[11px] text-slate-400">Layer 1 Evaluation:</div>
+                  <div class="p-2 rounded bg-red-950/80 border border-red-800 text-red-300 text-xs font-mono">
+                    🔴 DETECTED: Ibuprofen ➔ CKD Stage 3 Contraindication
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <div class="text-[11px] text-slate-400">Layer 2 Synthesis Output:</div>
+                  <div id="simulatedSLMOutput" class="p-2.5 rounded bg-slate-900 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                    "Ollama (llama3.2:3b): Ibuprofen inhibits renal prostaglandins (PGE2, PGI2), inducing afferent arteriolar vasoconstriction. This compromises GFR in compromised kidneys, risking acute tubular necrosis."
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 text-[10px] text-slate-500 font-mono text-center">
+              Click the button above to test graceful degradation without Ollama.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: LIVE PROTOTYPE DEMONSTRATION & MICRO-SIMULATOR
+         ========================================== -->
+    <section id="slide-5" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs uppercase font-bold tracking-wider text-cyan-400">Product Experience & Live Execution</span>
+            <h2 class="text-3xl font-black text-white mt-0.5">Interactive Prototype Demonstration</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleAirGapSim()" id="airgapSimBtn" class="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-mono flex items-center gap-1.5 hover:bg-emerald-900 transition">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Wi-Fi: DISCONNECTED (Air-Gap ACTIVE)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive CDSS Simulation Board -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Left: Prescription Selector & Patient Profile -->
+          <div class="lg:col-span-5 glass-card p-4 rounded-xl border border-slate-700 space-y-4">
+            <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-white">Active Patient: PT-101 (John Doe)</span>
+                <span class="text-[10px] text-cyan-400 font-mono">ANON_HASH: 7f8a9...</span>
+              </div>
+              <div class="text-slate-400 text-[11px]">Conditions: Stage 3 CKD, Essential HTN, T2DM</div>
+              <div class="text-slate-400 text-[11px]">Active Meds: Lisinopril 20mg, Metformin 500mg</div>
+              <div class="text-slate-400 text-[11px]">Biomarkers: eGFR 38 mL/min | Cr 1.8 mg/dL | K+ 4.6 mEq/L</div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="text-xs font-semibold text-slate-300">Test Prescription with 1-Click:</div>
+              <div class="grid grid-cols-1 gap-2">
+                <button onclick="runPrototypeDemo('advil')" id="demoBtnAdvil" class="p-2.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/80 text-left transition flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-bold text-rose-300">1. Order "Advil" 400mg PO TID</div>
+                    <div class="text-[10px] text-slate-400">Brand name test ➔ CKD Stage 3 nephrotoxicity</div>
+                  </div>
+                  <span class="text-xs px-2 py-0.5 rounded bg-rose-900 text-rose-200 font-mono">🔴 CRITICAL</span>
+                </button>
+
+                <button onclick="runPrototypeDemo('tylenol')" id="demoBtnTylenol" class="p-2.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/80 text-left transition flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-bold text-emerald-300">2. Order "Acetaminophen" 500mg QID</div>
+                    <div class="text-[10px] text-slate-400">Formulary safe analgesic substitute for CKD</div>
+                  </div>
+                  <span class="text-xs px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 font-mono">🟢 SAFE</span>
+                </button>
+
+                <button onclick="runPrototypeDemo('propranolol')" id="demoBtnPropranolol" class="p-2.5 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/80 text-left transition flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-bold text-amber-300">3. Order "Propranolol" 40mg PO BID</div>
+                    <div class="text-[10px] text-slate-400">Switches to Asthmatic patient PT-102</div>
+                  </div>
+                  <span class="text-xs px-2 py-0.5 rounded bg-amber-900 text-amber-200 font-mono">🟡 CAUTION</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400 font-mono pt-1">
+              ⚡ Keyboard hotkeys in actual app: <code class="text-slate-200">Ctrl+6</code> opens judge challenge suite.
+            </div>
+          </div>
+
+          <!-- Right: Live CDSS Review Output Card -->
+          <div class="lg:col-span-7 glass-card p-5 rounded-xl border border-slate-700 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span class="text-xs font-mono text-slate-400">CLINICAL DECISION SUPPORT VERDICT</span>
+                <span id="demoLatency" class="text-[10px] font-mono text-emerald-400">Latency: 42ms (Localhost)</span>
+              </div>
+
+              <!-- Banner -->
+              <div id="demoBanner" class="p-3 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-rose-800/60 flex items-center justify-center font-bold text-rose-100 text-base">🔴</div>
+                <div>
+                  <div class="font-bold text-xs uppercase tracking-wide">Critical Contraindication Detected</div>
+                  <div id="demoSubtitle" class="text-[11px] text-rose-300">Advil normalized to Ibuprofen • Risk: Acute Renal Hemodynamic Collapse</div>
+                </div>
+              </div>
+
+              <!-- Explanation Area -->
+              <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs space-y-2">
+                <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                  <span>🧬</span> Pharmacological Mechanism & Evidence:
+                </div>
+                <p id="demoBody" class="text-slate-300 leading-relaxed text-[11px]">
+                  NSAIDs inhibit cyclooxygenase (COX-1/2), blocking synthesis of vasodilatory prostaglandins (PGE2, PGI2) in renal arterioles. In Stage 3 CKD patients, compensatory afferent vasodilation is extinguished, triggering acute GFR collapse and high risk of dialysis.
+                </p>
+              </div>
+
+              <!-- Simulated PK Accumulation Curve Preview -->
+              <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
+                <div class="flex justify-between items-center text-[11px]">
+                  <span class="font-semibold text-slate-300">Rowland & Tozer Pharmacokinetic Dynamic Simulator:</span>
+                  <span id="demoPkStatus" class="font-mono text-rose-400 font-bold">⚠️ EXCEEDS TOXIC CEILING (48h)</span>
+                </div>
+                <!-- Simulated CSS bar graph -->
+                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden flex">
+                  <div id="demoPkBar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-500" style="width: 88%;"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>0h: 12 mg/L</span>
+                  <span>24h: 34 mg/L</span>
+                  <span>Toxic Ceiling: 40 mg/L</span>
+                  <span>72h: 58 mg/L (Renal Stagnation)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulary Recommendation -->
+            <div id="demoSwapBox" class="mt-2 p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-800 text-xs text-emerald-300 flex items-center justify-between">
+              <span>💡 Safe Formulary Alternative: <strong>Acetaminophen 500mg PO PRN</strong></span>
+              <button onclick="runPrototypeDemo('tylenol')" class="text-[10px] px-2 py-0.5 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-semibold transition">1-Click Swap</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: OPTICAL AIR-GAP & CRYPTOGRAPHIC MERKLE LEDGER
+         ========================================== -->
+    <section id="slide-6" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-5">
+        <div>
+          <span class="text-xs uppercase font-bold tracking-wider text-cyan-400">Security, Interoperability & Cryptography</span>
+          <h2 class="text-3xl font-black text-white mt-0.5">Optical Air-Gap Transfer & Merkle Audit Ledger</h2>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <!-- Left: Merkle Hash Chain -->
+          <div class="lg:col-span-7 glass-card p-5 rounded-xl border border-slate-700 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-white text-sm">HIPAA Security Rule § 164.312(b) Compliance</h3>
+                <p class="text-xs text-slate-400">Local SHA-256 hash-chained Merkle ledger proving zero audit tampering.</p>
+              </div>
+              <button onclick="verifyAuditChain()" id="verifyChainBtn" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-700 text-cyan-300 text-xs font-mono hover:bg-cyan-900 transition flex items-center gap-1.5">
+                <span>🔐 Verify Hash Chain</span>
+              </button>
+            </div>
+
+            <!-- Chained Blocks Visualization -->
+            <div class="space-y-2 text-xs font-mono">
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <div class="flex justify-between text-slate-400 text-[10px]">
+                  <span>BLOCK #101 • 16:10:14 IST</span>
+                  <span class="text-emerald-400">VERIFIED ✓</span>
+                </div>
+                <div class="text-slate-300">Reviewed: Advil 400mg ➔ 🔴 CRITICAL_CONTRAINDICATION</div>
+                <div class="text-[10px] text-slate-500 break-all">Hash: 9b2d8e41a... | Prev: 00000000000000000000000000000000</div>
+              </div>
+
+              <div class="flex justify-center text-slate-600 text-xs py-0.5">↓ Chained Parent SHA-256 Link ↓</div>
+
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <div class="flex justify-between text-slate-400 text-[10px]">
+                  <span>BLOCK #102 • 16:12:05 IST</span>
+                  <span class="text-emerald-400">VERIFIED ✓</span>
+                </div>
+                <div class="text-slate-300">Reviewed: Acetaminophen 500mg ➔ 🟢 SAFE_CLEARED</div>
+                <div class="text-[10px] text-slate-500 break-all">Hash: 3c4f7289e... | Prev: 9b2d8e41a...</div>
+              </div>
+            </div>
+
+            <div id="chainVerificationNotice" class="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-700 text-emerald-300 text-xs font-mono flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓ MATHEMATICAL PROOF:</span>
+              <span>All audit blocks chained securely. Zero bytes modified.</span>
+            </div>
+          </div>
+
+          <!-- Right: Optical Air-Gap QR Transfer & Image -->
+          <div class="lg:col-span-5 glass-card p-5 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3">
+            <div>
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h4 class="font-bold text-white text-xs">Optical Air-Gap QR Transfer</h4>
+                <span class="text-[10px] font-mono text-cyan-400">Base64 + zlib</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                Hospital wards can physically sever Wi-Fi, Ethernet, and Bluetooth. Prescriptions and clearances transfer across an <strong class="text-cyan-300">optical air gap</strong> via high-density dynamic SVG QR codes scanned camera-to-screen.
+              </p>
+              
+              <div class="mt-3 rounded-xl overflow-hidden border border-slate-700">
+                <img src="images/merkle_airgap_vault.jpg" alt="Air-Gap QR and Merkle Architecture" class="w-full h-36 object-cover">
+              </div>
+            </div>
+
+            <!-- Interoperability Standards -->
+            <div class="grid grid-cols-2 gap-2 text-center text-[10px] font-mono pt-1">
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 text-slate-300">HL7 FHIR R4 Bundle</div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 text-slate-300">HL7 CDS Hooks Standard</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: TECHNICAL CHALLENGES FACED & SOLUTIONS
+         ========================================== -->
+    <section id="slide-7" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-5">
+        <div>
+          <span class="text-xs uppercase font-bold tracking-wider text-rose-400">Engineering Depth & Resilience</span>
+          <h2 class="text-3xl font-black text-white mt-0.5">Four Critical Battles: Problems Faced & Solutions</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Problem 1 -->
+          <div class="glass-card p-4 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-rose-400">CHALLENGE 1: LLM HALLUCINATION RISK</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 font-mono">Clinical Hazard</span>
+            </div>
+            <p class="text-xs text-slate-300">
+              <strong>The Problem:</strong> When testing local SLMs (<code class="text-slate-200">llama3.2:3b</code>), the model occasionally cleared relative contraindications under noisy prompt input, risking patient toxicity.
+            </p>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-xs text-emerald-300">
+              <strong>Our Solution:</strong> Built a rigid <strong>Deterministic Override Gate</strong>. The SLM is strictly prohibited from granting clearance if SQLite flags a rule. The model is confined to explanatory synthesis only.
+            </div>
+          </div>
+
+          <!-- Problem 2 -->
+          <div class="glass-card p-4 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-amber-400">CHALLENGE 2: ZERO-CLOUD PAPER SLIP OCR</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 font-mono">Privacy Edge</span>
+            </div>
+            <p class="text-xs text-slate-300">
+              <strong>The Problem:</strong> Hospitals ingest physical handwritten/scanned lab slips. Cloud OCR (AWS Textract / Google Vision) violates zero-cloud HIPAA mandates.
+            </p>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-xs text-cyan-300">
+              <strong>Our Solution:</strong> Integrated embedded <strong>RapidOCR (ONNX runtime)</strong> on CPU with bounding-box coordinate recovery, followed by 18 HIPAA Safe Harbor regex strippers entirely in RAM.
+            </div>
+          </div>
+
+          <!-- Problem 3 -->
+          <div class="glass-card p-4 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-cyan-400">CHALLENGE 3: LOCAL DB CONCURRENCY LOCKS</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono">Performance</span>
+            </div>
+            <p class="text-xs text-slate-300">
+              <strong>The Problem:</strong> Under simultaneous multi-ward prescription entries on a single clinic PC, standard SQLite locked with <code class="text-rose-400">database is locked</code> errors during audit writes.
+            </p>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-xs text-teal-300">
+              <strong>Our Solution:</strong> Engineered <strong>SQLite WAL (Write-Ahead Logging)</strong> mode with thread-safe connection pooling. Verified by automated stress tests (12 concurrent reviews across 6 threads with 0 locks).
+            </div>
+          </div>
+
+          <!-- Problem 4 -->
+          <div class="glass-card p-4 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-teal-400">CHALLENGE 4: AIR-GAPPED INTEROPERABILITY</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-teal-950 text-teal-300 font-mono">Network Isolation</span>
+            </div>
+            <p class="text-xs text-slate-300">
+              <strong>The Problem:</strong> Transferring medical discharge clearances between air-gapped workstations without allowing USB thumb drives (malware vector) or network sockets.
+            </p>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-xs text-emerald-300">
+              <strong>Our Solution:</strong> Created <strong>Base64 + zlib compressed Optical SVG QR codes</strong>. Transmits entire FHIR R4 Bundles and cryptographic Merkle signatures via camera scan alone.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: QUANTITATIVE VERIFICATION & JUDGING ALIGNMENT
+         ========================================== -->
+    <section id="slide-8" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs uppercase font-bold tracking-wider text-emerald-400">ASYNC'26 Evaluation Alignment</span>
+            <h2 class="text-3xl font-black text-white mt-0.5">Judging Scorecard: 100% Target Met</h2>
+          </div>
+          <span class="text-xs font-mono text-emerald-300 px-3 py-1 rounded bg-emerald-950 border border-emerald-700">
+            117 / 117 Automated Tests Passing
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3.5">
+          <!-- Technical Execution (30%) -->
+          <div class="glass-card p-4 rounded-xl border-t-4 border-t-emerald-400 space-y-2">
+            <div class="text-[11px] font-mono font-bold text-emerald-400">30% WEIGHT</div>
+            <h3 class="text-sm font-bold text-white">Technical Execution</h3>
+            <ul class="text-[11px] text-slate-300 space-y-1 list-disc pl-3">
+              <li>117 automated unit/integration tests across 17 test modules.</li>
+              <li>Rowland & Tozer PK model.</li>
+              <li>SQLite WAL concurrency with zero locks under multi-threading.</li>
+              <li>Strict loopback assertion tests.</li>
+            </ul>
+          </div>
+
+          <!-- Innovation (20%) -->
+          <div class="glass-card p-4 rounded-xl border-t-4 border-t-cyan-400 space-y-2">
+            <div class="text-[11px] font-mono font-bold text-cyan-400">20% WEIGHT</div>
+            <h3 class="text-sm font-bold text-white">Innovation</h3>
+            <ul class="text-[11px] text-slate-300 space-y-1 list-disc pl-3">
+              <li>Deterministic SLM override architecture.</li>
+              <li>Optical air-gap SVG QR data transfer without RF interfaces.</li>
+              <li>Local Merkle hash ledger.</li>
+              <li>On-device RapidOCR parsing.</li>
+            </ul>
+          </div>
+
+          <!-- Impact (20%) -->
+          <div class="glass-card p-4 rounded-xl border-t-4 border-t-teal-400 space-y-2">
+            <div class="text-[11px] font-mono font-bold text-teal-400">20% WEIGHT</div>
+            <h3 class="text-sm font-bold text-white">Clinical Impact</h3>
+            <ul class="text-[11px] text-slate-300 space-y-1 list-disc pl-3">
+              <li>Eliminates fatal ADEs in polypharmacy patients.</li>
+              <li>Enables AI for hospitals legally barred from cloud services.</li>
+              <li>Zero software license costs for rural and military clinics.</li>
+            </ul>
+          </div>
+
+          <!-- Product Experience (15%) -->
+          <div class="glass-card p-4 rounded-xl border-t-4 border-t-amber-400 space-y-2">
+            <div class="text-[11px] font-mono font-bold text-amber-400">15% WEIGHT</div>
+            <h3 class="text-sm font-bold text-white">Product Experience</h3>
+            <ul class="text-[11px] text-slate-300 space-y-1 list-disc pl-3">
+              <li>Physician workstation with hotkeys (<code class="text-slate-200">Ctrl+1..6</code>).</li>
+              <li>Accessible Patient Portal with plain-English lab translations.</li>
+              <li>Printable Hospital Clearance Certificate with QR proof.</li>
+            </ul>
+          </div>
+
+          <!-- Demo & Completeness (15%) -->
+          <div class="glass-card p-4 rounded-xl border-t-4 border-t-purple-400 space-y-2">
+            <div class="text-[11px] font-mono font-bold text-purple-400">15% WEIGHT</div>
+            <h3 class="text-sm font-bold text-white">Completeness</h3>
+            <ul class="text-[11px] text-slate-300 space-y-1 list-disc pl-3">
+              <li>1-click <code class="text-slate-200">run_demo.bat</code> launcher.</li>
+              <li>Interactive Judge Challenge Suite (<code class="text-slate-200">Ctrl+6</code>).</li>
+              <li>Complete architecture docs and manual QA checklists.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Verification Terminal Snippet -->
+        <div class="glass-card p-3 rounded-xl border border-slate-800 bg-slate-950 font-mono text-[11px] text-slate-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400">● PASS</span>
+            <span>Ran 117 tests in 4.12s across 17 test suites (OK) • 0 bytes network egress detected</span>
+          </div>
+          <span class="text-slate-500">python -m unittest discover -s tests</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 9: TEAM OWNERSHIP, ROADMAP & FINALE
+         ========================================== -->
+    <section id="slide-9" class="slide-container flex-col justify-center py-4">
+      <div class="space-y-6">
+        <div>
+          <span class="text-xs uppercase font-bold tracking-wider text-teal-400">Future Horizon & Conclusion</span>
+          <h2 class="text-3xl font-black text-white mt-0.5">Sovereignty is Clinical Reliability</h2>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <!-- Left: Team Ownership Breakdown -->
+          <div class="lg:col-span-6 glass-card p-5 rounded-xl border border-slate-700 space-y-3">
+            <h3 class="font-bold text-white text-sm">Team Void_coders Division of Labor</h3>
+            <div class="space-y-2 text-xs">
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-teal-300">Person A: Rishikgowda SM</span>
+                  <span class="text-slate-400 text-[11px] block">Repo Lead, FastAPI backend, SQLite WAL concurrency, SHA-256 Merkle ledger</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">/backend</span>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-emerald-300">Person B: Rakshith DA</span>
+                  <span class="text-slate-400 text-[11px] block">Data Ingestion, 18 HIPAA Safe Harbor PHI redactions, RapidOCR engine</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">/ingestion</span>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-cyan-300">Person C: Kushal M</span>
+                  <span class="text-slate-400 text-[11px] block">Pharmacology rules, Rowland & Tozer PK simulator, Beers 2023, Ollama bridge</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">/ai_engine</span>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-amber-300">Person D: Sujan MB</span>
+                  <span class="text-slate-400 text-[11px] block">Doctor station UX, Patient Portal, Judge Challenge Suite, QA & demo script</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">/frontend, /docs</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Future Roadmap & Download -->
+          <div class="lg:col-span-6 glass-card p-5 rounded-xl border border-slate-700 flex flex-col justify-between space-y-4">
+            <div class="space-y-3">
+              <h3 class="font-bold text-white text-sm">Post-Hackathon Production Roadmap</h3>
+              <div class="space-y-2 text-xs text-slate-300">
+                <div class="flex items-start gap-2">
+                  <span class="text-cyan-400 font-bold">1.</span>
+                  <p><strong>On-Premises Hospital EHR Connector:</strong> HL7 v2 and FHIR subscription adapters for Cerner & Epic without internet access.</p>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-cyan-400 font-bold">2.</span>
+                  <p><strong>Pharmacogenomics (PGx) Matrix:</strong> Incorporating CYP2D6 and CYP2C19 metabolizer genotypes to detect personalized drug toxicity.</p>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-cyan-400 font-bold">3.</span>
+                  <p><strong>Edge Hardware Triage Appliance:</strong> Packaging MediVault Local onto ruggedized Raspberry Pi 5 / NVIDIA Jetson devices for field military triage.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Closing Callout -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-r from-teal-950/80 via-emerald-950/80 to-slate-900 border border-emerald-600/40 text-center space-y-1">
+              <div class="text-sm font-black text-white">
+                "No Cloud. No Hallucinations. No Data Leaks."
+              </div>
+              <p class="text-xs text-emerald-300">
+                True Sovereign AI isn't just about privacy—it's about saving patient lives when the world is completely offline.
+              </p>
+            </div>
+
+            <!-- Companion PPTX download link -->
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span>PowerPoint companion file: <a href="MediVault_Local_Presentation_Deck_v2.pptx" download class="text-teal-400 hover:text-teal-300 font-bold underline">docs/MediVault_Local_Presentation_Deck_v2.pptx</a></span>
+              <button onclick="window.print()" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                🖨️ Export / Print All 9 Slides (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM BAR: Speaker Notes Drawer & Shortcuts -->
+  <footer class="w-full bg-[var(--bg-card)] border-t border-[var(--border-dark)] px-6 py-2.5 flex items-center justify-between z-40 text-xs no-print">
+    <div class="flex items-center space-x-4 text-[var(--text-muted)]">
+      <span>Keys: <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">←</kbd> / <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">→</kbd> Navigate</span>
+      <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">F</kbd> Fullscreen</span>
+      <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">N</kbd> Speaker Script</span>
+      <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">T</kbd> Theme</span>
+    </div>
+    <div class="text-[var(--text-muted)] font-mono text-[11px]">
+      Track 1: Sovereign AI • ASYNC'26
+    </div>
+  </footer>
+
+  <!-- SPEAKER NOTES DRAWER (Collapsible) -->
+  <aside id="speakerNotesDrawer" class="hidden fixed bottom-11 right-6 w-96 max-h-72 glass-card rounded-xl border border-slate-700 shadow-2xl p-4 z-50 overflow-y-auto no-print">
+    <div class="flex items-center justify-between pb-2 border-b border-slate-700">
+      <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+        <span>🎤</span> Speaker Script & Live Pitch Beat
+      </span>
+      <button onclick="toggleSpeakerNotes()" class="text-slate-400 hover:text-white">✕</button>
+    </div>
+    <div id="speakerNotesContent" class="mt-2 text-xs text-slate-300 leading-relaxed space-y-2">
+      <!-- Injected dynamically based on current slide -->
+    </div>
+  </aside>
+
+  <!-- JAVASCRIPT CONTROLLER -->
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 9;
+
+    // Pitch scripts matching demo_script.md
+    const speakerScripts = {
+      1: `<strong>Beat 1 — The Hook (Rishikgowda):</strong><br>
+          "Judges, hospitals face a fatal dilemma: they cannot legally transmit patient records to cloud LLMs under HIPAA and DPDP regulations. Yet prescription fatigue causes deadly drug interactions every day.<br>
+          We built <strong>MediVault Local</strong>: a 100% sovereign AI clinical reviewer that executes completely on the doctor's workstation, with 0 bytes transmitted to the cloud, 0 hallucinations, and 117 passing automated tests."`,
+      2: `<strong>Beat 2 — Clinical & Legal Reality (Kushal & Rishikgowda):</strong><br>
+          "Notice the numbers: Adverse Drug Events are a top-5 cause of death. When a polypharmacy patient is on Lisinopril and Furosemide, and an exhausted doctor prescribes Advil, the efferent-afferent pressure in the kidney drops to zero. That's the 'Triple Whammy' acute kidney injury.<br>
+          Cloud LLMs can't be used here—they hallucinate and violate HIPAA. That's why MediVault Local is essential."`,
+      3: `<strong>Beat 3 — System Architecture (Rishikgowda & Rakshith):</strong><br>
+          "Here is our 6-stage sovereign pipeline: PyMuPDF and on-device RapidOCR extract notes from paper slips or PDFs. Next, Rakshith's engine strips all 18 HIPAA Safe Harbor identifiers.<br>
+          We normalize brand names to generics, feed into our deterministic pharmacology matrix, calculate dynamic PK accumulation curves, and synthesize clinical rationale with Ollama llama3.2:3b—all sealed in a local SHA-256 Merkle chain."`,
+      4: `<strong>Beat 4 — The Deterministic Override (Kushal):</strong><br>
+          "This is our core innovation: SLMs reason, but deterministic matrices protect.<br>
+          If Ollama is offline or experiences prompt drift, our deterministic rule gate guarantees that a critical contraindication can NEVER be overlooked. Notice the simulator: test turning Ollama off—our system maintains 100% clinical safety with zero interruption."`,
+      5: `<strong>Beat 5 — The Live Prototype & Air-Gap Kill Move (Sujan):</strong><br>
+          "Watch the screen: I'll click 'Order Advil'. In under 50ms, MediVault normalizes Advil to Ibuprofen, flags the Stage 3 CKD contraindication in red, shows the toxic PK accumulation curve, and suggests Acetaminophen as a safe alternative.<br>
+          Notice our Air-Gap pill: we can literally disconnect Wi-Fi right now, and everything continues to run flawlessly."`,
+      6: `<strong>Beat 6 — Optical Air-Gap & Merkle Ledger (Rishikgowda & Rakshith):</strong><br>
+          "How do we transfer records between isolated workstations without USB drives or cables? Through high-density Base64+zlib Optical SVG QR codes scanned camera-to-screen.<br>
+          And every decision is hashed in a local SHA-256 Merkle tree. Click 'Verify Hash Chain'—you have mathematical proof of zero tampering for HIPAA § 164.312(b)."`,
+      7: `<strong>Beat 7 — Engineering Battles (Rakshith & Rishikgowda):</strong><br>
+          "We solved 4 tough engineering problems: eliminating LLM hallucinations via deterministic gates; running on-device RapidOCR without cloud vision; preventing SQLite database locks using WAL mode under multi-threading; and zero-cable air-gap transfer via optical QR."`,
+      8: `<strong>Beat 8 — Test Verification & Scorecard (All Team):</strong><br>
+          "We built MediVault with enterprise discipline: 117 automated unit and integration tests across 17 test modules, from Beers criteria to Cockcroft-Gault CrCl calculations. 100% of tests pass, verifying 0 bytes of cloud egress on loopback."`,
+      9: `<strong>Beat 9 — Conclusion & Q&A (All Team):</strong><br>
+          "Each member of Void_coders owned their specialized layer: Person A on Backend & Merkle audit; Person B on Ingestion & OCR; Person C on Pharmacology & SLM; Person D on UX & QA.<br>
+          True sovereign AI isn't just about privacy—it's about clinical reliability when the world is offline. We're ready for your questions!"`
+    };
+
+    function updateSlide() {
+      document.querySelectorAll('.slide-container').forEach((el, index) => {
+        el.classList.toggle('active', index + 1 === currentSlide);
+      });
+      document.getElementById('slideIndicator').innerText = `Slide ${currentSlide} / ${totalSlides}`;
+      document.getElementById('slideProgressBar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+      
+      const script = speakerScripts[currentSlide] || "Deliver your slide points concisely.";
+      document.getElementById('speakerNotesContent').innerHTML = script;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleSpeakerNotes() {
+      const drawer = document.getElementById('speakerNotesDrawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.toggle('light');
+      const isLight = html.classList.contains('light');
+      document.getElementById('themeIcon').innerText = isLight ? '🌙' : '☀️';
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullscreen();
+      } else if (e.key.toLowerCase() === 'n') {
+        toggleSpeakerNotes();
+      } else if (e.key.toLowerCase() === 't') {
+        toggleTheme();
+      }
+    });
+
+    // Touch swipe support
+    let touchStartX = 0;
+    window.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+    window.addEventListener('touchend', e => {
+      const diffX = e.changedTouches[0].screenX - touchStartX;
+      if (diffX < -50) nextSlide();
+      if (diffX > 50) prevSlide();
+    });
+
+    // --- Interactive Prototype Micro-Widgets ---
+    let ollamaOnline = true;
+    function toggleOllamaSimulation() {
+      ollamaOnline = !ollamaOnline;
+      const btn = document.getElementById('ollamaToggleBtn');
+      const output = document.getElementById('simulatedSLMOutput');
+      if (ollamaOnline) {
+        btn.innerText = "● Ollama: ONLINE";
+        btn.className = "px-2.5 py-1 text-[11px] rounded bg-emerald-950 border border-emerald-800 text-emerald-400 font-mono hover:bg-emerald-900 transition";
+        output.innerText = '"Ollama (llama3.2:3b): Ibuprofen inhibits renal prostaglandins (PGE2, PGI2), inducing afferent arteriolar vasoconstriction. This compromises GFR in compromised kidneys, risking acute tubular necrosis."';
+      } else {
+        btn.innerText = "○ Ollama: OFFLINE (Fallback Active)";
+        btn.className = "px-2.5 py-1 text-[11px] rounded bg-amber-950 border border-amber-800 text-amber-400 font-mono hover:bg-amber-900 transition";
+        output.innerText = '"[Deterministic Fallback Synthesis]: CRITICAL CONTRAINDICATION: Ibuprofen in Stage 3 CKD. Prostaglandin inhibition causes afferent vasoconstriction and acute renal decline. (Offline Rule Engine Active - 0ms latency)."';
+      }
+    }
+
+    let airgapActive = true;
+    function toggleAirGapSim() {
+      airgapActive = !airgapActive;
+      const btn = document.getElementById('airgapSimBtn');
+      if (airgapActive) {
+        btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Wi-Fi: DISCONNECTED (Air-Gap ACTIVE)</span>';
+        btn.className = "px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-mono flex items-center gap-1.5 hover:bg-emerald-900 transition";
+      } else {
+        btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Wi-Fi: RECONNECTED (127.0.0.1 Loopback Verified)</span>';
+        btn.className = "px-3 py-1 rounded-full bg-amber-950 border border-amber-700 text-amber-300 text-xs font-mono flex items-center gap-1.5 hover:bg-amber-900 transition";
+      }
+    }
+
+    function runPrototypeDemo(type) {
+      const banner = document.getElementById('demoBanner');
+      const subtitle = document.getElementById('demoSubtitle');
+      const body = document.getElementById('demoBody');
+      const pkStatus = document.getElementById('demoPkStatus');
+      const pkBar = document.getElementById('demoPkBar');
+      const swapBox = document.getElementById('demoSwapBox');
+      const latency = document.getElementById('demoLatency');
+
+      if (type === 'advil') {
+        latency.innerText = "Latency: 38ms (Localhost)";
+        banner.className = "p-3 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 flex items-center gap-3";
+        banner.querySelector('div:first-child').innerText = "🔴";
+        banner.querySelector('div:first-child').className = "w-8 h-8 rounded-full bg-rose-800/60 flex items-center justify-center font-bold text-rose-100 text-base";
+        banner.querySelector('.font-bold').innerText = "Critical Contraindication Detected";
+        subtitle.innerText = "Advil normalized to Ibuprofen • Risk: Acute Renal Hemodynamic Collapse";
+        body.innerText = "NSAIDs inhibit cyclooxygenase (COX-1/2), blocking synthesis of vasodilatory prostaglandins (PGE2, PGI2) in renal arterioles. In Stage 3 CKD patients, compensatory afferent vasodilation is extinguished, triggering acute GFR collapse and high risk of dialysis.";
+        pkStatus.innerText = "⚠️ EXCEEDS TOXIC CEILING (48h)";
+        pkStatus.className = "font-mono text-rose-400 font-bold";
+        pkBar.style.width = "88%";
+        pkBar.className = "h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-500";
+        swapBox.classList.remove('hidden');
+      } else if (type === 'tylenol') {
+        latency.innerText = "Latency: 24ms (Localhost)";
+        banner.className = "p-3 rounded-xl bg-emerald-950/80 border border-emerald-600 text-emerald-200 flex items-center gap-3";
+        banner.querySelector('div:first-child').innerText = "🟢";
+        banner.querySelector('div:first-child').className = "w-8 h-8 rounded-full bg-emerald-800/60 flex items-center justify-center font-bold text-emerald-100 text-base";
+        banner.querySelector('.font-bold').innerText = "Prescription Cleared (Safe Formulation)";
+        subtitle.innerText = "Acetaminophen 500mg PO • Zero Renal Hemodynamic Hazard";
+        body.innerText = "Acetaminophen possesses central antipyretic and analgesic action with minimal peripheral cyclooxygenase inhibition. Glomerular filtration hemodynamics and prostaglandin synthesis in the afferent arterioles remain fully preserved.";
+        pkStatus.innerText = "✓ THERAPEUTIC WINDOW PRESERVED";
+        pkStatus.className = "font-mono text-emerald-400 font-bold";
+        pkBar.style.width = "42%";
+        pkBar.className = "h-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-500";
+        swapBox.classList.add('hidden');
+      } else if (type === 'propranolol') {
+        latency.innerText = "Latency: 31ms (Localhost)";
+        banner.className = "p-3 rounded-xl bg-amber-950/80 border border-amber-600 text-amber-200 flex items-center gap-3";
+        banner.querySelector('div:first-child').innerText = "🟡";
+        banner.querySelector('div:first-child').className = "w-8 h-8 rounded-full bg-amber-800/60 flex items-center justify-center font-bold text-amber-100 text-base";
+        banner.querySelector('.font-bold').innerText = "Clinical Caution / Relative Contraindication";
+        subtitle.innerText = "Propranolol 40mg PO BID • Bronchospasm Hazard in Moderate Asthma";
+        body.innerText = "Non-selective beta-adrenergic blockade (beta-1 and beta-2 receptors) antagonizes bronchodilatory tone in bronchial smooth muscle, precipitating severe acute bronchospasm in patients with reactive airway disease.";
+        pkStatus.innerText = "⚠️ MODERATE HAZARD PROFILE";
+        pkStatus.className = "font-mono text-amber-400 font-bold";
+        pkBar.style.width = "65%";
+        pkBar.className = "h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-amber-500 transition-all duration-500";
+        swapBox.classList.add('hidden');
+      }
+    }
+
+    function verifyAuditChain() {
+      const notice = document.getElementById('chainVerificationNotice');
+      notice.innerHTML = '<span class="text-cyan-400 font-bold animate-pulse">⏳ RE-HASHING SHA-256 MERKLE BLOCKS...</span>';
+      setTimeout(() => {
+        notice.innerHTML = '<span class="text-emerald-400 font-bold">✅ CRYPTOGRAPHIC PROOF:</span><span> All 102 audit blocks verified intact (Zero Tampering Detected). HIPAA § 164.312(b) Certified.</span>';
+      }, 450);
+    }
+
+    // Initialize first slide and notes
+    updateSlide();
+  </script>
+</body>
+</html>

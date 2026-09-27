@@ -22,3 +22,6 @@ database/.jwt_secret
 .idea/
 .DS_Store
 Thumbs.db
+~$*.pptx
+~$*.docx
+~$*.xlsx
