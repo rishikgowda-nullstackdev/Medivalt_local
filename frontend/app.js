@@ -552,6 +552,17 @@ async function selectPatient(patientId) {
 
   await loadPatientProfile(patientId);
 
+  // Load baseline hazard index
+  try {
+    const hRes = await fetch(`/api/hazard-index/${patientId}`);
+    if (hRes.ok) {
+      const hData = await hRes.json();
+      renderHazardGauge(hData);
+    }
+  } catch (e) {
+    console.warn("Could not load baseline hazard index:", e);
+  }
+
   // Sync 3D Hologram Target with Patient Profile
   if (patientId === 'PT-101') {
     switchHologramTarget('renal');
@@ -937,6 +948,74 @@ async function runSafetyCheck() {
   }
 }
 
+function renderHazardGauge(hazardData) {
+  if (!hazardData) return;
+  const needleGroup = document.getElementById("hazard-needle-group");
+  const scoreNum = document.getElementById("hazard-score-number");
+  const tierBadge = document.getElementById("hazard-tier-badge");
+  const primaryDriver = document.getElementById("hazard-primary-driver");
+  const recText = document.getElementById("hazard-recommendation-text");
+
+  const organScore = document.getElementById("hazard-score-organ");
+  const organBar = document.getElementById("hazard-bar-organ");
+  const ddiScore = document.getElementById("hazard-score-interaction");
+  const ddiBar = document.getElementById("hazard-bar-interaction");
+  const polyScore = document.getElementById("hazard-score-polypharmacy");
+  const polyBar = document.getElementById("hazard-bar-polypharmacy");
+  const allergyScore = document.getElementById("hazard-score-allergy");
+  const allergyBar = document.getElementById("hazard-bar-allergy");
+
+  const score = hazardData.score !== undefined ? hazardData.score : 0;
+  if (scoreNum) scoreNum.textContent = score;
+
+  // Semicircle needle: -90deg (0 score) to +90deg (100 score)
+  const angle = (score / 100) * 180 - 90;
+  if (needleGroup) {
+    needleGroup.style.transform = `rotate(${angle}deg)`;
+  }
+
+  // Tier badge styling
+  if (tierBadge) {
+    tierBadge.textContent = `${hazardData.risk_tier || 'LOW'} HAZARD`;
+    if (hazardData.risk_tier === "CRITICAL") {
+      tierBadge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold tracking-wider uppercase bg-rose-950/80 text-rose-300 border border-rose-500/50 animate-pulse";
+    } else if (hazardData.risk_tier === "HIGH") {
+      tierBadge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold tracking-wider uppercase bg-orange-950/80 text-orange-300 border border-orange-500/50";
+    } else if (hazardData.risk_tier === "MODERATE") {
+      tierBadge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold tracking-wider uppercase bg-amber-950/80 text-amber-300 border border-amber-500/50";
+    } else {
+      tierBadge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold tracking-wider uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-500/40";
+    }
+  }
+
+  if (primaryDriver && hazardData.primary_driver) {
+    primaryDriver.textContent = hazardData.primary_driver;
+  }
+  if (recText && hazardData.clinical_recommendation) {
+    recText.textContent = hazardData.clinical_recommendation;
+  }
+
+  // Category progress bars
+  const cb = hazardData.category_breakdown || {};
+  if (cb.organ_stress) {
+    if (organScore) organScore.textContent = `${cb.organ_stress.score} / ${cb.organ_stress.max}`;
+    if (organBar) organBar.style.width = `${Math.min(100, Math.round((cb.organ_stress.score / cb.organ_stress.max) * 100))}%`;
+  }
+  if (cb.drug_interactions) {
+    if (ddiScore) ddiScore.textContent = `${cb.drug_interactions.score} / ${cb.drug_interactions.max}`;
+    if (ddiBar) ddiBar.style.width = `${Math.min(100, Math.round((cb.drug_interactions.score / cb.drug_interactions.max) * 100))}%`;
+  }
+  if (cb.polypharmacy) {
+    if (polyScore) polyScore.textContent = `${cb.polypharmacy.score} / ${cb.polypharmacy.max}`;
+    if (polyBar) polyBar.style.width = `${Math.min(100, Math.round((cb.polypharmacy.score / cb.polypharmacy.max) * 100))}%`;
+  }
+  if (cb.allergy_risks) {
+    const totalAllergyAge = (cb.allergy_risks.score || 0) + (cb.age_vulnerability ? cb.age_vulnerability.score : 0);
+    if (allergyScore) allergyScore.textContent = `${totalAllergyAge} / 10`;
+    if (allergyBar) allergyBar.style.width = `${Math.min(100, Math.round((totalAllergyAge / 10) * 100))}%`;
+  }
+}
+
 function renderReviewResults(data) {
   currentReviewEventId = data.event_id;
   const idleHint = document.getElementById("result-idle-hint");
@@ -962,6 +1041,11 @@ function renderReviewResults(data) {
   }
   if (execTime && data.execution_time_ms !== undefined) {
     execTime.textContent = `${data.execution_time_ms} ms`;
+  }
+
+  // Render Clinical Hazard Index & Patient Vulnerability Gauge
+  if (data.hazard_index) {
+    renderHazardGauge(data.hazard_index);
   }
 
   // 1. Render Itemized Per-Medication Cards

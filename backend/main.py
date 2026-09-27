@@ -846,6 +846,26 @@ def review_prescription(req: ReviewRequest, request: Request):
     )
 
 
+@app.get("/api/hazard-index/{patient_id}")
+def get_patient_hazard_index_endpoint(patient_id: str):
+    """
+    Returns sovereign Clinical Hazard Index & Patient Vulnerability Gauge calculation
+    for a given patient ID (e.g. PT-101, PT-102, PT-103).
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT patient_id, patient_name FROM patients WHERE patient_id = ?", (patient_id,))
+    pt = cursor.fetchone()
+    conn.close()
+
+    if not pt:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+
+    hazard_data = ClinicalOrchestrator.get_patient_hazard_index(patient_id)
+    hazard_data["patient_id"] = patient_id
+    hazard_data["patient_name"] = pt["patient_name"]
+    return hazard_data
+
 
 @app.get("/api/audit-logs")
 def get_audit_trail(limit: int = 15):

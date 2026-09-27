@@ -1488,6 +1488,130 @@
               </div>
             </div>
 
+            <!-- Clinical Hazard Index & Patient Vulnerability Gauge -->
+            <div id="hazard-gauge-card" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="card-title text-xs">
+                  <i class="fa-solid fa-gauge-high text-teal-400"></i>
+                  <span>Clinical Hazard Index &amp; Vulnerability Gauge</span>
+                </div>
+                <span id="hazard-tier-badge" class="px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold tracking-wider uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                  LOW HAZARD
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <!-- Semi-circular SVG Speedometer (5 cols) -->
+                <div class="md:col-span-5 flex flex-col items-center justify-center relative">
+                  <svg viewBox="0 0 200 115" class="w-48 max-w-full drop-shadow-md">
+                    <defs>
+                      <linearGradient id="gaugeTrackGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" />
+                        <stop offset="35%" stop-color="#f59e0b" />
+                        <stop offset="70%" stop-color="#f97316" />
+                        <stop offset="100%" stop-color="#ef4444" />
+                      </linearGradient>
+                      <filter id="needleGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.8" />
+                      </filter>
+                    </defs>
+
+                    <!-- Gauge Background Arc -->
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" stroke-width="16" stroke-linecap="round" />
+
+                    <!-- Gauge Active Colored Arc -->
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeTrackGrad)" stroke-width="14" stroke-linecap="round" opacity="0.9" />
+
+                    <!-- Tick marks -->
+                    <text x="18" y="112" font-size="9" fill="#94a3b8" font-family="monospace">0</text>
+                    <text x="56" y="44" font-size="8" fill="#94a3b8" font-family="monospace">25</text>
+                    <text x="96" y="24" font-size="8" fill="#94a3b8" font-family="monospace">50</text>
+                    <text x="138" y="44" font-size="8" fill="#94a3b8" font-family="monospace">75</text>
+                    <text x="175" y="112" font-size="9" fill="#94a3b8" font-family="monospace">100</text>
+
+                    <!-- Needle Group -->
+                    <g id="hazard-needle-group" style="transform-origin: 100px 100px; transform: rotate(-90deg); transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);" filter="url(#needleGlow)">
+                      <polygon points="98,100 100,32 102,100" fill="#f8fafc" />
+                      <circle cx="100" cy="100" r="7" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5" />
+                      <circle cx="100" cy="100" r="3" fill="#38bdf8" />
+                    </g>
+                  </svg>
+
+                  <!-- Numeric Score Callout -->
+                  <div class="mt-[-10px] text-center">
+                    <span id="hazard-score-number" class="text-2xl font-black font-heading text-white tracking-tight">0</span>
+                    <span class="text-xs text-slate-400 font-mono">/ 100</span>
+                  </div>
+                </div>
+
+                <!-- Category Breakdown & Primary Driver (7 cols) -->
+                <div class="md:col-span-7 space-y-2 text-xs">
+                  <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block tracking-wider">Primary Risk Driver:</span>
+                    <span id="hazard-primary-driver" class="text-slate-200 font-medium text-[11px] leading-tight block mt-0.5">
+                      Normal baseline clearance with low pharmacological friction.
+                    </span>
+                  </div>
+
+                  <!-- 4 Category Progress Bars -->
+                  <div class="space-y-1.5 pt-1">
+                    <!-- Organ Stress -->
+                    <div>
+                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                        <span class="flex items-center"><i class="fa-solid fa-lungs text-sky-400 mr-1.5 w-3.5"></i> Organ Clearance Stress</span>
+                        <span id="hazard-score-organ" class="font-mono text-slate-400">0 / 40</span>
+                      </div>
+                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="hazard-bar-organ" class="bg-sky-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                      </div>
+                    </div>
+
+                    <!-- Drug Interactions -->
+                    <div>
+                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                        <span class="flex items-center"><i class="fa-solid fa-burst text-rose-400 mr-1.5 w-3.5"></i> Interaction Danger</span>
+                        <span id="hazard-score-interaction" class="font-mono text-slate-400">0 / 35</span>
+                      </div>
+                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="hazard-bar-interaction" class="bg-rose-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                      </div>
+                    </div>
+
+                    <!-- Polypharmacy -->
+                    <div>
+                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                        <span class="flex items-center"><i class="fa-solid fa-pills text-amber-400 mr-1.5 w-3.5"></i> Polypharmacy Load</span>
+                        <span id="hazard-score-polypharmacy" class="font-mono text-slate-400">0 / 15</span>
+                      </div>
+                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="hazard-bar-polypharmacy" class="bg-amber-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                      </div>
+                    </div>
+
+                    <!-- Immunologic / Allergy -->
+                    <div>
+                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                        <span class="flex items-center"><i class="fa-solid fa-shield-virus text-purple-400 mr-1.5 w-3.5"></i> Allergy &amp; Age Factors</span>
+                        <span id="hazard-score-allergy" class="font-mono text-slate-400">0 / 10</span>
+                      </div>
+                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="hazard-bar-allergy" class="bg-purple-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommendation Footer Strip -->
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                <div class="text-slate-300 flex items-center">
+                  <i class="fa-solid fa-shield-heart text-teal-400 mr-1.5"></i>
+                  <span id="hazard-recommendation-text" class="truncate max-w-md">Therapy Cleared: Clean safety profile.</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-mono">0-Byte Local Telemetry</span>
+              </div>
+            </div>
+
             <!-- Itemized Per-Medication Breakdown Cards -->
             <div id="itemized-medications-section" class="space-y-2">
               <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
@@ -2408,6 +2532,6 @@
 </div>
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=2.4"></script>
+<script src="/static/app.js?v=2.5"></script>
 </body>
 </html>

@@ -342,6 +342,22 @@ class ClinicalOrchestrator:
             hospital_name=hosp_name
         )
 
+        # Calculate Clinical Hazard Index & Patient Vulnerability
+        hazard_result = None
+        try:
+            from ai_engine.hazard_index import calculate_hazard_index
+            hazard_result = calculate_hazard_index(
+                biomarkers=labs,
+                alerts=alerts,
+                active_medications=medications,
+                conditions=conditions,
+                allergies=allergies,
+                demographics=demo_data,
+                overall_status=overall_status
+            )
+        except Exception:
+            pass
+
         return {
             "event_id": log_entry["event_id"],
             "patient_id": patient_id or "ANONYMOUS",
@@ -361,6 +377,7 @@ class ClinicalOrchestrator:
             "recommended_alternatives": recommended_alternatives,
             "biomarkers": labs,
             "demographics": demo_data,
+            "hazard_index": hazard_result,
             "explanation": explanation,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
@@ -508,6 +525,27 @@ class ClinicalOrchestrator:
             hospital_name=hosp_name
         )
 
+        # Collect bundle-wide alerts
+        bundle_alerts = []
+        for me in c_bundle.get("medication_evaluations", []):
+            bundle_alerts.extend(me.get("alerts", []))
+
+        # Compute bundle hazard index
+        hazard_result = None
+        try:
+            from ai_engine.hazard_index import calculate_hazard_index
+            hazard_result = calculate_hazard_index(
+                biomarkers=labs,
+                alerts=bundle_alerts,
+                active_medications=medications + all_med_names,
+                conditions=conditions,
+                allergies=allergies,
+                demographics=demo_data,
+                overall_status=c_bundle["overall_status"]
+            )
+        except Exception:
+            pass
+
         return {
             "event_id": log_entry["event_id"],
             "patient_id": patient_id or "ANONYMOUS",
@@ -525,10 +563,60 @@ class ClinicalOrchestrator:
             "summary_explanation": c_bundle["summary_explanation"],
             "biomarkers": labs,
             "demographics": demo_data,
+            "hazard_index": hazard_result,
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
             "execution_time_ms": exec_time_ms
         }
+
+    @classmethod
+    def get_patient_hazard_index(cls, patient_id: str) -> Dict[str, Any]:
+        """Calculates baseline hazard index & vulnerability for a specific patient ID."""
+        conn = cls.get_db()
+        conditions = []
+        medications = []
+        allergies = []
+        labs = {}
+        demo_data = {"age": 50, "gender": "unknown", "weight_kg": 70.0}
+
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT condition_name FROM patient_conditions WHERE patient_id = ?", (patient_id,))
+            conditions = [r["condition_name"] for r in cur.fetchall()]
+
+            cur.execute("SELECT medication_name FROM patient_medications WHERE patient_id = ?", (patient_id,))
+            medications = [r["medication_name"] for r in cur.fetchall()]
+
+            cur.execute("SELECT allergen FROM patient_allergies WHERE patient_id = ?", (patient_id,))
+            allergies = [r["allergen"] for r in cur.fetchall()]
+
+            cur.execute("SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?", (patient_id,))
+            for r in cur.fetchall():
+                labs[r["biomarker_name"]] = {
+                    "value": r["value"],
+                    "unit": r["unit"],
+                    "display": f"{r['value']} {r['unit']}"
+                }
+
+            if patient_id == "PT-101":
+                demo_data = {"age": 64, "gender": "male", "weight_kg": 78.0}
+            elif patient_id == "PT-102":
+                demo_data = {"age": 32, "gender": "female", "weight_kg": 58.0}
+            elif patient_id == "PT-103":
+                demo_data = {"age": 74, "gender": "male", "weight_kg": 82.0}
+        finally:
+            conn.close()
+
+        from ai_engine.hazard_index import calculate_hazard_index
+        return calculate_hazard_index(
+            biomarkers=labs,
+            alerts=[],
+            active_medications=medications,
+            conditions=conditions,
+            allergies=allergies,
+            demographics=demo_data,
+            overall_status="SAFE"
+        )
 
     # Backward compatibility alias
     run_review = process_review
