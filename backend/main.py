@@ -199,6 +199,14 @@ class LoginRequest(BaseModel):
 class SwitchDemoRequest(BaseModel):
     practitioner_id: str
 
+class PKSimulateRequest(BaseModel):
+    drug_name: str
+    egfr: float = 90.0
+    weight_kg: float = 70.0
+    dose_mg: Optional[float] = None
+    interval_hours: Optional[float] = None
+    total_hours: float = 72.0
+
 
 # ---------------------------------------------------------------------------
 # CONTRACTS.md Endpoints (Person A & Frontend Integration)
@@ -1345,6 +1353,52 @@ async def export_fhir_bundle(event_id: str = Query(..., description="Audit event
         ]
     }
     return JSONResponse(content=fhir_bundle)
+
+
+# ---------------------------------------------------------------------------
+# Clinical Pharmacology: Pharmacokinetic (PK) Simulator Endpoints
+# ---------------------------------------------------------------------------
+@app.get("/api/pk/drugs")
+def list_pk_drugs():
+    """Returns database of drugs with pharmacokinetic profile models."""
+    from ai_engine.pk_model import PK_DRUG_DATABASE
+    drugs_summary = []
+    for k, v in PK_DRUG_DATABASE.items():
+        drugs_summary.append({
+            "drug_key": k,
+            "display_name": v["display_name"],
+            "drug_class": v["drug_class"],
+            "fe_renal": v["fe_renal"],
+            "half_life_normal_h": v["half_life_normal_h"],
+            "vd_l_kg": v["vd_l_kg"],
+            "c_toxic_mg_l": v["c_toxic_mg_l"],
+            "c_mec_mg_l": v["c_mec_mg_l"],
+            "standard_dose_mg": v["standard_dose_mg"],
+            "standard_interval_h": v["standard_interval_h"],
+            "renal_clearance_fraction_pct": round(v["fe_renal"] * 100),
+            "toxicity_hazard": v["toxicity_hazard"]
+        })
+    return {"drugs": drugs_summary, "total": len(drugs_summary)}
+
+
+@app.post("/api/pk/simulate")
+def simulate_pk_endpoint(req: PKSimulateRequest):
+    """
+    Simulates multi-dose pharmacokinetic clearance and accumulation curves
+    scaled by patient eGFR via Rowland & Tozer renal clearance dynamics.
+    """
+    from ai_engine.pk_model import simulate_pk_curve
+    result = simulate_pk_curve(
+        drug_name=req.drug_name,
+        egfr=req.egfr,
+        weight_kg=req.weight_kg,
+        dose_mg=req.dose_mg,
+        interval_hours=req.interval_hours,
+        total_hours=req.total_hours
+    )
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 # ---------------------------------------------------------------------------
