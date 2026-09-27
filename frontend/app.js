@@ -57,6 +57,25 @@ function escapeHtml(str) {
 }
 
 // ═══════════════════════════════════════════
+//  API ERROR FORMATTER (Defensive Extraction)
+// ═══════════════════════════════════════════
+function formatApiError(err, fallback = "An unexpected error occurred") {
+  if (!err) return fallback;
+  if (typeof err === 'string') return err;
+  if (typeof err.detail === 'string') return err.detail;
+  if (Array.isArray(err.detail)) {
+    const msgs = err.detail.map(d => {
+      if (typeof d === 'string') return d;
+      const loc = Array.isArray(d.loc) ? d.loc.filter(x => x !== 'body').join('.') : '';
+      return loc ? `${loc}: ${d.msg || 'Invalid value'}` : (d.msg || JSON.stringify(d));
+    });
+    return msgs.join('; ');
+  }
+  if (typeof err.message === 'string') return err.message;
+  return fallback;
+}
+
+// ═══════════════════════════════════════════
 //  ENTERPRISE TOAST NOTIFICATION SYSTEM
 // ═══════════════════════════════════════════
 function showToast(title, message, type = 'info', duration = null) {
@@ -718,7 +737,10 @@ async function triggerRedaction() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: rawText })
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatApiError(data, "Clinical text extraction and de-identification failed"));
+    }
 
     const redactedOutput = document.getElementById("redacted-output-text");
     if (redactedOutput && data.redacted_text) {
@@ -818,8 +840,8 @@ async function handlePrescriptionFileUpload(event) {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "Prescription parsing failed");
+      const err = await res.json().catch(() => ({}));
+      throw new Error(formatApiError(err, "Prescription parsing failed"));
     }
 
     const data = await res.json();
@@ -918,8 +940,8 @@ async function runSafetyCheck() {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "API evaluation failed");
+      const err = await res.json().catch(() => ({}));
+      throw new Error(formatApiError(err, "API evaluation failed"));
     }
     const data = await res.json();
 
@@ -1709,6 +1731,9 @@ async function recalculatePKTitration() {
       const updated = await res.json();
       updatePKDisplay(updated);
       showToast('Titration Recalculated', `${updated.display_name}: ${targetDose}mg q${currentPKInterval}h simulated.`, 'info', 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast('Titration Simulation Error', formatApiError(err, 'Failed to simulate titration'), 'error', 4000);
     }
   } catch (err) {
     console.warn("Titration calculation failed:", err);
@@ -1789,7 +1814,7 @@ async function exportFhirBundle() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to export FHIR bundle");
+      throw new Error(formatApiError(err, "Failed to export FHIR bundle"));
     }
     const bundle = await res.json();
 
@@ -1872,8 +1897,8 @@ async function handleFhirFileUpload(event) {
 
   try {
     const res = await fetch("/api/ingest/interop", { method: "POST", body: formData });
-    if (!res.ok) throw new Error("Failed to parse interop file");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(formatApiError(data, "Failed to parse interop file"));
     applyParsedInteropData(data);
     showToast('File Ingested', `Parsed ${file.name} successfully.`, 'success');
   } catch (err) {
@@ -1893,8 +1918,8 @@ async function triggerFhirIngestion() {
 
   try {
     const res = await fetch("/api/ingest/interop", { method: "POST", body: formData });
-    if (!res.ok) throw new Error("Failed to parse interop payload");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(formatApiError(data, "Failed to parse interop payload"));
     applyParsedInteropData(data);
     showToast('Interop Ingestion Complete', 'De-identified clinical payload transferred to Review.', 'success');
   } catch (err) {
@@ -1979,7 +2004,7 @@ async function handleFileUpload(file) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "File extraction failed");
+      throw new Error(formatApiError(err, "File extraction failed"));
     }
 
     const data = await res.json();

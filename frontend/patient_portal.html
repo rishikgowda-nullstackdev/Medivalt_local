@@ -646,7 +646,20 @@
             const res = await fetch(endpoint, options);
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error(data.detail || data.message || `Request failed (${res.status})`);
+                let errText = "Request failed";
+                if (typeof data.detail === 'string') {
+                    errText = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errText = data.detail.map(d => {
+                        const loc = Array.isArray(d.loc) ? d.loc.filter(x => x !== 'body').join('.') : '';
+                        return loc ? `${loc}: ${d.msg || 'Invalid'}` : (d.msg || JSON.stringify(d));
+                    }).join('; ');
+                } else if (data.message) {
+                    errText = data.message;
+                } else {
+                    errText = `Request failed (${res.status})`;
+                }
+                throw new Error(errText);
             }
             return data;
         }
@@ -657,6 +670,11 @@
             hideError();
             const username = document.getElementById('login-username').value.trim();
             const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                showError("Please enter both your clinical ID / username and password.");
+                return;
+            }
 
             const btn = document.getElementById('btn-login');
             const spinner = document.getElementById('login-spinner');
@@ -696,6 +714,11 @@
             const username = document.getElementById('reg-username').value.trim();
             const password = document.getElementById('reg-password').value;
             const confirm = document.getElementById('reg-confirm').value;
+
+            if (!patient_id || !full_name || !username || !password) {
+                showError("Please fill in all required registration fields (Patient ID, Full Name, Username, and Password).");
+                return;
+            }
 
             if (password !== confirm) {
                 showError("Passwords do not match. Please re-enter.");
