@@ -187,6 +187,16 @@ def evaluate_full_safety(
             proposed_med, conditions, allergies
         )
 
+    # Deduplicate alerts based on conflicting_factor + interaction_type + severity
+    seen_alert_keys = set()
+    deduped_alerts = []
+    for a in alerts:
+        key = (a.get("interaction_type"), a.get("conflicting_factor"), a.get("severity"))
+        if key not in seen_alert_keys:
+            seen_alert_keys.add(key)
+            deduped_alerts.append(a)
+    alerts = deduped_alerts
+
     return overall_status, alerts, canonical_drug, recommended_alternatives
 
 

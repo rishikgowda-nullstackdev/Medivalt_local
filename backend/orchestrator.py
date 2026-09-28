@@ -180,6 +180,16 @@ class ClinicalOrchestrator:
         finally:
             conn.close()
 
+        # Deduplicate alerts
+        seen_alert_keys = set()
+        deduped_alerts = []
+        for a in alerts:
+            key = (a.get("interaction_type"), a.get("conflicting_factor"), a.get("severity"))
+            if key not in seen_alert_keys:
+                seen_alert_keys.add(key)
+                deduped_alerts.append(a)
+        alerts = deduped_alerts
+
         return overall_status, alerts, canonical_drug
 
     @classmethod

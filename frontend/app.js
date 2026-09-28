@@ -621,14 +621,19 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   if (tokenEl) tokenEl.textContent = patient.patient_id ? `ANON_${patient.patient_id}` : "ANON_UNVERIFIED";
 
   // Conditions
-  const condContainer = document.getElementById("patient-card-conditions");
+  const condContainer = document.getElementById("patient-card-conditions") || document.getElementById("conditions-list");
   if (condContainer) {
     condContainer.innerHTML = "";
     if (conditions && conditions.length > 0) {
       conditions.forEach(c => {
         const span = document.createElement("span");
-        span.className = "bg-slate-900 border border-slate-700/60 text-slate-200 px-2 py-0.5 rounded text-[11px] flex items-center space-x-1";
-        span.innerHTML = `<i class="fa-solid fa-stethoscope text-teal-400 text-[10px]"></i> <span>${escapeHtml(c.condition_name)}</span>`;
+        const cName = c.condition_name || (typeof c === 'string' ? c : JSON.stringify(c));
+        const cLower = cName.toLowerCase();
+        const isCritical = cLower.includes("kidney") || cLower.includes("ckd") || cLower.includes("asthma") || cLower.includes("fibrillation") || cLower.includes("thrombosis");
+        span.className = isCritical
+          ? "px-2 py-0.5 bg-red-950/60 border border-red-500/40 text-red-200 rounded text-xs flex items-center space-x-1"
+          : "px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs flex items-center space-x-1";
+        span.innerHTML = `<i class="fa-solid fa-notes-medical text-teal-400 text-[10px] mr-1"></i><span>${escapeHtml(cName)}</span>`;
         condContainer.appendChild(span);
       });
     } else {
@@ -637,15 +642,16 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   }
 
   // Medications
-  const medsContainer = document.getElementById("patient-card-medications");
+  const medsContainer = document.getElementById("patient-card-medications") || document.getElementById("medications-list");
   if (medsContainer) {
     medsContainer.innerHTML = "";
     if (medications && medications.length > 0) {
       medications.forEach(m => {
         const span = document.createElement("span");
-        span.className = "bg-slate-900 border border-slate-700/60 text-slate-200 px-2 py-0.5 rounded text-[11px] flex items-center space-x-1";
+        span.className = "px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs flex items-center space-x-1";
+        const mName = m.medication_name || (typeof m === 'string' ? m : JSON.stringify(m));
         const doseStr = m.dosage ? ` (${escapeHtml(m.dosage)})` : "";
-        span.innerHTML = `<i class="fa-solid fa-pills text-cyan-400 text-[10px]"></i> <span>${escapeHtml(m.medication_name)}${doseStr}</span>`;
+        span.innerHTML = `<i class="fa-solid fa-pills text-cyan-400 text-[10px] mr-1"></i><span>${escapeHtml(mName)}${doseStr}</span>`;
         medsContainer.appendChild(span);
       });
     } else {
@@ -654,14 +660,15 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   }
 
   // Allergies
-  const allContainer = document.getElementById("patient-card-allergies");
+  const allContainer = document.getElementById("patient-card-allergies") || document.getElementById("allergies-list");
   if (allContainer) {
     allContainer.innerHTML = "";
     if (allergies && allergies.length > 0) {
       allergies.forEach(a => {
         const span = document.createElement("span");
-        span.className = "bg-purple-950/80 border border-purple-500/50 text-purple-200 px-2 py-0.5 rounded text-[11px] flex items-center space-x-1";
-        span.innerHTML = `<i class="fa-solid fa-shield-virus text-purple-400 text-[10px]"></i> <span>${escapeHtml(a.allergen)}</span>`;
+        span.className = "px-2 py-0.5 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded text-xs flex items-center space-x-1";
+        const aName = a.allergen || (typeof a === 'string' ? a : JSON.stringify(a));
+        span.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 text-[10px] mr-1"></i><span>${escapeHtml(aName)}</span>`;
         allContainer.appendChild(span);
       });
     } else {
@@ -670,40 +677,36 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   }
 
   // Biomarkers Panel
-  const bioContainer = document.getElementById("patient-card-labs");
+  const bioContainer = document.getElementById("patient-card-labs") || document.getElementById("biomarkers-list");
   if (bioContainer) {
     bioContainer.innerHTML = "";
-    if (labs) {
+    if (labs && Object.keys(labs).length > 0) {
       Object.keys(labs).forEach(k => {
         const item = labs[k];
         const span = document.createElement("div");
-        let borderLeft = "border-teal-500";
-        let statusBadge = "bg-teal-950 text-teal-300 border-teal-500/40";
-        let textValColor = "text-slate-100";
+        let borderLeft = "border-l-emerald-500";
+        let statusBadge = "text-emerald-300";
+        let textValColor = "text-emerald-400";
 
         const label = k.toUpperCase();
         const dispVal = typeof item === 'object' && item.display ? item.display : `${item.value || item} ${item.unit || ''}`;
         const status = (typeof item === 'object' && item.status) ? item.status : "NORMAL";
 
         if (status.includes("CRITICAL")) {
-          borderLeft = "border-red-500";
-          statusBadge = "bg-red-950 text-red-300 border-red-500/50";
-          textValColor = "text-red-300";
-        } else if (status.includes("WARNING") || status.includes("HIGH") || status.includes("LOW")) {
-          borderLeft = "border-amber-500";
-          statusBadge = "bg-amber-950 text-amber-300 border-amber-500/50";
-          textValColor = "text-amber-300";
-        } else {
-          borderLeft = "border-emerald-500";
-          statusBadge = "bg-emerald-950 text-emerald-300 border-emerald-500/50";
-          textValColor = "text-emerald-300";
+          borderLeft = "border-l-red-500";
+          statusBadge = "text-red-300";
+          textValColor = "text-red-400";
+        } else if (status.includes("WARNING") || status.includes("HIGH") || status.includes("LOW") || status.includes("ELEVATED")) {
+          borderLeft = "border-l-amber-500";
+          statusBadge = "text-amber-300";
+          textValColor = "text-amber-400";
         }
 
         span.className = `bg-slate-900 p-2.5 rounded-lg border-l-2 ${borderLeft} border border-slate-800 flex flex-col justify-between`;
         span.innerHTML = `
           <div class="text-[10px] text-slate-400 uppercase tracking-wider">${escapeHtml(label)}</div>
           <div class="text-sm font-bold ${textValColor} font-mono mt-0.5">${escapeHtml(dispVal)}</div>
-          <span class="text-[9px] ${statusBadge} border font-mono mt-0.5 px-1 rounded">${escapeHtml(status)}</span>
+          <span class="text-[9px] ${statusBadge} font-mono mt-0.5 font-semibold">${escapeHtml(status)}</span>
         `;
         bioContainer.appendChild(span);
       });
@@ -711,6 +714,7 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
       bioContainer.innerHTML = "<span class='text-xs text-slate-500'>No quantitative labs recorded</span>";
     }
   }
+
 }
 
 // ═══════════════════════════════════════════
@@ -915,7 +919,7 @@ async function runSafetyCheck() {
   }
 
   const btn = document.getElementById("btn-run-review");
-  const bioContainer = document.getElementById("patient-card-labs");
+  const bioContainer = document.getElementById("patient-card-labs") || document.getElementById("biomarkers-list");
 
   // Multi-Stage Progressive Scanning Animation
   if (btn) {
@@ -1094,7 +1098,15 @@ function renderReviewResults(data) {
 
         let alertsHtml = "";
         if (ev.alerts && ev.alerts.length > 0) {
-          alertsHtml = `<div class="mt-2 space-y-1.5 border-t border-slate-800/80 pt-2">` + ev.alerts.map(a => `
+          const seenAlerts = new Set();
+          const uniqueAlerts = ev.alerts.filter(a => {
+            const key = `${a.interaction_type || ''}|${a.conflicting_factor || ''}|${a.severity || ''}`;
+            if (seenAlerts.has(key)) return false;
+            seenAlerts.add(key);
+            return true;
+          });
+
+          alertsHtml = `<div class="mt-2 space-y-1.5 border-t border-slate-800/80 pt-2">` + uniqueAlerts.map(a => `
             <div class="text-[11px] bg-slate-950/80 p-2 rounded border border-slate-800">
               <div class="flex items-center justify-between text-slate-200 font-semibold mb-0.5">
                 <span><i class="fa-solid fa-circle-radiation text-amber-400 mr-1"></i> ${escapeHtml(a.conflicting_factor)}</span>
@@ -3177,8 +3189,10 @@ async function executeDemoScenario(scenarioId) {
     // 1. Update form inputs to match scenario
     const medInput = document.getElementById("proposed-med-input");
     const doseInput = document.getElementById("proposed-dose-input");
+    const prescText = document.getElementById("proposed-prescription-text");
     if (medInput) medInput.value = data.scenario.proposed_medication;
     if (doseInput) doseInput.value = data.scenario.dosage;
+    if (prescText) prescText.value = `${data.scenario.proposed_medication} ${data.scenario.dosage || ''}`.trim();
 
     // 2. Select patient if available
     if (data.scenario.patient_id) {
