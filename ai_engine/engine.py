@@ -187,11 +187,16 @@ def evaluate_full_safety(
             proposed_med, conditions, allergies
         )
 
-    # Deduplicate alerts based on conflicting_factor + interaction_type + severity
+    # Deduplicate alerts based on stable composite key (severity, interaction_type, conflicting_factor, mechanism)
     seen_alert_keys = set()
     deduped_alerts = []
     for a in alerts:
-        key = (a.get("interaction_type"), a.get("conflicting_factor"), a.get("severity"))
+        key = (
+            str(a.get("severity", "")).upper(),
+            str(a.get("interaction_type", "")).upper(),
+            str(a.get("conflicting_factor", "")).strip().lower(),
+            str(a.get("clinical_mechanism", ""))[:80].strip().lower()
+        )
         if key not in seen_alert_keys:
             seen_alert_keys.add(key)
             deduped_alerts.append(a)
@@ -370,6 +375,21 @@ def evaluate_prescription_set(
                     "clinical_mechanism": slm_assessment.get("mechanism", "Potential interaction detected by local SLM reasoning."),
                     "recommendation": slm_assessment.get("recommendation", "Review pharmacology carefully.")
                 })
+
+        # Deduplicate alerts for this medication based on stable composite key
+        seen_alert_keys = set()
+        deduped_alerts = []
+        for a in alerts:
+            key = (
+                str(a.get("severity", "")).upper(),
+                str(a.get("interaction_type", "")).upper(),
+                str(a.get("conflicting_factor", "")).strip().lower(),
+                str(a.get("clinical_mechanism", ""))[:80].strip().lower()
+            )
+            if key not in seen_alert_keys:
+                seen_alert_keys.add(key)
+                deduped_alerts.append(a)
+        alerts = deduped_alerts
 
         # Update bundle overall status
         if status == "CRITICAL":

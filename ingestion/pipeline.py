@@ -812,24 +812,50 @@ def extract_prescription_bundle(
         BRAND_TO_GENERIC = {}
         PharmacologyKnowledge = None
 
+    NON_DRUG_WORDS = {
+        "st", "patient", "name", "dob", "mrn", "ssn", "phone", "attending", "admission",
+        "discharge", "hospital", "doctor", "dr", "physician", "date", "diagnosis",
+        "diagnoses", "diagnostic", "allergies", "allergy", "chief", "complaint", "history",
+        "assessment", "plan", "instructions", "clinic", "summary", "labs", "laboratory",
+        "vitals", "bp", "hr", "note", "notes", "inpatient", "outpatient", "follow", "up",
+        "emergency", "department", "service", "consult", "consultation", "physical", "exam",
+        "examination", "results", "stage", "chronic", "kidney", "disease", "ckd", "hypertension",
+        "htn", "diabetes", "mellitus", "osteoarthritis", "asthma", "bronchial", "atrial",
+        "fibrillation", "afib", "baseline", "creatinine", "egfr", "severe", "moderate", "mild",
+        "flare", "flare-up", "inquiring", "regarding", "pain", "management", "order", "orders",
+        "reviewed", "verified", "signed", "electronically", "page", "confidential", "profile",
+        "medical", "center", "memorial", "care", "prescription", "rx", "sig", "dispense",
+        "refills", "status", "comment", "none", "nkda", "no", "yes", "negative", "positive",
+        "essential", "type", "current", "active", "regimen", "outpatient", "medications",
+        "medication", "dose", "tablet", "capsule", "syrup", "injection", "pill", "pills"
+    }
+
+    # Section boundary detection: if document contains explicit medication headers, extract from that section
+    med_section_match = re.search(
+        r"(?im)^\s*(?:CURRENT\s+MEDICATIONS|MEDICATIONS|DISCHARGE\s+MEDICATIONS|ACTIVE\s+MEDICATIONS|MEDICATION\s+ORDERS|HOME\s+MEDICATIONS|PRESCRIPTIONS|PRESCRIBED\s+MEDICATIONS|RX\s+ORDERS|RX)\s*[:=-]?\s*\n(.*?)(?=\n\s*(?:ALLERGIES|ALLERGY|CHIEF\s+COMPLAINT|DIAGNOSIS|DIAGNOSES|DISCHARGE\s+DIAGNOSES|PAST\s+MEDICAL|HISTORY|ASSESSMENT|PLAN|DISCHARGE\s+PLAN|INSTRUCTIONS|DISCHARGE\s+INSTRUCTIONS|LABS|LABORATORY|VITALS|PHYSICAL\s+EXAM|HOSPITAL|PATIENT|ATTENDING|FOLLOW\s*UP)\s*[:=-]|\Z)",
+        raw_text,
+        re.DOTALL
+    )
+    target_text = med_section_match.group(1).strip() if med_section_match else raw_text
+
     parsed_prescriptions: List[Dict[str, Any]] = []
     seen_drugs = set()
 
-    # Split text into lines/sentences
-    lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
-    if not lines or len(lines) == 1 and "," in raw_text:
-        # Check if comma-separated
-        lines = [item.strip() for item in raw_text.split(",") if item.strip()]
+    # Split target text into candidate lines
+    lines = [l.strip() for l in target_text.splitlines() if l.strip()]
+    if not lines or (len(lines) == 1 and "," in target_text):
+        lines = [item.strip() for item in target_text.split(",") if item.strip()]
 
     for line in lines:
-        # Skip header lines that don't contain drug info
+        # Strip numbering and bullet prefixes
         line_clean = re.sub(r"^[0-9]+[\.\)\-:]\s*", "", line).strip()
+        line_clean = re.sub(r"^[-*•]\s*", "", line_clean).strip()
         line_clean = re.sub(r"^(?:Rx|Prescription|Prescribe|Medication|Med|Take|Give)\s*[:=-]?\s*", "", line_clean, flags=re.I).strip()
         if not line_clean or len(line_clean) < 2:
             continue
 
-        # Check for non-prescription metadata headers
-        if re.match(r"(?i)^(Patient|Age|Sex|Gender|Date|Diagnosis|Doctor|Hospital|Phone|Address|Allergies)\s*:", line_clean):
+        # Skip administrative/clinical metadata headers
+        if re.match(r"(?i)^(?:Patient(?:\s+Name)?|Age|Sex|Gender|DOB|MRN|SSN|Date|Diagnosis|Diagnoses|Doctor|Attending|Hospital|Phone|Address|Allergies|Chief\s+Complaint)\s*[:=-]", line_clean):
             continue
 
         dose_match = re.search(dose_pattern, line_clean, re.I)
@@ -844,29 +870,34 @@ def extract_prescription_bundle(
 
         # Identify drug name
         drug_candidate = ""
-        # Remove formulation prefix
         line_no_form = re.sub(formulation_pattern, "", line_clean, flags=re.I).strip()
-
-        # Strategy A: Check known brand or generic dictionary
         line_words = re.findall(r"[a-zA-Z-]+", line_no_form)
+        if not line_words:
+            continue
+
+        # Strategy A: Check known brand, generic dictionary, or medication lexicon
         for word in line_words:
             w_low = word.lower()
+            if w_low in NON_DRUG_WORDS:
+                continue
             if w_low in BRAND_TO_GENERIC or w_low in BRAND_TO_GENERIC.values() or w_low in MEDICATION_LEXICON:
                 drug_candidate = word.title()
                 break
 
-        # Strategy B: If no known word, take leading words before dosage or route
-        if not drug_candidate and line_words:
-            # Filter out non-drug words
-            filtered = [w for w in line_words if w.lower() not in (
-                "mg", "mcg", "g", "ml", "po", "oral", "iv", "im", "sc", "qd", "bid", "tid", "qid",
-                "daily", "stat", "prn", "take", "tab", "cap", "inj", "syrup", "for", "days", "weeks",
-                "before", "after", "food", "meals", "sos", "od", "bd", "tds", "hs", "pc", "ac"
-            )]
-            if filtered:
-                drug_candidate = filtered[0].title()
+        # Strategy B: If no known dictionary word, accept ONLY if the line has explicit clinical dosage OR route/frequency AND is not a stopword
+        if not drug_candidate and (dose_match or freq_match or route_match):
+            candidates = [
+                w for w in line_words
+                if w.lower() not in NON_DRUG_WORDS
+                and len(w) >= 3
+                and not re.match(r"^(?:mg|mcg|g|ml|iu|units|meq|po|oral|iv|im|sc|qd|bid|tid|qid|daily|stat|prn|take|tab|cap|inj|syrup|for|days|weeks|before|after|food|meals|sos|od|bd|tds|hs|pc|ac)$", w, re.I)
+            ]
+            if candidates:
+                candidate_word = candidates[0].title()
+                if candidate_word.lower() not in NON_DRUG_WORDS:
+                    drug_candidate = candidate_word
 
-        if drug_candidate:
+        if drug_candidate and drug_candidate.lower() not in NON_DRUG_WORDS:
             canonical_drug = drug_candidate.lower()
             if PharmacologyKnowledge:
                 canonical, _ = PharmacologyKnowledge.normalize_drug_name(drug_candidate)
@@ -884,10 +915,12 @@ def extract_prescription_bundle(
                     "duration": duration
                 })
 
-    # If no lines were structured, fallback to lexicon scan
+    # If no lines were structured, fallback to lexicon scan ONLY in target_text and non-stopwords
     if not parsed_prescriptions:
         for med in MEDICATION_LEXICON:
-            if re.search(r"\b" + re.escape(med) + r"\b", raw_text.lower()):
+            if med in NON_DRUG_WORDS:
+                continue
+            if re.search(r"\b" + re.escape(med) + r"\b", target_text.lower()):
                 if med.lower() not in seen_drugs:
                     seen_drugs.add(med.lower())
                     parsed_prescriptions.append({

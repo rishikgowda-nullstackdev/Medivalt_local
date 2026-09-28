@@ -1202,35 +1202,8 @@
         <span class="text-[10px] text-slate-400 font-mono">Live Labs · Threshold Triggers</span>
       </div>
       <div id="biomarkers-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-red-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">eGFR (CKD-EPI)</div>
-          <div class="text-sm font-bold text-red-400 font-mono">42 mL/min</div>
-          <span class="text-[9px] text-red-300 font-mono">Stage 3a CKD Alert</span>
-        </div>
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-amber-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">Serum Creatinine</div>
-          <div class="text-sm font-bold text-amber-400 font-mono">1.9 mg/dL</div>
-          <span class="text-[9px] text-amber-300 font-mono">Elevated</span>
-        </div>
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">Potassium (K+)</div>
-          <div class="text-sm font-bold text-emerald-400 font-mono">4.4 mEq/L</div>
-          <span class="text-[9px] text-emerald-300 font-mono">Normokalemic</span>
-        </div>
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">QTc Interval</div>
-          <div class="text-sm font-bold text-emerald-400 font-mono">420 ms</div>
-          <span class="text-[9px] text-emerald-300 font-mono">Normal &lt;450ms</span>
-        </div>
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-emerald-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">ALT / AST</div>
-          <div class="text-sm font-bold text-emerald-400 font-mono">22 / 24 U/L</div>
-          <span class="text-[9px] text-emerald-300 font-mono">Hepatic Safe</span>
-        </div>
-        <div class="bg-slate-900 p-2.5 rounded-lg border-l-2 border-l-amber-500 border border-slate-800">
-          <div class="text-[10px] text-slate-400">Blood Pressure</div>
-          <div class="text-sm font-bold text-amber-400 font-mono">138/86 mmHg</div>
-          <span class="text-[9px] text-amber-300 font-mono">Stage 1 HTN</span>
+        <div class="col-span-full py-2 text-center text-xs text-slate-500 font-mono animate-pulse">
+          <i class="fa-solid fa-flask-vial mr-1.5 text-teal-400"></i> Loading quantitative biomarkers...
         </div>
       </div>
     </div>
@@ -1330,9 +1303,7 @@
               <i class="fa-solid fa-notes-medical text-teal-400 mr-1.5"></i> Diagnosed Conditions
             </div>
             <div id="conditions-list" class="flex flex-wrap gap-1.5">
-              <span class="px-2 py-0.5 bg-red-950/60 border border-red-500/40 text-red-200 rounded text-xs">Stage 3 Chronic Kidney Disease</span>
-              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Essential Hypertension</span>
-              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Type 2 Diabetes Mellitus</span>
+              <span class="text-xs text-slate-500 font-mono animate-pulse">Loading baseline conditions...</span>
             </div>
           </div>
 
@@ -1342,9 +1313,7 @@
               <i class="fa-solid fa-pills text-cyan-400 mr-1.5"></i> Current Outpatient Regimen
             </div>
             <div id="medications-list" class="flex flex-wrap gap-1.5">
-              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Lisinopril 20mg daily</span>
-              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Metformin 500mg BID</span>
-              <span class="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-xs">Amlodipine 5mg daily</span>
+              <span class="text-xs text-slate-500 font-mono animate-pulse">Loading active medications...</span>
             </div>
           </div>
 
@@ -1354,7 +1323,7 @@
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
             </div>
             <div id="allergies-list" class="flex flex-wrap gap-1.5">
-              <span class="px-2 py-0.5 bg-amber-950/60 border border-amber-500/40 text-amber-200 rounded text-xs">Sulfonamides (Anaphylactoid)</span>
+              <span class="text-xs text-slate-500 font-mono animate-pulse">Loading documented allergies...</span>
             </div>
           </div>
         </div>

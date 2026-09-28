@@ -180,11 +180,16 @@ class ClinicalOrchestrator:
         finally:
             conn.close()
 
-        # Deduplicate alerts
+        # Deduplicate alerts using stable composite key
         seen_alert_keys = set()
         deduped_alerts = []
         for a in alerts:
-            key = (a.get("interaction_type"), a.get("conflicting_factor"), a.get("severity"))
+            key = (
+                str(a.get("severity", "")).upper(),
+                str(a.get("interaction_type", "")).upper(),
+                str(a.get("conflicting_factor", "")).strip().lower(),
+                str(a.get("clinical_mechanism", ""))[:80].strip().lower()
+            )
             if key not in seen_alert_keys:
                 seen_alert_keys.add(key)
                 deduped_alerts.append(a)

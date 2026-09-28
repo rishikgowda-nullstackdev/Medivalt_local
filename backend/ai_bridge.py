@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger("medivault.ai_bridge")
 
-OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "llama3.2:3b"
 REQUEST_TIMEOUT_SECONDS = 4.0
 
@@ -28,34 +28,39 @@ class OllamaBridge:
     def get_status(cls) -> Dict[str, Any]:
         """Probes local Ollama instance and returns connectivity status."""
         try:
-            with httpx.Client(timeout=1.5) as client:
+            with httpx.Client(timeout=2.0) as client:
                 res = client.get(f"{OLLAMA_BASE_URL}/api/tags")
                 if res.status_code == 200:
                     models = [m.get("name") for m in res.json().get("models", [])]
                     has_target = any("llama3.2" in m or "phi3" in m for m in models)
+                    active = DEFAULT_MODEL if has_target else (models[0] if models else "None")
                     return {
                         "online": True,
+                        "status": "ONLINE",
                         "url": OLLAMA_BASE_URL,
                         "available_models": models,
                         "target_model_ready": has_target,
-                        "active_model": DEFAULT_MODEL if has_target else (models[0] if models else "None")
+                        "active_model": active,
+                        "model": active
                     }
         except Exception:
             pass
 
         return {
             "online": False,
+            "status": "OFFLINE",
             "url": OLLAMA_BASE_URL,
             "available_models": [],
             "target_model_ready": False,
-            "active_model": "None (Using Deterministic Rule Synthesis)"
+            "active_model": "None (Using Deterministic Rule Synthesis)",
+            "model": "Deterministic SQL Engine"
         }
 
     @classmethod
     def is_online(cls) -> bool:
-        """Fast 0.25s check if local Ollama port is responsive."""
+        """Fast 1.0s check if local Ollama port is responsive."""
         try:
-            with httpx.Client(timeout=0.25) as client:
+            with httpx.Client(timeout=1.0) as client:
                 res = client.get(f"{OLLAMA_BASE_URL}/api/tags")
                 return res.status_code == 200
         except Exception:

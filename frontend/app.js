@@ -339,14 +339,65 @@ function handleLogout() {
   showToast('Session Locked', 'Physician workstation session locked.', 'info', 3000);
 }
 
+async function refreshPatientModalCards() {
+  const container = document.getElementById('switch-patient-list');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/patients');
+    if (!res.ok) return;
+    const data = await res.json();
+    container.innerHTML = '';
+    (data.patients || []).forEach(p => {
+      const isSelected = p.patient_id === currentPatientId;
+      const card = document.createElement('div');
+      card.className = `p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${isSelected ? 'bg-teal-950/60 border-teal-500/60 text-white shadow-md' : 'bg-slate-900 hover:bg-slate-850 border-slate-800 text-slate-200'}`;
+      card.onclick = () => {
+        selectPatient(p.patient_id);
+        closePatientModal();
+      };
+
+      let badgeInfo = 'Renal Profile';
+      let icon = 'fa-file-waveform';
+      if (p.patient_id === 'PT-102') {
+        badgeInfo = 'Respiratory Profile';
+        icon = 'fa-lungs';
+      } else if (p.patient_id === 'PT-103') {
+        badgeInfo = 'Anticoagulation Profile';
+        icon = 'fa-heart-pulse';
+      }
+
+      card.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg ${isSelected ? 'bg-teal-500/30 text-teal-300' : 'bg-slate-800 text-slate-400'} flex items-center justify-center text-sm">
+            <i class="fa-solid ${icon}"></i>
+          </div>
+          <div>
+            <div class="font-bold text-xs flex items-center space-x-2">
+              <span>${escapeHtml(p.patient_name)}</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded ${isSelected ? 'bg-teal-900 text-teal-200 border border-teal-500/50' : 'bg-slate-800 text-slate-400'}">${escapeHtml(p.patient_id)}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              Age ${p.age} · ${escapeHtml(p.gender)} · <span class="text-teal-400 font-semibold">${badgeInfo}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          ${isSelected ? '<span class="text-[10px] font-bold text-teal-400 bg-teal-950 px-2 py-1 rounded border border-teal-500/40"><i class="fa-solid fa-check mr-1"></i>Active</span>' : '<button type="button" class="btn-clinical-secondary text-[11px] py-1 px-2.5">Select</button>'}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (e) {
+    console.error('Failed to load patient modal list:', e);
+  }
+}
+
 function openPatientModal() {
   lastFocusedElement = document.activeElement;
   const modal = document.getElementById('switch-patient-modal');
   if (modal) {
     modal.style.display = 'flex';
-    if (typeof refreshPatientModalCards === 'function') {
-      refreshPatientModalCards();
-    }
+    refreshPatientModalCards();
   }
 }
 
@@ -605,7 +656,7 @@ async function loadPatientProfile(patientId) {
     if (!res.ok) throw new Error("Patient not found");
     const p = await res.json();
 
-    renderPatientCard(p.patient, p.conditions, p.medications, p.allergies, p.labs);
+    renderPatientCard(p.patient, p.conditions, p.medications, p.allergies, p.biomarkers || p.labs);
   } catch (e) {
     console.error("Failed to load patient:", e);
   }
@@ -825,6 +876,18 @@ function setMultiPrescriptionPreset(label, text) {
     const countBadge = document.getElementById("presc-parsed-count");
     if (countBadge) countBadge.textContent = `${lines.length} orders parsed`;
   }
+
+  // Auto-synchronize patient baseline with the scenario profile
+  const lowerLabel = (label || '').toLowerCase();
+  const lowerText = (text || '').toLowerCase();
+  if (lowerLabel.includes('asthma') || lowerText.includes('propranolol')) {
+    selectPatient('PT-102');
+  } else if (lowerLabel.includes('warfarin') || lowerLabel.includes('afib') || lowerLabel.includes('coag')) {
+    selectPatient('PT-103');
+  } else if (lowerLabel.includes('renal') || lowerLabel.includes('whammy') || lowerLabel.includes('penicillin') || lowerLabel.includes('safe')) {
+    selectPatient('PT-101');
+  }
+
   showToast('Challenge Preset Loaded', `Loaded ${label} into evaluation suite.`, 'info', 2500);
 }
 
@@ -1100,11 +1163,16 @@ function renderReviewResults(data) {
         if (ev.alerts && ev.alerts.length > 0) {
           const seenAlerts = new Set();
           const uniqueAlerts = ev.alerts.filter(a => {
-            const key = `${a.interaction_type || ''}|${a.conflicting_factor || ''}|${a.severity || ''}`;
+            const sev = (a.severity || '').toUpperCase();
+            const type = (a.interaction_type || '').toUpperCase();
+            const factor = (a.conflicting_factor || '').trim().toLowerCase();
+            const mech = (a.clinical_mechanism || '').trim().slice(0, 80).toLowerCase();
+            const key = `${sev}|${type}|${factor}|${mech}`;
             if (seenAlerts.has(key)) return false;
             seenAlerts.add(key);
             return true;
           });
+          ev.alerts = uniqueAlerts;
 
           alertsHtml = `<div class="mt-2 space-y-1.5 border-t border-slate-800/80 pt-2">` + uniqueAlerts.map(a => `
             <div class="text-[11px] bg-slate-950/80 p-2 rounded border border-slate-800">
@@ -1180,6 +1248,21 @@ function renderReviewResults(data) {
   }
 
   // 3. Status Banner with Distinct Shape & Iconography
+  let totalUniqueAlerts = 0;
+  if (data.medication_evaluations && data.medication_evaluations.length > 0) {
+    totalUniqueAlerts = data.medication_evaluations.reduce((acc, ev) => acc + (ev.alerts ? ev.alerts.length : 0), 0);
+  } else if (data.alerts && data.alerts.length > 0) {
+    const seen = new Set();
+    const unique = data.alerts.filter(a => {
+      const key = `${(a.severity || '').toUpperCase()}|${(a.interaction_type || '').toUpperCase()}|${(a.conflicting_factor || '').trim().toLowerCase()}|${(a.clinical_mechanism || '').trim().slice(0, 80).toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    totalUniqueAlerts = unique.length;
+  }
+  const displayAlertCount = (totalUniqueAlerts > 0 || data.overall_status === 'SAFE') ? totalUniqueAlerts : (data.total_alerts || 0);
+
   if (data.overall_status === "CRITICAL") {
     banner.className = "triage-banner danger animate-badge-critical";
     icon.className = "text-2xl mt-0.5 text-red-400";
@@ -1187,7 +1270,7 @@ function renderReviewResults(data) {
     title.className = "font-extrabold text-xs tracking-wide uppercase text-red-200 font-heading";
     title.textContent = "🛑 CRITICAL CONTRAINDICATION DETECTED";
     countBadge.className = "text-[10px] font-mono bg-red-950 border border-red-500/50 text-red-200 px-2 py-0.5 rounded-full font-bold";
-    countBadge.textContent = `${data.total_alerts} Risk Alert${data.total_alerts > 1 ? 's' : ''}`;
+    countBadge.textContent = `${displayAlertCount} Risk Alert${displayAlertCount > 1 ? 's' : ''}`;
   } else if (data.overall_status === "WARNING") {
     banner.className = "triage-banner warning animate-badge-pop";
     icon.className = "text-2xl mt-0.5 text-amber-400";
@@ -1195,7 +1278,7 @@ function renderReviewResults(data) {
     title.className = "font-extrabold text-xs tracking-wide uppercase text-amber-200 font-heading";
     title.textContent = "⚠️ CLINICAL CAUTION / RELATIVE CONTRAINDICATION";
     countBadge.className = "text-[10px] font-mono bg-amber-950 border border-amber-500/50 text-amber-200 px-2 py-0.5 rounded-full font-bold";
-    countBadge.textContent = `${data.total_alerts} Warning${data.total_alerts > 1 ? 's' : ''}`;
+    countBadge.textContent = `${displayAlertCount} Warning${displayAlertCount > 1 ? 's' : ''}`;
   } else {
     banner.className = "triage-banner safe animate-badge-pop";
     icon.className = "text-2xl mt-0.5 text-emerald-400";
@@ -2117,10 +2200,36 @@ async function checkAiStatus() {
   try {
     const res = await fetch("/api/ai-status");
     const data = await res.json();
+    const isOnline = data.online === true || data.status === "ONLINE";
+    const modelName = data.model || data.active_model || "llama3.2:3b";
+
+    const textEl = document.getElementById("ai-status-text");
+    const badgeEl = document.getElementById("ai-telemetry-badge") || (textEl ? textEl.parentElement : null);
     const pill = document.getElementById("ai-status-pill");
+
+    if (textEl) {
+      if (isOnline) {
+        textEl.textContent = `Ollama SLM: Ready (${modelName})`;
+      } else {
+        textEl.textContent = "Local Engine: Deterministic";
+      }
+    }
+
+    if (badgeEl) {
+      if (isOnline) {
+        badgeEl.className = "flex items-center space-x-1.5 bg-teal-950/80 border border-teal-500/50 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        const dot = badgeEl.querySelector("span:first-child");
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-teal-400 animate-pulse";
+      } else {
+        badgeEl.className = "flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        const dot = badgeEl.querySelector("span:first-child");
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-400";
+      }
+    }
+
     if (pill) {
-      if (data.status === "ONLINE") {
-        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA SLM (${escapeHtml(data.model || 'llama3.2:3b')})</span>`;
+      if (isOnline) {
+        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA SLM (${escapeHtml(modelName)})</span>`;
         pill.className = "bg-teal-950/80 border border-teal-500/40 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded flex items-center";
       } else {
         pill.innerHTML = `<i class="fa-solid fa-code-commit text-slate-400 mr-1"></i><span>DETERMINISTIC SQL ENGINE</span>`;
@@ -2129,6 +2238,8 @@ async function checkAiStatus() {
     }
   } catch (e) {
     console.warn("AI status check failed:", e);
+    const textEl = document.getElementById("ai-status-text");
+    if (textEl) textEl.textContent = "Local Engine: Deterministic";
   }
 }
 
@@ -2188,6 +2299,7 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshAuditTrail();
   setupFileDropZone();
   checkAiStatus();
+  setInterval(checkAiStatus, 10000);
   checkNetworkGuard();
   updateDoctorUI(currentDoctor);
 
@@ -3209,6 +3321,9 @@ async function executeDemoScenario(scenarioId) {
       if (nameEl) nameEl.textContent = data.scenario.patient_name;
       if (metaEl) metaEl.textContent = `ID: ${data.scenario.patient_id} · Age: ${data.scenario.demographics?.age || 65}y · ${data.scenario.demographics?.gender || 'Unknown'}`;
       if (tokenEl) tokenEl.textContent = `ANON_${data.scenario.patient_id}`;
+
+      // Synchronize full patient baseline clinical cards & biomarkers
+      await loadPatientProfile(data.scenario.patient_id);
     }
 
     // 3. Render review results
