@@ -2802,37 +2802,40 @@ async function checkAiStatus() {
 
     if (textEl) {
       if (isOnline) {
-        textEl.textContent = `Ollama SLM: Ready (${modelName})`;
+        textEl.textContent = "Ollama Active";
       } else {
-        textEl.textContent = "Local Engine: Deterministic";
+        textEl.textContent = "Deterministic";
       }
     }
 
     if (badgeEl) {
       if (isOnline) {
-        badgeEl.className = "flex items-center space-x-1.5 bg-teal-950/80 border border-teal-500/50 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        badgeEl.className = "flex items-center space-x-1.5 bg-teal-950/80 border border-teal-500/50 text-teal-300 text-xs px-2 sm:px-2.5 py-1 rounded-full shadow-inner font-mono cursor-default";
+        badgeEl.setAttribute("title", `Ollama SLM Active (${modelName}) · Offline Inference`);
         const dot = badgeEl.querySelector("span:first-child");
         if (dot) dot.className = "w-2 h-2 rounded-full bg-teal-400 animate-pulse";
       } else {
-        badgeEl.className = "flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        badgeEl.className = "flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-2 sm:px-2.5 py-1 rounded-full shadow-inner font-mono cursor-default";
+        badgeEl.setAttribute("title", "Local Engine: Deterministic Safety Matrix");
         const dot = badgeEl.querySelector("span:first-child");
-        if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
       }
     }
 
     if (pill) {
       if (isOnline) {
-        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA SLM (${escapeHtml(modelName)})</span>`;
+        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA ACTIVE</span>`;
         pill.className = "bg-teal-950/80 border border-teal-500/40 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded flex items-center";
+        pill.setAttribute("title", `Model: ${modelName}`);
       } else {
-        pill.innerHTML = `<i class="fa-solid fa-code-commit text-slate-400 mr-1"></i><span>DETERMINISTIC SQL ENGINE</span>`;
+        pill.innerHTML = `<i class="fa-solid fa-code-commit text-slate-400 mr-1"></i><span>DETERMINISTIC</span>`;
         pill.className = "bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded flex items-center";
       }
     }
   } catch (e) {
     console.warn("AI status check failed:", e);
     const textEl = document.getElementById("ai-status-text");
-    if (textEl) textEl.textContent = "Local Engine: Deterministic";
+    if (textEl) textEl.textContent = "Deterministic";
   }
 }
 
