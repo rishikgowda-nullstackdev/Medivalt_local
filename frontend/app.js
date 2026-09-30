@@ -4482,11 +4482,15 @@ async function triggerAiNoteSynthesis() {
 
 // Window Exports for Sovereign AI Suite
 window.sendCopilotMessage = sendCopilotMessage;
+window.sendTabCopilotMessage = sendTabCopilotMessage;
 window.askCopilotQuick = askCopilotQuick;
 window.askCopilotTabQuick = askCopilotTabQuick;
 window.clearCopilotChat = clearCopilotChat;
 window.searchKnowledgeBase = searchKnowledgeBase;
 window.triggerAiNoteSynthesis = triggerAiNoteSynthesis;
+window.copyCopilotReply = copyCopilotReply;
+window.speakCopilotReply = speakCopilotReply;
+window.applyCopilotPrescription = applyCopilotPrescription;
 
 async function sendTabCopilotMessage(explicitPrompt = null) {
   const inputEl = document.getElementById('tab-copilot-input');
@@ -4566,26 +4570,7 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
     }
 
     if (chatStream) {
-      const replyBubble = document.createElement('div');
-      replyBubble.className = 'p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
-
-      const citationsHtml = data.citations && data.citations.length > 0
-        ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
-             <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
-             ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
-           </div>`
-        : '';
-
-      replyBubble.innerHTML = `
-        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
-          <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
-          <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
-        </div>
-        <div class="text-slate-200 leading-normal">${formatMarkdownText(displayReply)}</div>
-        ${citationsHtml}
-      `;
-      chatStream.appendChild(replyBubble);
-      chatStream.scrollTop = chatStream.scrollHeight;
+      renderCopilotBubble(chatStream, data, displayReply, true);
     }
 
   } catch (err) {
