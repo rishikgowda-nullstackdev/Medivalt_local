@@ -255,6 +255,10 @@ window.onPresetBundleSelect = onPresetBundleSelect;
 //  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
+  if (window.innerWidth <= 768 && typeof toggleSidebarCollapse === 'function') {
+    toggleSidebarCollapse(false);
+  }
+
   // Hide all view panels dynamically
   document.querySelectorAll('.page-view-panel').forEach(panel => {
     panel.classList.remove('active');
@@ -2910,19 +2914,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function toggleSidebarCollapse(forceState) {
   const sidebar = document.getElementById('left-nav-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
   if (!sidebar) return;
-  const willCollapse = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('collapsed');
-  if (willCollapse) {
-    sidebar.classList.add('collapsed');
-    try { localStorage.setItem('medivault_sidebar_collapsed', 'true'); } catch (e) {}
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    const willOpen = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('mobile-open');
+    if (willOpen) {
+      sidebar.classList.add('mobile-open');
+      if (backdrop) backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    } else {
+      sidebar.classList.remove('mobile-open');
+      if (backdrop) backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
   } else {
-    sidebar.classList.remove('collapsed');
-    try { localStorage.setItem('medivault_sidebar_collapsed', 'false'); } catch (e) {}
-  }
-  const btnHeader = document.getElementById('btn-header-collapse-sidebar');
-  if (btnHeader) {
-    btnHeader.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
-    btnHeader.setAttribute('title', willCollapse ? 'Expand Navigation Sidebar (Ctrl+B)' : 'Collapse Navigation Sidebar (Ctrl+B)');
+    const willCollapse = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('collapsed');
+    if (willCollapse) {
+      sidebar.classList.add('collapsed');
+      try { localStorage.setItem('medivault_sidebar_collapsed', 'true'); } catch (e) {}
+    } else {
+      sidebar.classList.remove('collapsed');
+      try { localStorage.setItem('medivault_sidebar_collapsed', 'false'); } catch (e) {}
+    }
+    const btnHeader = document.getElementById('btn-header-collapse-sidebar');
+    if (btnHeader) {
+      btnHeader.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+      btnHeader.setAttribute('title', willCollapse ? 'Expand Navigation Sidebar (Ctrl+B)' : 'Collapse Navigation Sidebar (Ctrl+B)');
+    }
   }
 }
 
