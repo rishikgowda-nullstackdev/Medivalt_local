@@ -10,6 +10,7 @@ Patient tokens are completely isolated from practitioner tokens.
 import os
 import sqlite3
 import logging
+import re
 from typing import Dict, Any, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -770,6 +771,7 @@ def get_doctor_advice(request: Request, patient_id: Optional[str] = None):
     return {
         "patient_id": target_patient_id,
         "notes": notes,
+        "advice": notes,
         "total": len(notes),
         "unread_count": unread_count,
         "zero_cloud": True
@@ -1049,6 +1051,7 @@ def get_patient_medication_guides(request: Request):
     return {
         "patient_id": patient_id,
         "guides": guides,
+        "library": DRUG_PATIENT_LEAFLETS,
         "total": len(guides),
         "zero_cloud": True
     }
@@ -1144,8 +1147,11 @@ def get_patient_adherence(request: Request, log_date: Optional[str] = None):
         "log_date": today_str,
         "slots": slots,
         "total_tasks": total_tasks,
+        "total_doses": total_tasks,
         "completed_tasks": completed_tasks,
+        "taken_count": completed_tasks,
         "compliance_pct": compliance_pct,
+        "completion_percentage": compliance_pct,
         "streak_days": max(1, streak_days),
         "zero_cloud": True
     }

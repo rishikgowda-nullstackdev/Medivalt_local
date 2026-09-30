@@ -206,11 +206,13 @@ class ClinicalOrchestrator:
         proposed_med: str,
         canonical_drug: str,
         overall_status: str,
-        alerts: List[Dict[str, Any]]
+        alerts: List[Dict[str, Any]],
+        biomarkers: Optional[Dict[str, Any]] = None,
+        demographics: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Generates clinical rationale.
-        First attempts local SLM (llama3.2:3b via Ollama);
+        First attempts local SLM (llama2/llama3.2 via Ollama) enriched with patient trajectory telemetry;
         automatically falls back to deterministic synthesis if Ollama is offline.
         """
         drug_label = proposed_med
@@ -218,12 +220,14 @@ class ClinicalOrchestrator:
             drug_label = f"{proposed_med} (generic {canonical_drug})"
 
         if overall_status == "CRITICAL":
-            # Attempt local SLM explanation
+            # Attempt local SLM explanation with patient telemetry
             if alerts:
                 slm_expl = ai_bridge.generate_clinical_explanation(
                     proposed_drug=drug_label,
                     conflicting_factor=alerts[0]["conflicting_factor"],
-                    mechanism=alerts[0]["clinical_mechanism"]
+                    mechanism=alerts[0]["clinical_mechanism"],
+                    biomarkers=biomarkers,
+                    demographics=demographics
                 )
                 if slm_expl:
                     return f"CRITICAL CONTRAINDICATION: {slm_expl}"
@@ -337,8 +341,11 @@ class ClinicalOrchestrator:
         beers_alerts = [a for a in alerts if a.get("interaction_type") == "BEERS_CRITERIA"]
         renal_alerts = [a for a in alerts if a.get("interaction_type") == "RENAL_TITRATION"]
 
-        # Synthesize explanation
-        explanation = cls.synthesize_explanation(proposed_med, canonical_drug, overall_status, alerts)
+        # Synthesize explanation with patient telemetry
+        explanation = cls.synthesize_explanation(
+            proposed_med, canonical_drug, overall_status, alerts,
+            biomarkers=labs, demographics=demo_data
+        )
 
         exec_time_ms = round((time.time() - start_time) * 1000, 2)
 

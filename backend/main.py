@@ -19,7 +19,7 @@ logger = logging.getLogger("medivault.main")
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, Response, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
@@ -1549,6 +1549,40 @@ def copilot_chat_endpoint(req: CopilotChatRequest):
         history=req.history
     )
     return result
+
+
+@app.post("/api/copilot/stream")
+def stream_copilot_endpoint(req: CopilotChatRequest):
+    """
+    Real-Time Sovereign Token Streaming for Clinical Copilot.
+    Yields Server-Sent Events (SSE) token chunks as Ollama generates them.
+    """
+    patient_context_header = ""
+    if req.patient_id:
+        try:
+            from ai_engine.copilot import _lookup_patient
+            p = _lookup_patient(req.patient_id)
+            if p:
+                patient_context_header = (
+                    f"Patient: {p.get('full_name', 'Patient')} ({p.get('patient_id')}), Age {p.get('age', 'Unknown')}. "
+                    f"Diagnoses: {', '.join(p.get('conditions', []))}. "
+                    f"Medications: {', '.join(p.get('medications', []))}.\n"
+                )
+        except Exception:
+            pass
+
+    system_instruction = (
+        "You are MediVault Sovereign Clinical Copilot, an offline medical second-opinion assistant. "
+        "Provide direct, authoritative, and concise clinical answers under 80 words."
+    )
+    user_prompt = f"{patient_context_header}Physician Question: {req.message}"
+
+    def event_stream():
+        for token in ai_bridge.stream_copilot_tokens(prompt=user_prompt, system_prompt=system_instruction):
+            yield f"data: {json.dumps({'token': token})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.post("/api/knowledge/search")

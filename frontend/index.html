@@ -2391,31 +2391,55 @@
       </div>
     </div>
 
-    <!-- 🫀 ELEVATED 3D ANATOMICAL GLASS HEART & SOVEREIGN ARCHITECTURE SHOWCASE -->
+    <!-- 🫀 ELEVATED 3D ANATOMICAL MEDICAL FIELD SHOWCASE (Animated Carousel: Heart | DNA Helix | Stethoscope) -->
     <div id="clinical-3d-showcase" class="clinical-card relative overflow-hidden p-4 md:p-5 border-teal-500/30 transition-all duration-300 shadow-lg">
-      <!-- Ambient Glow Behind Heart -->
+      <!-- Ambient Glow Behind 3D Stage -->
       <div class="absolute -right-16 -top-16 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute right-1/4 -bottom-12 w-56 h-56 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative z-10">
         
-        <!-- Left Column: Editorial Medical Heading & Architecture Metrics (7 cols) -->
+        <!-- Left Column: Editorial Medical Heading, Carousel Tabs & Architecture Metrics (7 cols) -->
         <div class="lg:col-span-7 space-y-3">
-          <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-            <span class="px-2.5 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[10.5px] font-mono uppercase tracking-wider font-bold flex items-center">
-              <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse mr-1.5"></span>
-              Sovereign Clinical Precision
-            </span>
-            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10.5px] font-mono font-semibold flex items-center">
-              <i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i> Zero-Cloud Air-Gap
-            </span>
+          
+          <!-- Top Row: Enclave Badge & Auto-Cycle Status Button -->
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+              <span class="px-2.5 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[10.5px] font-mono uppercase tracking-wider font-bold flex items-center">
+                <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse mr-1.5"></span>
+                Sovereign Clinical Precision
+              </span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10.5px] font-mono font-semibold flex items-center">
+                <i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i> Zero-Cloud Air-Gap
+              </span>
+            </div>
+
+            <!-- Auto-Cycle Play/Pause Toggle Button -->
+            <button type="button" onclick="toggleMedicalAutoCycle()" id="medical-cycle-btn" class="px-2.5 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-[10.5px] font-mono hover:bg-teal-500/25 transition cursor-pointer flex items-center space-x-1.5" title="Pause or Resume Automated 3D Modality Cycling">
+              <span id="medical-cycle-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span id="medical-cycle-text" class="text-teal-200 font-semibold">▶️ Auto-Cycling (6.5s)</span>
+            </button>
           </div>
 
-          <h3 class="text-lg sm:text-xl md:text-2xl font-bold font-heading text-[var(--text-heading)] leading-snug">
+          <!-- 3D Medical Modality Switcher Tabs -->
+          <div class="flex items-center space-x-1.5 bg-[var(--bg-input-well)] p-1 rounded-xl border border-[var(--border-main)] flex-wrap text-xs font-semibold">
+            <button type="button" onclick="setMedicalVisualMode('heart', true)" id="tab-medical-heart" class="flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition flex items-center justify-center space-x-1.5 shadow-sm">
+              <span>🫀 Crystal Heart</span>
+            </button>
+            <button type="button" onclick="setMedicalVisualMode('dna', true)" id="tab-medical-dna" class="flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5">
+              <span>🧬 DNA Helix</span>
+            </button>
+            <button type="button" onclick="setMedicalVisualMode('stethoscope', true)" id="tab-medical-stethoscope" class="flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5">
+              <span>🩺 Stethoscope</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Editorial Headline & Subtext -->
+          <h3 id="medical-headline" class="text-lg sm:text-xl md:text-2xl font-bold font-heading text-[var(--text-heading)] leading-snug transition-all duration-200">
             Precision care <span class="italic font-serif text-teal-400 font-normal">for every patient</span> in one sovereign station.
           </h3>
 
-          <p class="text-xs sm:text-[13px] text-[var(--text-muted)] leading-relaxed max-w-xl">
+          <p id="medical-desc" class="text-xs sm:text-[13px] text-[var(--text-muted)] leading-relaxed max-w-xl transition-all duration-200">
             From acute inpatient reviews to chronic outpatient regimens, MediVault cross-checks diagnostic histories, Beers Criteria, and quantitative biomarkers against pairwise contraindications entirely on offline silicon.
           </p>
 
@@ -2449,31 +2473,22 @@
             </div>
           </div>
 
-          <!-- Interactive Organ Target Switcher Chips -->
+          <!-- Dynamic Domain Chips -->
           <div class="flex items-center space-x-1.5 pt-1 flex-wrap gap-y-1 text-[11px] font-mono">
-            <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mr-1">Focus Target:</span>
-            <button type="button" id="target-chip-renal" onclick="setOrganFocus('renal')" class="px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-400/50 text-teal-200 font-semibold transition hover:bg-teal-500/30 shadow-sm flex items-center space-x-1">
-              <i class="fa-solid fa-dna text-[10px]"></i>
-              <span>Renal (eGFR 38)</span>
-            </button>
-            <button type="button" id="target-chip-cardiac" onclick="setOrganFocus('cardiac')" class="px-2.5 py-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-teal-300 font-semibold transition hover:border-teal-500/40 flex items-center space-x-1">
-              <i class="fa-solid fa-heart-pulse text-[10px]"></i>
-              <span>Cardiopulmonary</span>
-            </button>
-            <button type="button" id="target-chip-hepatic" onclick="setOrganFocus('hepatic')" class="px-2.5 py-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-teal-300 font-semibold transition hover:border-teal-500/40 flex items-center space-x-1">
-              <i class="fa-solid fa-capsules text-[10px]"></i>
-              <span>Hepatic CYP450</span>
-            </button>
+            <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mr-1">Domain Focus:</span>
+            <span id="medical-domain-1" class="px-2.5 py-1 rounded-lg bg-teal-500/15 border border-teal-400/40 text-teal-200 font-semibold shadow-sm">Stage 3b CKD (eGFR 38)</span>
+            <span id="medical-domain-2" class="px-2.5 py-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[var(--text-muted)]">Triple Whammy Prevention</span>
+            <span id="medical-domain-3" class="px-2.5 py-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[var(--text-muted)]">Beers Criteria 2023</span>
           </div>
         </div>
 
-        <!-- Right Column: 3D Translucent Glass Heart & Interactive Pointer Pins (5 cols) -->
+        <!-- Right Column: 3D Animated Medical Stage & Interactive Dynamic Pins (5 cols) -->
         <div class="lg:col-span-5 flex justify-center items-center relative py-2">
           
-          <!-- Outer Floating Heart Visual Stage -->
+          <!-- Outer Floating Visual Stage (Pauses animation on mouse hover) -->
           <div class="glass-heart-container relative w-full max-w-[320px] aspect-square flex items-center justify-center">
             
-            <!-- Radial Pulse Aura Behind Heart -->
+            <!-- Radial Pulse Aura -->
             <div class="glass-heart-aura absolute inset-4 rounded-full border border-teal-500/25 pointer-events-none"></div>
 
             <!-- Floating Pill Drift 1 (Top Left) -->
@@ -2490,58 +2505,53 @@
               </div>
             </div>
 
-            <!-- 3D Anatomical Glass Heart Render (Prism Refraction & Blooming Florals) -->
+            <!-- Dynamic 3D Medical Stage Render (Cross-fades smoothly on cycle) -->
             <img 
+              id="medical-stage-img"
               src="/static/assets/glass_heart_3d.jpg" 
-              alt="3D Anatomical Crystal Heart with Blooming Blue Florals" 
-              class="glass-heart-img w-full h-full object-contain rounded-2xl select-none"
+              alt="3D Medical Visual Experience" 
+              class="glass-heart-img w-full h-full object-contain rounded-2xl select-none transition-all duration-300"
               loading="eager"
             />
 
-            <!-- 📍 Interactive Pin 1: Fast Diagnosis (Top Left of Heart) -->
-            <div class="clinical-callout-pin top-6 -left-3 sm:-left-6 group" title="Click to inspect response latency">
+            <!-- 📍 Dynamic Pin 1: (Top Left) -->
+            <div class="clinical-callout-pin top-6 -left-3 sm:-left-6 group cursor-pointer" title="Inspect clinical telemetry">
               <div class="flex items-center space-x-1.5">
                 <div class="clinical-callout-tag">
                   <i class="fa-solid fa-bolt text-teal-400 text-[10px]"></i>
-                  <span>Fast Diagnosis</span>
+                  <span id="pin-1-tag">Fast Diagnosis</span>
                 </div>
                 <div class="pin-dot"></div>
               </div>
-              <!-- Hover Popover Card -->
-              <div class="absolute left-0 top-8 w-52 p-2.5 rounded-xl bg-slate-950/95 border border-teal-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
-                <div class="font-bold text-teal-300 text-xs mb-0.5">Deterministic Engine</div>
+              <div id="pin-1-desc" class="absolute left-0 top-8 w-52 p-2.5 rounded-xl bg-slate-950/95 border border-teal-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
                 SQLite compiled queries execute in &lt;12ms with zero cold start.
               </div>
             </div>
 
-            <!-- 📍 Interactive Pin 2: Diagnosis Accuracy (Bottom Right of Heart) -->
-            <div class="clinical-callout-pin bottom-8 -right-3 sm:-right-8 group" title="Click to inspect accuracy score">
+            <!-- 📍 Dynamic Pin 2: (Bottom Right) -->
+            <div class="clinical-callout-pin bottom-8 -right-3 sm:-right-8 group cursor-pointer" title="Inspect diagnostic accuracy">
               <div class="flex items-center space-x-1.5">
                 <div class="pin-dot"></div>
                 <div class="clinical-callout-tag">
                   <i class="fa-solid fa-circle-check text-cyan-400 text-[10px]"></i>
-                  <span>Diagnosis Accuracy</span>
+                  <span id="pin-2-tag">Diagnosis Accuracy</span>
                 </div>
               </div>
-              <!-- Hover Popover Card -->
-              <div class="absolute right-0 top-8 w-52 p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
-                <div class="font-bold text-cyan-300 text-xs mb-0.5">Zero Hallucinations</div>
+              <div id="pin-2-desc" class="absolute right-0 top-8 w-52 p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
                 Contraindications verified against RxNorm, FDA black boxes &amp; Beers Criteria.
               </div>
             </div>
 
-            <!-- 📍 Interactive Pin 3: Cardio-Renal Safeguard (Bottom Left of Heart) -->
-            <div class="clinical-callout-pin -bottom-2 left-6 group" title="Click to view organ safeguard">
+            <!-- 📍 Dynamic Pin 3: (Bottom Left) -->
+            <div class="clinical-callout-pin -bottom-2 left-6 group cursor-pointer" title="Inspect organ safeguard">
               <div class="flex items-center space-x-1.5">
                 <div class="clinical-callout-tag">
                   <i class="fa-solid fa-shield-heart text-emerald-400 text-[10px]"></i>
-                  <span id="pin-organ-label">Cardio-Renal Safeguard</span>
+                  <span id="pin-3-tag">Cardio-Renal Safeguard</span>
                 </div>
                 <div class="pin-dot"></div>
               </div>
-              <!-- Hover Popover Card -->
-              <div class="absolute left-0 bottom-8 w-56 p-2.5 rounded-xl bg-slate-950/95 border border-emerald-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
-                <div class="font-bold text-emerald-300 text-xs mb-0.5">Cockcroft-Gault CrCl Guard</div>
+              <div id="pin-3-desc" class="absolute left-0 bottom-8 w-56 p-2.5 rounded-xl bg-slate-950/95 border border-emerald-500/40 text-[10.5px] text-slate-300 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-40 backdrop-blur-md">
                 Active eGFR 38 mL/min triggers automatic NSAID titration block.
               </div>
             </div>

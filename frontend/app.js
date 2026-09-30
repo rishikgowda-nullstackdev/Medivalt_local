@@ -183,6 +183,162 @@ function toggleHologramAccordion() {
 window.toggleHologramAccordion = toggleHologramAccordion;
 
 // ═══════════════════════════════════════════
+//  3D MEDICAL VISUAL CAROUSEL CONTROLLER (Heart | DNA Helix | Stethoscope)
+// ═══════════════════════════════════════════
+const MEDICAL_CAROUSEL_DATA = {
+  heart: {
+    img: '/static/assets/glass_heart_3d.jpg',
+    headline: 'Precision care <span class="italic font-serif text-teal-400 font-normal">for every patient</span> in one sovereign station.',
+    desc: 'From acute inpatient reviews to chronic outpatient regimens, MediVault cross-checks diagnostic histories, Beers Criteria, and quantitative biomarkers against pairwise contraindications entirely on offline silicon.',
+    pin1: 'Fast Diagnosis',
+    desc1: 'SQLite compiled queries execute in <12ms with zero cold start.',
+    pin2: 'Diagnosis Accuracy',
+    desc2: 'Contraindications verified against RxNorm, FDA black boxes & Beers Criteria.',
+    pin3: 'Cardio-Renal Safeguard',
+    desc3: 'Active eGFR 38 mL/min triggers automatic NSAID titration block.',
+    chip1: 'Stage 3b CKD (eGFR 38)',
+    chip2: 'Triple Whammy Prevention',
+    chip3: 'Beers Criteria 2023'
+  },
+  dna: {
+    img: '/static/assets/dna_helix_3d.jpg',
+    headline: 'Pharmacogenomic intelligence <span class="italic font-serif text-cyan-400 font-normal">encoded in crystal</span> on device.',
+    desc: 'Deterministic molecular cross-checking identifies genetic contraindications, CYP2C9/CYP2D6 metabolic vulnerabilities, and hereditary adverse drug reactions with zero cloud exposure.',
+    pin1: 'Genomic Profiling',
+    desc1: 'Analyzes patient enzymatic pathways to prevent toxic drug accumulation.',
+    pin2: 'CYP450 Kinetics',
+    desc2: 'Monitors substrate inhibition across Warfarin, Omeprazole, and SSRIs.',
+    pin3: 'Gene-Drug Guard',
+    desc3: 'Identifies high-risk phenotypes without sending DNA tokens to cloud servers.',
+    chip1: 'CYP450 Metabolism',
+    chip2: 'Allergy Cross-Reactivity',
+    chip3: 'Enzymatic Safeguards'
+  },
+  stethoscope: {
+    img: '/static/assets/stethoscope_3d.jpg',
+    headline: 'Auscultation & bedside care <span class="italic font-serif text-teal-400 font-normal">grounded in real-time</span> safety.',
+    desc: 'Integrates physical bedside exam findings, heart sounds, and blood pressure hemodynamics into the sovereign contraindication engine for instant point-of-care verification.',
+    pin1: 'Bedside Auscultation',
+    desc1: 'Captures arrhythmia, murmurs, and blood pressure telemetry for holistic review.',
+    pin2: 'Arrhythmia & QTc',
+    desc2: 'Alerts on torsades de pointes and multi-drug QTc prolongation risks.',
+    pin3: 'Hemodynamic Barrier',
+    desc3: 'Prevents acute renal ischemia triggered by NSAID + Diuretic combinations.',
+    chip1: 'Blood Pressure 128/82',
+    chip2: 'Arrhythmia & QTc Watch',
+    chip3: 'Point-of-Care Clearance'
+  }
+};
+
+let medicalCycleList = ['heart', 'dna', 'stethoscope'];
+let currentMedicalIndex = 0;
+let isMedicalAutoPlaying = true;
+let medicalCycleInterval = null;
+
+function setMedicalVisualMode(mode, manual = false) {
+  if (manual) {
+    stopMedicalAutoCycle();
+  }
+  currentMedicalIndex = medicalCycleList.indexOf(mode);
+  medicalCycleList.forEach(m => {
+    const tab = document.getElementById(`tab-medical-${m}`);
+    if (tab) {
+      if (m === mode) {
+        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition flex items-center justify-center space-x-1.5 shadow-sm';
+      } else {
+        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5';
+      }
+    }
+  });
+
+  const data = MEDICAL_CAROUSEL_DATA[mode];
+  if (!data) return;
+
+  const img = document.getElementById('medical-stage-img');
+  if (img) {
+    img.style.opacity = '0.2';
+    img.style.transform = 'scale(0.97)';
+    setTimeout(() => {
+      img.src = data.img;
+      img.style.opacity = '1';
+      img.style.transform = 'scale(1)';
+    }, 180);
+  }
+
+  const h = document.getElementById('medical-headline');
+  if (h) h.innerHTML = data.headline;
+  const d = document.getElementById('medical-desc');
+  if (d) d.textContent = data.desc;
+
+  const p1Tag = document.getElementById('pin-1-tag');
+  if (p1Tag) p1Tag.textContent = data.pin1;
+  const p1Desc = document.getElementById('pin-1-desc');
+  if (p1Desc) p1Desc.textContent = data.desc1;
+
+  const p2Tag = document.getElementById('pin-2-tag');
+  if (p2Tag) p2Tag.textContent = data.pin2;
+  const p2Desc = document.getElementById('pin-2-desc');
+  if (p2Desc) p2Desc.textContent = data.desc2;
+
+  const p3Tag = document.getElementById('pin-3-tag');
+  if (p3Tag) p3Tag.textContent = data.pin3;
+  const p3Desc = document.getElementById('pin-3-desc');
+  if (p3Desc) p3Desc.textContent = data.desc3;
+
+  const d1 = document.getElementById('medical-domain-1');
+  if (d1) d1.textContent = data.chip1;
+  const d2 = document.getElementById('medical-domain-2');
+  if (d2) d2.textContent = data.chip2;
+  const d3 = document.getElementById('medical-domain-3');
+  if (d3) d3.textContent = data.chip3;
+}
+window.setMedicalVisualMode = setMedicalVisualMode;
+
+function startMedicalAutoCycle() {
+  if (medicalCycleInterval) clearInterval(medicalCycleInterval);
+  medicalCycleInterval = setInterval(() => {
+    if (!isMedicalAutoPlaying) return;
+    currentMedicalIndex = (currentMedicalIndex + 1) % medicalCycleList.length;
+    setMedicalVisualMode(medicalCycleList[currentMedicalIndex], false);
+  }, 6500);
+}
+
+function stopMedicalAutoCycle() {
+  isMedicalAutoPlaying = false;
+  const ind = document.getElementById('medical-cycle-indicator');
+  const txt = document.getElementById('medical-cycle-text');
+  if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+  if (txt) txt.textContent = '⏸️ Paused (Click to Play)';
+}
+
+function toggleMedicalAutoCycle() {
+  isMedicalAutoPlaying = !isMedicalAutoPlaying;
+  const ind = document.getElementById('medical-cycle-indicator');
+  const txt = document.getElementById('medical-cycle-text');
+  if (isMedicalAutoPlaying) {
+    if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping';
+    if (txt) txt.textContent = '▶️ Auto-Cycling (6.5s)';
+    startMedicalAutoCycle();
+  } else {
+    if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+    if (txt) txt.textContent = '⏸️ Paused (Click to Play)';
+  }
+}
+window.toggleMedicalAutoCycle = toggleMedicalAutoCycle;
+
+// Attach hover pause and initialize on window load
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('#clinical-3d-showcase .glass-heart-container');
+    if (container) {
+      container.addEventListener('mouseenter', () => { isMedicalAutoPlaying = false; });
+      container.addEventListener('mouseleave', () => { isMedicalAutoPlaying = true; });
+    }
+    startMedicalAutoCycle();
+  });
+}
+
+// ═══════════════════════════════════════════
 //  3D ANATOMICAL FOCUS TARGET CONTROLLER
 // ═══════════════════════════════════════════
 function setOrganFocus(target) {
@@ -4724,6 +4880,73 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
   }
 
   try {
+    // Attempt real-time token streaming first
+    try {
+      const streamRes = await fetch('/api/copilot/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          patient_id: patientId,
+          proposed_med: proposedMed
+        })
+      });
+
+      if (streamRes.ok && streamRes.body) {
+        const thinkingBubble = document.getElementById('tab-copilot-thinking-bubble');
+        if (thinkingBubble) thinkingBubble.remove();
+
+        const streamBubble = document.createElement('div');
+        streamBubble.className = 'p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
+        streamBubble.innerHTML = `
+          <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold mb-1">
+            <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot (Live SLM)</span>
+            <span class="text-emerald-400 font-mono text-[9px] bg-emerald-950/80 border border-emerald-500/40 px-1.5 py-0.2 rounded">STREAMING</span>
+          </div>
+        `;
+        const streamContent = document.createElement('div');
+        streamContent.className = 'text-slate-200 leading-normal font-sans whitespace-pre-wrap';
+        streamBubble.appendChild(streamContent);
+        chatStream.appendChild(streamBubble);
+
+        const reader = streamRes.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const raw = line.substring(6).trim();
+              if (raw === '[DONE]') break;
+              try {
+                const parsed = JSON.parse(raw);
+                if (parsed.token) {
+                  fullText += parsed.token;
+                  streamContent.textContent = fullText;
+                  chatStream.scrollTop = chatStream.scrollHeight;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+
+        if (fullText.trim().length > 0) {
+          tabCopilotHistory.push({ role: 'user', content: message });
+          tabCopilotHistory.push({ role: 'assistant', content: fullText });
+          if (tabCopilotHistory.length > 20) tabCopilotHistory = tabCopilotHistory.slice(-20);
+          return;
+        } else {
+          streamBubble.remove();
+        }
+      }
+    } catch (streamErr) {
+      console.warn('Real-time stream fallback to standard copilot:', streamErr);
+    }
+
     const res = await fetch('/api/copilot/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

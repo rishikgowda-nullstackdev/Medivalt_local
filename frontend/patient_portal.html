@@ -479,6 +479,9 @@
 
                 <!-- Action Controls -->
                 <div class="flex items-center space-x-2.5 flex-wrap">
+                    <button type="button" onclick="openEmergencyPassModal()" class="px-3.5 py-2 bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-400/40 text-amber-200 rounded-xl text-xs font-semibold transition flex items-center shadow-sm no-print cursor-pointer" title="Open Offline Sovereign Emergency Medical ID Wallet Pass">
+                        <i class="fa-solid fa-id-card-clip mr-1.5 text-amber-300"></i> Emergency ID
+                    </button>
                     <button onclick="window.print()" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white rounded-xl text-xs font-medium transition flex items-center shadow-sm no-print cursor-pointer">
                         <i class="fa-solid fa-print mr-2"></i> Print Health Pass
                     </button>
@@ -575,6 +578,76 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===================================================================== -->
+        <!-- SECTION 1: ATTENDING PHYSICIAN CARE INSTRUCTIONS & ADVICE INBOX        -->
+        <!-- ===================================================================== -->
+        <section class="bg-white p-6 sm:p-7 rounded-3xl shadow-sanctuary border border-teal-500/30 mb-6 relative overflow-hidden card-sanctuary-3d">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200/80 flex items-center justify-center text-lg shadow-sm">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg font-bold text-slate-900 font-heading">Doctor's Care Instructions &amp; Advice</h3>
+                            <span id="advice-unread-badge" class="hidden text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+                                0 Directives
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Direct instructions and safety guidance published by your attending clinical team.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="loadDoctorAdvice()" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition flex items-center cursor-pointer shadow-sm">
+                    <i class="fa-solid fa-rotate-right mr-1.5 text-teal-600"></i> Refresh Directives
+                </button>
+            </div>
+
+            <!-- Advice Directives Container -->
+            <div id="doctor-advice-list" class="space-y-3.5">
+                <div class="p-6 text-center text-slate-400 text-xs">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-2 text-teal-600"></i> Loading attending physician directives...
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- SECTION 2: DAILY MEDICATION SCHEDULE & ADHERENCE TRACKER               -->
+        <!-- ===================================================================== -->
+        <section class="bg-white p-6 sm:p-7 rounded-3xl shadow-sanctuary border border-slate-200/90 mb-6 card-sanctuary-3d">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center text-lg shadow-sm">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg font-bold text-slate-900 font-heading">Daily Medication Adherence Schedule</h3>
+                            <span id="adherence-streak-pill" class="text-[10.5px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🔥 1-Day Streak
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Track your daily morning, afternoon, and evening prescriptions with 1-click completion.</p>
+                    </div>
+                </div>
+
+                <!-- Daily Completion Gauge -->
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <div class="text-xs font-bold text-slate-700" id="adherence-pct-label">0% Completed</div>
+                        <div class="text-[10px] text-slate-400 font-mono" id="adherence-count-label">0 of 0 taken</div>
+                    </div>
+                    <div class="w-24 bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                        <div id="adherence-progress-bar" class="h-2.5 rounded-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slots Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="adherence-slots-grid">
+                <!-- Dynamically populated Morning, Afternoon, Evening cards -->
+            </div>
+        </section>
 
         <!-- ===================================================================== -->
         <!-- TWO-COLUMN WORKSPACE: Baseline History & AI Dietary Nutritionist       -->
@@ -839,6 +912,166 @@
         </div>
     </main>
 
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: SOVEREIGN OFFLINE EMERGENCY MEDICAL ID PASS                      -->
+    <!-- ========================================================================= -->
+    <div id="modal-emergency-pass" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden my-auto fade-in">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-rose-700 via-rose-800 to-slate-900 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white text-lg">
+                        <i class="fa-solid fa-id-card-clip"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold font-heading">Emergency Medical ID Pass</h3>
+                        <p class="text-[11px] text-rose-200">Offline Sovereign Health Card · First Responder Quick Access</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEmergencyPassModal()" class="text-white/80 hover:text-white text-lg p-1.5 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Pass Content (Printable ID Card) -->
+            <div id="emergency-pass-print-area" class="p-6 space-y-4">
+                <!-- Patient Identification Header Card -->
+                <div class="flex items-start justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-[10px] font-bold text-rose-600 uppercase tracking-widest font-mono">Patient Emergency Pass</span>
+                        <h4 id="pass-patient-name" class="text-xl font-extrabold text-slate-900 font-heading">John Doe</h4>
+                        <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1 font-mono">
+                            <span>ID: <strong id="pass-patient-id" class="text-slate-800 font-bold">PT-101</strong></span>
+                            <span>•</span>
+                            <span>DOB: <strong id="pass-patient-dob" class="text-slate-800">1978-04-12</strong></span>
+                        </div>
+                    </div>
+                    <!-- Vector QR Code -->
+                    <div class="text-center">
+                        <div id="pass-qr-container" class="w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center justify-center shadow-xs">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <rect x="0" y="0" width="100" height="100" fill="white" rx="6"/>
+                                <rect x="5" y="5" width="26" height="26" fill="#0f172a" rx="3"/>
+                                <rect x="9" y="9" width="18" height="18" fill="white"/>
+                                <rect x="13" y="13" width="10" height="10" fill="#e11d48"/>
+                                <rect x="69" y="5" width="26" height="26" fill="#0f172a" rx="3"/>
+                                <rect x="73" y="9" width="18" height="18" fill="white"/>
+                                <rect x="77" y="13" width="10" height="10" fill="#e11d48"/>
+                                <rect x="5" y="69" width="26" height="26" fill="#0f172a" rx="3"/>
+                                <rect x="9" y="73" width="18" height="18" fill="white"/>
+                                <rect x="13" y="77" width="10" height="10" fill="#e11d48"/>
+                                <rect x="36" y="8" width="6" height="6" fill="#0f172a"/>
+                                <rect x="48" y="8" width="8" height="8" fill="#e11d48"/>
+                                <rect x="36" y="20" width="8" height="8" fill="#0f172a"/>
+                                <rect x="50" y="22" width="6" height="6" fill="#0f172a"/>
+                                <rect x="36" y="36" width="28" height="28" fill="#0f172a" rx="3"/>
+                                <rect x="40" y="40" width="20" height="20" fill="white"/>
+                                <path d="M44 48 L48 53 L56 43" stroke="#e11d48" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="69" y="36" width="6" height="6" fill="#0f172a"/>
+                                <rect x="79" y="46" width="6" height="6" fill="#0f172a"/>
+                                <rect x="89" y="36" width="6" height="6" fill="#e11d48"/>
+                                <rect x="69" y="56" width="6" height="6" fill="#0f172a"/>
+                                <rect x="36" y="69" width="6" height="6" fill="#0f172a"/>
+                                <rect x="46" y="79" width="6" height="6" fill="#0f172a"/>
+                                <rect x="56" y="69" width="6" height="6" fill="#e11d48"/>
+                                <rect x="36" y="89" width="6" height="6" fill="#0f172a"/>
+                                <rect x="46" y="89" width="6" height="6" fill="#e11d48"/>
+                                <rect x="76" y="76" width="12" height="12" fill="#0f172a"/>
+                            </svg>
+                        </div>
+                        <span class="text-[9px] font-mono text-slate-400 mt-1 block">AIR-GAPPED QR</span>
+                    </div>
+                </div>
+
+                <!-- Critical Clinical Precaution Alert -->
+                <div class="p-3.5 bg-rose-50 border-l-4 border-rose-600 rounded-xl space-y-1">
+                    <div class="flex items-center space-x-1.5 text-rose-800 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>First Responder Critical Contraindication</span>
+                    </div>
+                    <p class="text-xs text-rose-950 font-semibold leading-relaxed" id="pass-precautions">
+                        Stage 3b Chronic Kidney Disease (CKD). DO NOT ADMINISTER NSAIDs (Ibuprofen, Naproxen, Ketorolac). Renal dosing required for all nephrotoxic drugs.
+                    </p>
+                </div>
+
+                <!-- Medical Conditions & Allergies Grid -->
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Diagnosed Conditions</span>
+                        <div id="pass-conditions-list" class="space-y-1 font-semibold text-slate-800 text-[11px]">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Drug Allergies</span>
+                        <div id="pass-allergies-list" class="space-y-1 font-semibold text-rose-700 text-[11px]">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Medications -->
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Active Prescription Regimen</span>
+                    <div id="pass-medications-list" class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-700 font-mono">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Attending Physician & Facility -->
+                <div class="pt-2 text-[10.5px] text-slate-500 flex items-center justify-between border-t border-slate-100">
+                    <span>Attending: <strong>Dr. Gregory House, MD</strong></span>
+                    <span>Princeton Plainsboro Hospital</span>
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between no-print">
+                <button type="button" onclick="closeEmergencyPassModal()" class="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer">
+                    Close Pass
+                </button>
+                <button type="button" onclick="window.print()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center cursor-pointer">
+                    <i class="fa-solid fa-print mr-1.5"></i> Print Wallet Pass
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: PLAIN-ENGLISH MEDICINE SAFETY LEAFLET                            -->
+    <!-- ========================================================================= -->
+    <div id="modal-medication-guide" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden my-auto fade-in">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-teal-700 to-emerald-800 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white text-lg">
+                        <i class="fa-solid fa-book-medical"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold font-heading" id="guide-modal-title">Lisinopril Safety Guide</h3>
+                        <p class="text-[11px] text-teal-100">Plain-English Patient Medication &amp; Safety Leaflet</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeMedicationGuideModal()" class="text-white/80 hover:text-white text-lg p-1.5 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Leaflet Content -->
+            <div id="guide-modal-body" class="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-xs">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+                <button type="button" onclick="closeMedicationGuideModal()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer">
+                    Got It, Close Guide
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Sovereign Vault Persistent Footer -->
     <footer id="footer" class="w-full max-w-6xl mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 px-4 no-print">
         <div class="flex items-center space-x-2">
@@ -878,6 +1111,13 @@
             const el = document.getElementById('error-message');
             if (el) el.classList.add('hidden');
         };
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
 
         // Tab Switching in Auth Gate
         function switchTab(tab) {
@@ -1055,7 +1295,11 @@
             try {
                 const profile = await apiCall('/api/patient/profile', { method: 'GET' });
                 renderProfile(profile);
-                await loadRecommendations();
+                await Promise.allSettled([
+                    loadRecommendations(),
+                    loadDoctorAdvice(),
+                    loadMedicationAdherence()
+                ]);
                 loadHabitsState();
                 updateHydrationUI();
             } catch(err) {
@@ -1140,7 +1384,7 @@
                     else if (lower.includes('albuterol')) purpose = 'Rescue bronchodilation for breathing comfort';
 
                     medCards.innerHTML += `
-                        <div class="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between text-xs hover:border-teal-400 transition">
+                        <div class="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between text-xs hover:border-teal-400 transition gap-2">
                             <div>
                                 <div class="flex items-center space-x-2">
                                     <span class="font-bold text-slate-900">${medName}</span>
@@ -1148,7 +1392,12 @@
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-0.5">${purpose}</p>
                             </div>
-                            <div>${timingChip}</div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                ${timingChip}
+                                <button type="button" onclick="openMedicationGuideModal('${escapeHtml(medName)}')" class="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[10.5px] font-semibold transition flex items-center cursor-pointer shadow-xs" title="View Patient Safety Guide & Missed Dose Rules">
+                                    <i class="fa-solid fa-book-medical mr-1 text-teal-600"></i> Guide
+                                </button>
+                            </div>
                         </div>`;
 
                     // Keep table in DOM for backward test compatibility
@@ -1503,9 +1752,367 @@
             sendCompanionMessage(promptText);
         }
 
+        // ═════════════════════════════════════════════════════════════════════
+        // ATTENDING PHYSICIAN CARE INSTRUCTIONS CONTROLLER
+        // ═════════════════════════════════════════════════════════════════════
+        let cachedDoctorAdvice = [];
+
+        async function loadDoctorAdvice() {
+            const listEl = document.getElementById('doctor-advice-list');
+            const badgeEl = document.getElementById('advice-unread-badge');
+            if (!listEl) return;
+
+            try {
+                const data = await apiCall('/api/patient/advice', { method: 'GET' });
+                cachedDoctorAdvice = data.advice || [];
+
+                const unreadCount = data.unread_count || 0;
+                if (badgeEl) {
+                    if (unreadCount > 0) {
+                        badgeEl.textContent = `${unreadCount} New Directives`;
+                        badgeEl.classList.remove('hidden');
+                    } else {
+                        badgeEl.classList.add('hidden');
+                    }
+                }
+
+                if (cachedDoctorAdvice.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="p-6 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            <i class="fa-solid fa-clipboard-check text-2xl text-teal-600 mb-2 block"></i>
+                            No specific directives from your attending physician yet. Your care plan is up to date!
+                        </div>
+                    `;
+                    return;
+                }
+
+                listEl.innerHTML = cachedDoctorAdvice.map(adv => {
+                    const isUnread = !adv.is_read;
+                    const sev = (adv.severity || 'ROUTINE').toUpperCase();
+                    let sevBadge = '<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-bold px-2 py-0.5 rounded-full">Routine</span>';
+                    let cardBorder = isUnread ? 'border-teal-400 bg-teal-50/20' : 'border-slate-200 bg-white';
+
+                    if (sev === 'CRITICAL') {
+                        sevBadge = '<span class="bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">Critical Warning</span>';
+                        cardBorder = isUnread ? 'border-rose-400 bg-rose-50/30' : 'border-rose-200 bg-white';
+                    } else if (sev === 'URGENT' || sev === 'WARNING') {
+                        sevBadge = '<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">Urgent</span>';
+                        cardBorder = isUnread ? 'border-amber-400 bg-amber-50/30' : 'border-amber-200 bg-white';
+                    }
+
+                    const cat = adv.category || 'GENERAL';
+                    let catIcon = 'fa-stethoscope';
+                    if (cat === 'MEDICATION') catIcon = 'fa-pills';
+                    else if (cat === 'DIETARY' || cat === 'DIET') catIcon = 'fa-apple-whole';
+                    else if (cat === 'WARNING_SIGNS') catIcon = 'fa-triangle-exclamation';
+                    else if (cat === 'FOLLOW_UP') catIcon = 'fa-calendar-check';
+
+                    const createdDate = adv.created_at ? new Date(adv.created_at).toLocaleString() : 'Recently';
+
+                    return `
+                        <div class="p-4 rounded-2xl border ${cardBorder} shadow-sm transition space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-7 h-7 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-xs">
+                                        <i class="fa-solid ${catIcon}"></i>
+                                    </span>
+                                    <div>
+                                        <span class="font-bold text-slate-900 text-xs font-heading">${escapeHtml(adv.practitioner_name || 'Attending Physician')}</span>
+                                        <span class="text-[10px] text-slate-500 font-mono block">${escapeHtml(adv.hospital_name || 'Hospital')} · ${createdDate}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    ${sevBadge}
+                                    <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase">${escapeHtml(cat)}</span>
+                                </div>
+                            </div>
+
+                            <!-- Clinical Text -->
+                            <div class="text-xs text-slate-800 leading-relaxed font-sans bg-slate-50/60 p-3 rounded-xl border border-slate-100">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">Clinical Note:</div>
+                                ${escapeHtml(adv.advice_text)}
+                            </div>
+
+                            <!-- Plain Language Summary from Offline SLM -->
+                            ${adv.plain_summary && adv.plain_summary !== adv.advice_text ? `
+                                <div class="p-3 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 text-xs text-slate-800 leading-relaxed space-y-1">
+                                    <div class="flex items-center space-x-1.5 text-teal-800 font-bold text-[11px]">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-teal-600"></i>
+                                        <span>Plain-Language Explanation:</span>
+                                    </div>
+                                    <p class="text-[11.5px] text-teal-950">${escapeHtml(adv.plain_summary)}</p>
+                                </div>
+                            ` : ''}
+
+                            <!-- Action Bar -->
+                            <div class="flex items-center justify-between pt-1 text-xs">
+                                ${isUnread ? `
+                                    <button type="button" onclick="markAdviceRead(${adv.id})" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold transition flex items-center shadow-xs cursor-pointer">
+                                        <i class="fa-solid fa-check mr-1.5"></i> Acknowledge Directive
+                                    </button>
+                                ` : `
+                                    <span class="text-[11px] text-emerald-700 font-medium flex items-center">
+                                        <i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i> Acknowledged
+                                    </span>
+                                `}
+                                <span class="text-[10px] text-slate-400 font-mono">Direct Sovereign Instruction</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error loading doctor advice:', err);
+                listEl.innerHTML = `<div class="p-4 text-xs text-rose-600 bg-rose-50 rounded-xl border border-rose-200">Unable to load doctor directives: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function markAdviceRead(adviceId) {
+            try {
+                await apiCall(`/api/patient/advice/${adviceId}/read`, { method: 'POST' });
+                await loadDoctorAdvice();
+            } catch (err) {
+                alert('Could not update directive status: ' + err.message);
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // DAILY MEDICATION ADHERENCE TRACKER
+        // ═════════════════════════════════════════════════════════════════════
+        async function loadMedicationAdherence() {
+            const gridEl = document.getElementById('adherence-slots-grid');
+            const streakEl = document.getElementById('adherence-streak-pill');
+            const pctEl = document.getElementById('adherence-pct-label');
+            const countEl = document.getElementById('adherence-count-label');
+            const barEl = document.getElementById('adherence-progress-bar');
+            if (!gridEl) return;
+
+            try {
+                const data = await apiCall('/api/patient/adherence', { method: 'GET' });
+                
+                if (streakEl) streakEl.textContent = `🔥 ${data.streak_days || 1}-Day Streak`;
+                if (pctEl) pctEl.textContent = `${data.completion_percentage || 0}% Completed`;
+                if (countEl) countEl.textContent = `${data.taken_count || 0} of ${data.total_doses || 0} taken`;
+                if (barEl) barEl.style.width = `${data.completion_percentage || 0}%`;
+
+                const slots = data.slots || [];
+                if (slots.length === 0) {
+                    gridEl.innerHTML = '<div class="col-span-3 text-center text-slate-400 text-xs py-4">No active prescriptions scheduled today.</div>';
+                    return;
+                }
+
+                gridEl.innerHTML = slots.map(slot => {
+                    let slotIcon = 'fa-sun text-amber-500';
+                    let slotBg = 'bg-amber-50/40 border-amber-200/80';
+                    if (slot.slot === 'MORNING') {
+                        slotIcon = 'fa-cloud-sun text-amber-500';
+                    } else if (slot.slot === 'AFTERNOON') {
+                        slotIcon = 'fa-sun text-blue-500';
+                        slotBg = 'bg-blue-50/40 border-blue-200/80';
+                    } else if (slot.slot === 'EVENING') {
+                        slotIcon = 'fa-moon text-indigo-500';
+                        slotBg = 'bg-indigo-50/40 border-indigo-200/80';
+                    }
+
+                    const medsHtml = (slot.medications || []).map(med => {
+                        const isTaken = !!med.taken;
+                        const toggleVal = !isTaken;
+                        return `
+                            <div class="p-2.5 rounded-xl ${isTaken ? 'bg-emerald-50 border border-emerald-200' : 'bg-white border border-slate-200/80'} flex items-center justify-between text-xs transition shadow-xs">
+                                <div>
+                                    <div class="font-bold ${isTaken ? 'text-emerald-950 line-through opacity-70' : 'text-slate-800'}">${escapeHtml(med.medication_name)}</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">${escapeHtml(med.dosage || '')}</div>
+                                </div>
+                                <button type="button" onclick="toggleMedAdherence('${slot.slot}', '${escapeHtml(med.medication_name)}', ${toggleVal})" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center cursor-pointer ${isTaken ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 hover:bg-teal-50 text-slate-700 border border-slate-300 hover:border-teal-500'}">
+                                    ${isTaken ? '<i class="fa-solid fa-check mr-1"></i> Taken' : '<i class="fa-regular fa-circle mr-1"></i> Mark'}
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="p-4 rounded-2xl border ${slotBg} space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid ${slotIcon}"></i>
+                                    <h4 class="font-bold text-slate-900 text-xs font-heading">${escapeHtml(slot.display_name)}</h4>
+                                </div>
+                                <span class="text-[10.5px] font-mono font-bold text-slate-500">${escapeHtml(slot.target_time)}</span>
+                            </div>
+                            <div class="space-y-2">
+                                ${medsHtml || '<div class="text-[11px] text-slate-400 italic">No doses scheduled</div>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error loading medication adherence:', err);
+            }
+        }
+
+        async function toggleMedAdherence(slot, medName, isTaken) {
+            try {
+                await apiCall('/api/patient/adherence/log', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        time_slot: slot,
+                        medication_name: medName,
+                        taken: isTaken
+                    })
+                });
+                await loadMedicationAdherence();
+            } catch (err) {
+                alert('Could not update adherence status: ' + err.message);
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // PLAIN-ENGLISH MEDICINE SAFETY LEAFLET MODAL
+        // ═════════════════════════════════════════════
+        let cachedMedGuides = null;
+
+        async function openMedicationGuideModal(medName) {
+            const modal = document.getElementById('modal-medication-guide');
+            const titleEl = document.getElementById('guide-modal-title');
+            const bodyEl = document.getElementById('guide-modal-body');
+            if (!modal) return;
+
+            if (titleEl) titleEl.textContent = `${medName} Patient Safety Guide`;
+            if (bodyEl) bodyEl.innerHTML = '<div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-teal-600 mr-2"></i> Loading safety leaflet...</div>';
+            modal.classList.remove('hidden');
+
+            try {
+                if (!cachedMedGuides) {
+                    const data = await apiCall('/api/patient/medication-guides', { method: 'GET' });
+                    cachedMedGuides = data.guides || {};
+                }
+
+                // Match case-insensitively
+                const cleanName = medName.toLowerCase().trim();
+                let matchedKey = Object.keys(cachedMedGuides).find(k => cleanName.includes(k.toLowerCase()) || k.toLowerCase().includes(cleanName));
+                const guide = matchedKey ? cachedMedGuides[matchedKey] : null;
+
+                if (guide) {
+                    bodyEl.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="p-3.5 bg-teal-50 border border-teal-200 rounded-2xl">
+                                <div class="font-bold text-teal-950 text-xs flex items-center mb-1">
+                                    <i class="fa-solid fa-bullseye text-teal-600 mr-2"></i> Why You Are Taking This:
+                                </div>
+                                <p class="text-slate-700 leading-relaxed">${escapeHtml(guide.purpose)}</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                    <div class="font-bold text-slate-900 text-xs flex items-center mb-1">
+                                        <i class="fa-solid fa-clock text-amber-600 mr-2"></i> When &amp; How to Take:
+                                    </div>
+                                    <p class="text-slate-600 leading-relaxed text-[11px]">${escapeHtml(guide.how_to_take)}</p>
+                                </div>
+                                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                    <div class="font-bold text-slate-900 text-xs flex items-center mb-1">
+                                        <i class="fa-solid fa-rotate-left text-blue-600 mr-2"></i> If You Miss a Dose:
+                                    </div>
+                                    <p class="text-slate-600 leading-relaxed text-[11px]">${escapeHtml(guide.missed_dose)}</p>
+                                </div>
+                            </div>
+
+                            <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl">
+                                <div class="font-bold text-rose-950 text-xs flex items-center mb-1">
+                                    <i class="fa-solid fa-triangle-exclamation text-rose-600 mr-2"></i> Foods &amp; Over-The-Counter Avoidances:
+                                </div>
+                                <p class="text-rose-900 leading-relaxed text-[11px]">${escapeHtml(guide.avoid_with)}</p>
+                            </div>
+
+                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                <div class="font-bold text-slate-900 text-xs flex items-center mb-1">
+                                    <i class="fa-solid fa-circle-exclamation text-purple-600 mr-2"></i> Side Effects to Watch:
+                                </div>
+                                <p class="text-slate-600 leading-relaxed text-[11px]">${escapeHtml(guide.side_effects)}</p>
+                            </div>
+
+                            <div class="p-2.5 rounded-xl bg-teal-50/50 text-[10px] text-teal-800 font-mono text-center">
+                                🔒 Sovereign Offline Leaflet · No Cloud Egress · Clinical Evidence Verified
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    bodyEl.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900">
+                                <h4 class="font-bold mb-1">General Safety Information: ${escapeHtml(medName)}</h4>
+                                <p class="text-xs leading-relaxed">Always take this medication exactly as directed by your physician. Take with water and do not change or skip doses without consulting your doctor.</p>
+                            </div>
+                            <div class="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 text-xs">
+                                <strong>Safety Warning:</strong> Remember to never combine with over-the-counter NSAIDs (Ibuprofen, Aleve, Advil) without nephrologist clearance.
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                bodyEl.innerHTML = `<div class="p-4 text-xs text-rose-600">Failed to load guide: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function closeMedicationGuideModal() {
+            const modal = document.getElementById('modal-medication-guide');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // SOVEREIGN EMERGENCY ID CARD PASS MODAL
+        // ═════════════════════════════════════════════
+        function openEmergencyPassModal() {
+            const modal = document.getElementById('modal-emergency-pass');
+            if (!modal) return;
+
+            if (currentPatientProfile) {
+                const nameEl = document.getElementById('pass-patient-name');
+                const idEl = document.getElementById('pass-patient-id');
+                const dobEl = document.getElementById('pass-patient-dob');
+                const condEl = document.getElementById('pass-conditions-list');
+                const algEl = document.getElementById('pass-allergies-list');
+                const medEl = document.getElementById('pass-medications-list');
+
+                if (nameEl) nameEl.textContent = currentPatientProfile.full_name || 'John Doe';
+                if (idEl) idEl.textContent = currentPatientProfile.patient_id || 'PT-101';
+                if (dobEl) dobEl.textContent = currentPatientProfile.date_of_birth || '1978-04-12';
+
+                if (condEl) {
+                    condEl.innerHTML = (currentPatientProfile.conditions || []).map(c => `<div>• ${escapeHtml(c.condition_name || c.name || c)}</div>`).join('') || '<div>• None listed</div>';
+                }
+                if (algEl) {
+                    algEl.innerHTML = (currentPatientProfile.allergies || []).map(a => `<div>⚠️ ${escapeHtml(a.allergen || a)} (${escapeHtml(a.reaction || 'Reaction')})</div>`).join('') || '<div>None reported (NKDA)</div>';
+                }
+                if (medEl) {
+                    medEl.innerHTML = (currentPatientProfile.medications || []).map(m => `<div>• ${escapeHtml(m.medication_name || m.name)} <span class="text-slate-400">(${escapeHtml(m.dosage || '')})</span></div>`).join('') || '<div>None active</div>';
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeEmergencyPassModal() {
+            const modal = document.getElementById('modal-emergency-pass');
+            if (modal) modal.classList.add('hidden');
+        }
+
         // Initialize on Load
         document.addEventListener('DOMContentLoaded', () => {
             initPortalTheme();
+
+            // Pre-fill patient id or login if query param present (e.g. /portal?pid=PT-101)
+            const urlParams = new URLSearchParams(window.location.search);
+            const pidParam = urlParams.get('pid') || urlParams.get('patient_id');
+            if (pidParam) {
+                const regPidInput = document.getElementById('reg-patient-id');
+                if (regPidInput) regPidInput.value = pidParam;
+                if (pidParam.toUpperCase() === 'PT-101') {
+                    fillDemoCredentials();
+                }
+            }
+
             if (token) {
                 loadDashboard();
             } else {

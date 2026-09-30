@@ -52,13 +52,16 @@ def main():
     print("=" * 68)
     print()
 
-    print("[1/3] Initializing local database...")
+    print("[1/3] Initializing local database & pre-warming SLM weights...")
     try:
         from backend.main import init_db
         init_db()
         print(" SQLite database verified and ready.")
+        from backend.ai_bridge import warm_up_local_slm_background
+        warm_up_local_slm_background()
+        print(" Local SLM background pre-warming initialized in RAM.")
     except Exception as e:
-        print(f" Database init status: {e}")
+        print(f" Database/SLM init status: {e}")
 
     print()
     print("[2/3] Checking workstation socket availability...")
