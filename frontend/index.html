@@ -1356,13 +1356,18 @@
     .card-3d-tilt:hover::after {
       --sheen-opacity: 1;
     }
-    /* ─── 3D MEDICAL VISUAL EXPERIENCE (GLASS HEART & FLOATING CAPSULES) ─── */
     @keyframes floatHeartPhysics {
       0%, 100% {
-        transform: translateY(0px) rotate(0deg) scale(1);
+        transform: translateY(0px) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-5px) rotate(0.6deg);
       }
       50% {
-        transform: translateY(-8px) rotate(1deg) scale(1.015);
+        transform: translateY(-9px) rotate(-0.4deg);
+      }
+      75% {
+        transform: translateY(-4px) rotate(0.3deg);
       }
     }
 
@@ -1371,15 +1376,15 @@
         box-shadow: 0 0 25px rgba(45, 212, 191, 0.2), inset 0 0 20px rgba(45, 212, 191, 0.1);
         border-color: rgba(45, 212, 191, 0.3);
       }
-      15% {
-        box-shadow: 0 0 45px rgba(45, 212, 191, 0.4), inset 0 0 30px rgba(45, 212, 191, 0.25);
-        border-color: rgba(45, 212, 191, 0.6);
+      20% {
+        box-shadow: 0 0 45px rgba(45, 212, 191, 0.42), inset 0 0 30px rgba(45, 212, 191, 0.25);
+        border-color: rgba(45, 212, 191, 0.65);
       }
-      30% {
+      40% {
         box-shadow: 0 0 25px rgba(45, 212, 191, 0.2), inset 0 0 20px rgba(45, 212, 191, 0.1);
         border-color: rgba(45, 212, 191, 0.3);
       }
-      45% {
+      60% {
         box-shadow: 0 0 38px rgba(45, 212, 191, 0.35), inset 0 0 25px rgba(45, 212, 191, 0.2);
         border-color: rgba(45, 212, 191, 0.5);
       }
@@ -1403,12 +1408,20 @@
 
     .glass-heart-container {
       position: relative;
-      animation: floatHeartPhysics 6s ease-in-out infinite;
+      animation: floatHeartPhysics 7.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
       transform-origin: center center;
+      perspective: 1000px;
+      will-change: transform;
     }
 
     .glass-heart-aura {
-      animation: cardiacPulseAura 4s ease-in-out infinite;
+      animation: cardiacPulseAura 4.5s ease-in-out infinite;
+      will-change: box-shadow, border-color;
+    }
+
+    .medical-slide {
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
+      will-change: opacity, transform, filter;
     }
 
     .pill-drift-1 {
@@ -2422,16 +2435,21 @@
           </div>
 
           <!-- 3D Medical Modality Switcher Tabs -->
-          <div class="flex items-center space-x-1.5 bg-[var(--bg-input-well)] p-1 rounded-xl border border-[var(--border-main)] flex-wrap text-xs font-semibold">
+          <div class="flex items-center space-x-1.5 bg-[var(--bg-input-well)] p-1 rounded-xl border border-[var(--border-main)] flex-wrap text-xs font-semibold relative">
             <button type="button" onclick="setMedicalVisualMode('heart', true)" id="tab-medical-heart" class="flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition flex items-center justify-center space-x-1.5 shadow-sm">
-              <span>🫀 Crystal Heart</span>
+              <span>🫀 Cardio-Auscultation</span>
             </button>
             <button type="button" onclick="setMedicalVisualMode('dna', true)" id="tab-medical-dna" class="flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5">
-              <span>🧬 DNA Helix</span>
+              <span>🧬 Molecular DNA Plexus</span>
             </button>
             <button type="button" onclick="setMedicalVisualMode('stethoscope', true)" id="tab-medical-stethoscope" class="flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5">
-              <span>🩺 Stethoscope</span>
+              <span>🩺 Clinical Instruments</span>
             </button>
+          </div>
+
+          <!-- Auto-Cycle Smooth Progress Bar -->
+          <div class="w-full h-1 bg-slate-800/60 rounded-full overflow-hidden mt-1">
+            <div id="medical-cycle-progress" class="h-full bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-400 rounded-full transition-all duration-[6500ms] ease-linear" style="width: 0%;"></div>
           </div>
 
           <!-- Dynamic Editorial Headline & Subtext -->
@@ -2506,13 +2524,40 @@
             </div>
 
             <!-- Dynamic 3D Medical Stage Render (Cross-fades smoothly on cycle) -->
-            <img 
-              id="medical-stage-img"
-              src="/static/assets/glass_heart_3d.jpg" 
-              alt="3D Medical Visual Experience" 
-              class="glass-heart-img w-full h-full object-contain rounded-2xl select-none transition-all duration-300"
-              loading="eager"
-            />
+            <div class="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl">
+              <!-- Slide 1: Cardio-Auscultation (Heart & Stethoscope) -->
+              <div id="slide-heart" class="medical-slide absolute inset-0 flex items-center justify-center opacity-100 scale-100 z-10 pointer-events-auto">
+                <img 
+                  src="/static/assets/heart_stethoscope_clinical.jpg" 
+                  alt="Cardio-Auscultation Anatomy with Stethoscope" 
+                  class="glass-heart-img w-full h-full object-contain rounded-2xl select-none"
+                  loading="eager"
+                />
+              </div>
+
+              <!-- Slide 2: Molecular DNA Plexus -->
+              <div id="slide-dna" class="medical-slide absolute inset-0 flex items-center justify-center opacity-0 scale-95 pointer-events-none z-0">
+                <img 
+                  src="/static/assets/dna_helix_plexus.jpg" 
+                  alt="3D Molecular DNA Plexus Helix" 
+                  class="glass-heart-img w-full h-full object-contain rounded-2xl select-none"
+                  loading="eager"
+                />
+              </div>
+
+              <!-- Slide 3: Clinical Diagnostic Instruments Suite -->
+              <div id="slide-stethoscope" class="medical-slide absolute inset-0 flex items-center justify-center opacity-0 scale-95 pointer-events-none z-0">
+                <img 
+                  src="/static/assets/clinical_instruments_diagnostic.jpg" 
+                  alt="Clinical Diagnostic Instruments Suite" 
+                  class="glass-heart-img w-full h-full object-contain rounded-2xl select-none"
+                  loading="eager"
+                />
+              </div>
+
+              <!-- Invisible fallback for legacy code -->
+              <img id="medical-stage-img" src="/static/assets/heart_stethoscope_clinical.jpg" alt="" class="hidden" />
+            </div>
 
             <!-- 📍 Dynamic Pin 1: (Top Left) -->
             <div class="clinical-callout-pin top-6 -left-3 sm:-left-6 group cursor-pointer" title="Inspect clinical telemetry">
@@ -2703,6 +2748,24 @@
             <button type="button" class="test-chip test-chip-safe" onclick="setMultiPrescriptionPreset('Safe Complex Regimen','Tab Amoxicillin 500mg PO TID\nTab Paracetamol 650mg PO TID\nCap Omeprazole 20mg PO OD ac')">
               <i class="fa-solid fa-circle-check"></i> Safe 3-Drug
             </button>
+          </div>
+
+          <!-- Sovereign AI Execution Mode Switcher -->
+          <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs my-1">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+              <span class="text-slate-300 font-semibold text-[11px]">AI Reasoning Layer:</span>
+            </div>
+            <div class="flex items-center space-x-1.5 font-mono text-[10px]">
+              <label class="cursor-pointer flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700">
+                <input type="radio" name="ai-mode-toggle" id="ai-mode-deterministic" value="deterministic" onchange="updateReviewButtonText()" class="mr-1 accent-teal-500">
+                <span>⚡ Instant CDSS (&lt;10ms)</span>
+              </label>
+              <label class="cursor-pointer flex items-center space-x-1 px-2.5 py-1 rounded bg-teal-950/80 text-teal-300 border border-teal-500/40">
+                <input type="radio" name="ai-mode-toggle" id="ai-mode-hybrid" value="hybrid" checked onchange="updateReviewButtonText()" class="mr-1 accent-teal-500">
+                <span>🤖 Hybrid SLM (llama2)</span>
+              </label>
+            </div>
           </div>
 
           <!-- Primary CTA Button -->

@@ -183,26 +183,27 @@ function toggleHologramAccordion() {
 window.toggleHologramAccordion = toggleHologramAccordion;
 
 // ═══════════════════════════════════════════
-//  3D MEDICAL VISUAL CAROUSEL CONTROLLER (Heart | DNA Helix | Stethoscope)
+// ═══════════════════════════════════════════
+//  3D MEDICAL VISUAL CAROUSEL CONTROLLER (Cardio-Auscultation | DNA Plexus | Clinical Instruments)
 // ═══════════════════════════════════════════
 const MEDICAL_CAROUSEL_DATA = {
   heart: {
-    img: '/static/assets/glass_heart_3d.jpg',
-    headline: 'Precision care <span class="italic font-serif text-teal-400 font-normal">for every patient</span> in one sovereign station.',
+    img: '/static/assets/heart_stethoscope_clinical.jpg',
+    headline: 'Precision auscultation & cardio-renal care <span class="italic font-serif text-teal-400 font-normal">in one sovereign station</span>.',
     desc: 'From acute inpatient reviews to chronic outpatient regimens, MediVault cross-checks diagnostic histories, Beers Criteria, and quantitative biomarkers against pairwise contraindications entirely on offline silicon.',
-    pin1: 'Fast Diagnosis',
-    desc1: 'SQLite compiled queries execute in <12ms with zero cold start.',
-    pin2: 'Diagnosis Accuracy',
-    desc2: 'Contraindications verified against RxNorm, FDA black boxes & Beers Criteria.',
-    pin3: 'Cardio-Renal Safeguard',
-    desc3: 'Active eGFR 38 mL/min triggers automatic NSAID titration block.',
+    pin1: 'Cardio-Renal Safeguard',
+    desc1: 'Active eGFR 38 mL/min triggers automatic NSAID titration block.',
+    pin2: 'Acoustic Auscultation',
+    desc2: 'Monitors hemodynamics, murmurs, and blood pressure contraindications.',
+    pin3: 'Fast Diagnosis',
+    desc3: 'SQLite compiled queries execute in <12ms with zero cold start.',
     chip1: 'Stage 3b CKD (eGFR 38)',
     chip2: 'Triple Whammy Prevention',
     chip3: 'Beers Criteria 2023'
   },
   dna: {
-    img: '/static/assets/dna_helix_3d.jpg',
-    headline: 'Pharmacogenomic intelligence <span class="italic font-serif text-cyan-400 font-normal">encoded in crystal</span> on device.',
+    img: '/static/assets/dna_helix_plexus.jpg',
+    headline: 'Pharmacogenomic molecular intelligence <span class="italic font-serif text-cyan-400 font-normal">encoded on local silicon</span>.',
     desc: 'Deterministic molecular cross-checking identifies genetic contraindications, CYP2C9/CYP2D6 metabolic vulnerabilities, and hereditary adverse drug reactions with zero cloud exposure.',
     pin1: 'Genomic Profiling',
     desc1: 'Analyzes patient enzymatic pathways to prevent toxic drug accumulation.',
@@ -215,12 +216,12 @@ const MEDICAL_CAROUSEL_DATA = {
     chip3: 'Enzymatic Safeguards'
   },
   stethoscope: {
-    img: '/static/assets/stethoscope_3d.jpg',
-    headline: 'Auscultation & bedside care <span class="italic font-serif text-teal-400 font-normal">grounded in real-time</span> safety.',
-    desc: 'Integrates physical bedside exam findings, heart sounds, and blood pressure hemodynamics into the sovereign contraindication engine for instant point-of-care verification.',
-    pin1: 'Bedside Auscultation',
-    desc1: 'Captures arrhythmia, murmurs, and blood pressure telemetry for holistic review.',
-    pin2: 'Arrhythmia & QTc',
+    img: '/static/assets/clinical_instruments_diagnostic.jpg',
+    headline: 'Clinical diagnostic instrumentation <span class="italic font-serif text-teal-400 font-normal">grounded in real-time safety</span>.',
+    desc: 'Integrates physical bedside exam findings, acoustic telemetry, and precision therapeutic markers into the sovereign contraindication engine for instant point-of-care clearance.',
+    pin1: 'Bedside Clearance',
+    desc1: 'Instant evaluation of acute contraindications at patient bedside.',
+    pin2: 'Arrhythmia & QTc Watch',
     desc2: 'Alerts on torsades de pointes and multi-drug QTc prolongation risks.',
     pin3: 'Hemodynamic Barrier',
     desc3: 'Prevents acute renal ischemia triggered by NSAID + Diuretic combinations.',
@@ -235,18 +236,53 @@ let currentMedicalIndex = 0;
 let isMedicalAutoPlaying = true;
 let medicalCycleInterval = null;
 
+function resetCycleProgressBar() {
+  const bar = document.getElementById('medical-cycle-progress');
+  if (!bar) return;
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  if (isMedicalAutoPlaying) {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        bar.style.transition = 'width 6.5s linear';
+        bar.style.width = '100%';
+      }, 40);
+    });
+  }
+}
+
 function setMedicalVisualMode(mode, manual = false) {
   if (manual) {
     stopMedicalAutoCycle();
   }
   currentMedicalIndex = medicalCycleList.indexOf(mode);
+  
+  // 1. Update Tabs with smooth transition
   medicalCycleList.forEach(m => {
     const tab = document.getElementById(`tab-medical-${m}`);
     if (tab) {
       if (m === mode) {
-        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition flex items-center justify-center space-x-1.5 shadow-sm';
+        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-sm';
       } else {
-        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition flex items-center justify-center space-x-1.5';
+        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition-all duration-300 flex items-center justify-center space-x-1.5';
+      }
+    }
+
+    // 2. Cross-fade slide layers with hardware-accelerated transforms
+    const slide = document.getElementById(`slide-${m}`);
+    if (slide) {
+      if (m === mode) {
+        slide.style.opacity = '1';
+        slide.style.transform = 'scale(1) translateY(0)';
+        slide.style.filter = 'blur(0px)';
+        slide.style.pointerEvents = 'auto';
+        slide.style.zIndex = '10';
+      } else {
+        slide.style.opacity = '0';
+        slide.style.transform = 'scale(0.96) translateY(4px)';
+        slide.style.filter = 'blur(1px)';
+        slide.style.pointerEvents = 'none';
+        slide.style.zIndex = '0';
       }
     }
   });
@@ -254,22 +290,36 @@ function setMedicalVisualMode(mode, manual = false) {
   const data = MEDICAL_CAROUSEL_DATA[mode];
   if (!data) return;
 
-  const img = document.getElementById('medical-stage-img');
-  if (img) {
-    img.style.opacity = '0.2';
-    img.style.transform = 'scale(0.97)';
+  // Fallback image update
+  const legacyImg = document.getElementById('medical-stage-img');
+  if (legacyImg) legacyImg.src = data.img;
+
+  // 3. Smooth Text Transitions
+  const h = document.getElementById('medical-headline');
+  if (h) {
+    h.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+    h.style.opacity = '0.35';
+    h.style.transform = 'translateY(-2px)';
     setTimeout(() => {
-      img.src = data.img;
-      img.style.opacity = '1';
-      img.style.transform = 'scale(1)';
-    }, 180);
+      h.innerHTML = data.headline;
+      h.style.opacity = '1';
+      h.style.transform = 'translateY(0)';
+    }, 140);
   }
 
-  const h = document.getElementById('medical-headline');
-  if (h) h.innerHTML = data.headline;
   const d = document.getElementById('medical-desc');
-  if (d) d.textContent = data.desc;
+  if (d) {
+    d.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+    d.style.opacity = '0.35';
+    d.style.transform = 'translateY(-2px)';
+    setTimeout(() => {
+      d.textContent = data.desc;
+      d.style.opacity = '1';
+      d.style.transform = 'translateY(0)';
+    }, 140);
+  }
 
+  // 4. Update dynamic callout pins
   const p1Tag = document.getElementById('pin-1-tag');
   if (p1Tag) p1Tag.textContent = data.pin1;
   const p1Desc = document.getElementById('pin-1-desc');
@@ -291,11 +341,15 @@ function setMedicalVisualMode(mode, manual = false) {
   if (d2) d2.textContent = data.chip2;
   const d3 = document.getElementById('medical-domain-3');
   if (d3) d3.textContent = data.chip3;
+
+  // 5. Restart smooth progress bar
+  resetCycleProgressBar();
 }
 window.setMedicalVisualMode = setMedicalVisualMode;
 
 function startMedicalAutoCycle() {
   if (medicalCycleInterval) clearInterval(medicalCycleInterval);
+  resetCycleProgressBar();
   medicalCycleInterval = setInterval(() => {
     if (!isMedicalAutoPlaying) return;
     currentMedicalIndex = (currentMedicalIndex + 1) % medicalCycleList.length;
@@ -307,8 +361,10 @@ function stopMedicalAutoCycle() {
   isMedicalAutoPlaying = false;
   const ind = document.getElementById('medical-cycle-indicator');
   const txt = document.getElementById('medical-cycle-text');
+  const bar = document.getElementById('medical-cycle-progress');
   if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
   if (txt) txt.textContent = '⏸️ Paused (Click to Play)';
+  if (bar) bar.style.transition = 'none';
 }
 
 function toggleMedicalAutoCycle() {
@@ -320,19 +376,25 @@ function toggleMedicalAutoCycle() {
     if (txt) txt.textContent = '▶️ Auto-Cycling (6.5s)';
     startMedicalAutoCycle();
   } else {
-    if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
-    if (txt) txt.textContent = '⏸️ Paused (Click to Play)';
+    stopMedicalAutoCycle();
   }
 }
 window.toggleMedicalAutoCycle = toggleMedicalAutoCycle;
 
-// Attach hover pause and initialize on window load
+// Attach hover pause and interactive 3D parallax tilt on window load
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('#clinical-3d-showcase .glass-heart-container');
     if (container) {
-      container.addEventListener('mouseenter', () => { isMedicalAutoPlaying = false; });
-      container.addEventListener('mouseleave', () => { isMedicalAutoPlaying = true; });
+      container.addEventListener('mouseenter', () => { 
+        isMedicalAutoPlaying = false; 
+        const bar = document.getElementById('medical-cycle-progress');
+        if (bar) bar.style.transition = 'none';
+      });
+      container.addEventListener('mouseleave', () => { 
+        isMedicalAutoPlaying = true; 
+        startMedicalAutoCycle(); 
+      });
     }
     startMedicalAutoCycle();
   });
@@ -1795,6 +1857,18 @@ function setProposedMed(drug, dose) {
   showToast('Preset Selected', `Proposed prescription set to ${drug} (${dose}).`, 'info', 2000);
 }
 
+function updateReviewButtonText() {
+  const btn = document.getElementById("btn-run-review");
+  const detRadio = document.getElementById("ai-mode-deterministic");
+  if (!btn) return;
+  if (detRadio && detRadio.checked) {
+    btn.innerHTML = `<i class="fa-solid fa-bolt text-amber-400"></i><span>RUN INSTANT SOVEREIGN CDSS</span><span class="text-[10px] opacity-75 font-mono ml-1">[&lt;10ms]</span>`;
+  } else {
+    btn.innerHTML = `<i class="fa-solid fa-stethoscope"></i><span>RUN OFFLINE CONTRAINDICATION REVIEW</span><span class="text-[10px] opacity-75 font-mono ml-1">[Ctrl+Enter]</span>`;
+  }
+}
+window.updateReviewButtonText = updateReviewButtonText;
+
 async function runSafetyCheck() {
   let payload = {};
 
@@ -1834,6 +1908,9 @@ async function runSafetyCheck() {
     } else {
       payload.raw_notes_override = (document.getElementById("raw-note-input") || {}).value;
     }
+
+    const detRadio = document.getElementById("ai-mode-deterministic");
+    payload.enable_slm = !(detRadio && detRadio.checked);
 
     const res = await fetch("/api/review", {
       method: "POST",

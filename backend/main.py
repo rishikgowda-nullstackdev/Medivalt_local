@@ -187,6 +187,7 @@ class ReviewRequest(BaseModel):
     prescription_text: Optional[str] = None
     dosage: Optional[str] = "Standard dose"
     raw_notes_override: Optional[str] = None
+    enable_slm: Optional[bool] = True
 
 
 class RedactRequest(BaseModel):
@@ -962,7 +963,8 @@ def review_prescription(req: ReviewRequest, request: Request):
                 proposed_med=validated_med,
                 patient_id=req.patient_id if not req.raw_notes_override else None,
                 raw_notes=req.raw_notes_override,
-                practitioner=current_doctor
+                practitioner=current_doctor,
+                enable_slm=req.enable_slm if req.enable_slm is not None else True
             )
             result["timestamp"] = datetime.now(timezone.utc).isoformat()
             return result

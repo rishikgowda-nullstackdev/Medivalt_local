@@ -109,14 +109,18 @@
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; }
         }
 
-        /* ─── 3D MEDICAL VISUAL EXPERIENCE (GLASS HEART & WELLNESS PINS) ─── */
+        /* ─── 3D MEDICAL VISUAL EXPERIENCE (ORGANIC PHYSICS & CARDIAC PULSE) ─── */
         @keyframes floatHeartPhysics {
-            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
-            50% { transform: translateY(-7px) rotate(1deg) scale(1.015); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-4px) rotate(0.5deg); }
+            50% { transform: translateY(-8px) rotate(-0.3deg); }
+            75% { transform: translateY(-3px) rotate(0.2deg); }
         }
         @keyframes cardiacPulseAura {
             0%, 100% { box-shadow: 0 0 25px rgba(20, 184, 166, 0.2), inset 0 0 15px rgba(20, 184, 166, 0.1); border-color: rgba(20, 184, 166, 0.3); }
-            50% { box-shadow: 0 0 45px rgba(20, 184, 166, 0.4), inset 0 0 25px rgba(20, 184, 166, 0.25); border-color: rgba(20, 184, 166, 0.6); }
+            20% { box-shadow: 0 0 45px rgba(20, 184, 166, 0.4), inset 0 0 25px rgba(20, 184, 166, 0.25); border-color: rgba(20, 184, 166, 0.6); }
+            40% { box-shadow: 0 0 25px rgba(20, 184, 166, 0.2), inset 0 0 15px rgba(20, 184, 166, 0.1); border-color: rgba(20, 184, 166, 0.3); }
+            60% { box-shadow: 0 0 38px rgba(20, 184, 166, 0.35), inset 0 0 20px rgba(20, 184, 166, 0.2); border-color: rgba(20, 184, 166, 0.5); }
         }
         @keyframes floatPillDrift {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -129,10 +133,12 @@
         }
         .portal-glass-heart-container {
             position: relative;
-            animation: floatHeartPhysics 6s ease-in-out infinite;
+            animation: floatHeartPhysics 7.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+            will-change: transform;
         }
         .portal-glass-heart-aura {
-            animation: cardiacPulseAura 4s ease-in-out infinite;
+            animation: cardiacPulseAura 4.5s ease-in-out infinite;
+            will-change: box-shadow, border-color;
         }
         .portal-pill-drift {
             animation: floatPillDrift 7s ease-in-out infinite;
@@ -466,7 +472,7 @@
                 <div class="hidden lg:flex items-center space-x-3 bg-white/10 border border-white/20 rounded-2xl p-2 backdrop-blur-md shadow-inner">
                     <div class="portal-glass-heart-container relative w-14 h-14 flex items-center justify-center">
                         <div class="portal-glass-heart-aura absolute inset-1 rounded-full border border-teal-300/40 pointer-events-none"></div>
-                        <img src="/static/assets/glass_heart_3d.jpg" alt="3D Crystal Heart" class="w-full h-full object-contain rounded-xl drop-shadow-md">
+                        <img src="/static/assets/heart_stethoscope_clinical.jpg" alt="Clinical Heart & Auscultation" class="w-full h-full object-contain rounded-xl drop-shadow-md">
                     </div>
                     <div class="pr-2">
                         <div class="flex items-center space-x-1.5">

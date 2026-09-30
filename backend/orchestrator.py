@@ -208,12 +208,13 @@ class ClinicalOrchestrator:
         overall_status: str,
         alerts: List[Dict[str, Any]],
         biomarkers: Optional[Dict[str, Any]] = None,
-        demographics: Optional[Dict[str, Any]] = None
+        demographics: Optional[Dict[str, Any]] = None,
+        enable_slm: bool = True
     ) -> str:
         """
         Generates clinical rationale.
-        First attempts local SLM (llama2/llama3.2 via Ollama) enriched with patient trajectory telemetry;
-        automatically falls back to deterministic synthesis if Ollama is offline.
+        If enable_slm is True: attempts local SLM (llama2/llama3.2 via Ollama) enriched with patient trajectory telemetry.
+        If enable_slm is False or Ollama is offline: executes instant deterministic synthesis (<5ms).
         """
         drug_label = proposed_med
         if proposed_med.lower() != canonical_drug.lower():
@@ -221,7 +222,7 @@ class ClinicalOrchestrator:
 
         if overall_status == "CRITICAL":
             # Attempt local SLM explanation with patient telemetry
-            if alerts:
+            if enable_slm and alerts:
                 slm_expl = ai_bridge.generate_clinical_explanation(
                     proposed_drug=drug_label,
                     conflicting_factor=alerts[0]["conflicting_factor"],
@@ -255,7 +256,8 @@ class ClinicalOrchestrator:
         patient_id: Optional[str] = None,
         raw_notes: Optional[str] = None,
         practitioner: Optional[Dict[str, Any]] = None,
-        demographics: Optional[Dict[str, Any]] = None
+        demographics: Optional[Dict[str, Any]] = None,
+        enable_slm: bool = True
     ) -> Dict[str, Any]:
         """
         Executes end-to-end clinical safety review and logs cryptographic audit event.
@@ -344,7 +346,7 @@ class ClinicalOrchestrator:
         # Synthesize explanation with patient telemetry
         explanation = cls.synthesize_explanation(
             proposed_med, canonical_drug, overall_status, alerts,
-            biomarkers=labs, demographics=demo_data
+            biomarkers=labs, demographics=demo_data, enable_slm=enable_slm
         )
 
         exec_time_ms = round((time.time() - start_time) * 1000, 2)
@@ -428,6 +430,8 @@ class ClinicalOrchestrator:
             "hazard_index": hazard_result,
             "pk_simulation": pk_simulation,
             "explanation": explanation,
+            "slm_enabled": enable_slm,
+            "slm_used": bool("Local SLM" in explanation),
             "zero_cloud_verified": True,
             "audit_hash": log_entry["audit_hash"],
             "execution_time_ms": exec_time_ms
