@@ -1629,6 +1629,83 @@ def intake_ai_extract_endpoint(req: IntakeAiExtractRequest):
 
 
 # ---------------------------------------------------------------------------
+# Model Context Protocol (MCP) Gateway Endpoints
+# ---------------------------------------------------------------------------
+class McpCallRequest(BaseModel):
+    tool_name: str
+    arguments: Optional[Dict[str, Any]] = None
+
+
+@app.get("/api/mcp/tools")
+def list_mcp_tools():
+    """
+    Exposes all sovereign clinical tools adhering to the Model Context Protocol (MCP).
+    Can be consumed by Claude Desktop, Cursor, or local SLM agent runtimes.
+    """
+    from backend.mcp_server import get_available_tools_list
+    return {
+        "protocol": "Model Context Protocol (MCP) 2024-11-05",
+        "server": "medivault-local-cdss",
+        "version": "1.0.0",
+        "zero_cloud_guarantee": True,
+        "tools": get_available_tools_list()
+    }
+
+
+@app.post("/api/mcp/call")
+def call_mcp_tool(req: McpCallRequest):
+    """
+    Invokes a clinical MCP tool by name and returns structured JSON output.
+    """
+    from backend.mcp_server import (
+        review_prescription,
+        simulate_pharmacokinetics,
+        search_clinical_knowledge,
+        calculate_clinical_hazard,
+        verify_audit_seal
+    )
+    args = req.arguments or {}
+    tool = req.tool_name
+
+    if tool == "review_prescription":
+        raw = review_prescription(
+            patient_id=args.get("patient_id", "PT-101"),
+            proposed_drug=args.get("proposed_drug", "Ibuprofen"),
+            enable_slm=args.get("enable_slm", False)
+        )
+    elif tool == "simulate_pharmacokinetics":
+        raw = simulate_pharmacokinetics(
+            drug_name=args.get("drug_name", "Ibuprofen"),
+            egfr=float(args.get("egfr", 38.0)),
+            dose_mg=float(args.get("dose_mg", 400.0)),
+            hours=float(args.get("hours", 72.0))
+        )
+    elif tool == "search_clinical_knowledge":
+        raw = search_clinical_knowledge(
+            query=args.get("query", "NSAID renal contraindication"),
+            category=args.get("category"),
+            top_k=int(args.get("top_k", 3))
+        )
+    elif tool == "calculate_clinical_hazard":
+        raw = calculate_clinical_hazard(
+            patient_id=args.get("patient_id", "PT-101"),
+            proposed_med=args.get("proposed_med", "Ibuprofen")
+        )
+    elif tool == "verify_audit_seal":
+        raw = verify_audit_seal(
+            audit_hash=args.get("audit_hash", "")
+        )
+    else:
+        raise HTTPException(status_code=404, detail=f"MCP tool '{tool}' not found.")
+
+    try:
+        parsed = json.loads(raw)
+        return {"tool": tool, "success": True, "result": parsed}
+    except Exception:
+        return {"tool": tool, "success": True, "raw_result": raw}
+
+
+# ---------------------------------------------------------------------------
 # Serve Frontend Static Assets
 # ---------------------------------------------------------------------------
 if os.path.exists(FRONTEND_DIR):
