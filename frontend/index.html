@@ -1127,6 +1127,33 @@
     </div>
   </header>
 
+  <!-- WORKFLOW STEPPER NAVIGATION CONTROLLER (INLINE SAFEGUARD) -->
+  <script>
+    window.switchMainTab = function(tabKey) {
+      document.querySelectorAll('.page-view-panel').forEach(function(panel) {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      });
+      document.querySelectorAll('.step-nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      var targetPanel = document.getElementById('page-view-' + tabKey);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+        targetPanel.style.display = 'block';
+      }
+      var targetBtn = document.getElementById('nav-btn-' + tabKey);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.setAttribute('aria-selected', 'true');
+      }
+      if (tabKey === 'analytics' && typeof window.loadClinicalAnalytics === 'function') {
+        window.loadClinicalAnalytics();
+      }
+    };
+  </script>
+
   <!-- WORKFLOW STEPPER NAVIGATION -->
   <nav class="clinical-card p-1.5 flex items-center space-x-1.5 overflow-x-auto border-slate-800">
     <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="step-nav-btn active" title="Clinical CDSS & Contraindication Review (Ctrl+1 / Alt+1)">
@@ -1138,6 +1165,7 @@
       <i class="fa-solid fa-robot text-teal-400"></i>
       <span>2. Sovereign AI Copilot</span>
       <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold ml-1">SLM RAG</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+2</kbd>
     </button>
     <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="step-nav-btn" title="Patient Intake & Safe Harbor Redaction (Ctrl+3 / Alt+3)">
       <i class="fa-solid fa-hospital-user text-cyan-400"></i>
@@ -2837,6 +2865,6 @@
 </div>
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=2.7"></script>
+<script src="/static/app.js?v=3.5-sovereign-ai-copilot"></script>
 </body>
 </html>

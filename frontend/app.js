@@ -174,31 +174,33 @@ function updateThemeUI(isLight) {
 //  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
-  const tabs = ['review', 'copilot', 'intake', 'fhir', 'audit', 'analytics'];
-  tabs.forEach(t => {
-    const btn = document.getElementById(`nav-btn-${t}`);
-    const panel = document.getElementById(`page-view-${t}`);
-    if (btn) {
-      if (t === tabKey) {
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-      } else {
-        btn.classList.remove('active');
-        btn.setAttribute('aria-selected', 'false');
-      }
-    }
-    if (panel) {
-      if (t === tabKey) {
-        panel.classList.add('active');
-        panel.style.display = 'block';
-      } else {
-        panel.classList.remove('active');
-        panel.style.display = 'none';
-      }
-    }
+  // Hide all view panels dynamically
+  document.querySelectorAll('.page-view-panel').forEach(panel => {
+    panel.classList.remove('active');
+    panel.style.display = 'none';
   });
 
-  if (tabKey === 'analytics') {
+  // Deactivate all navigation buttons
+  document.querySelectorAll('.step-nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+
+  // Activate target view panel
+  const targetPanel = document.getElementById(`page-view-${tabKey}`);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+    targetPanel.style.display = 'block';
+  }
+
+  // Activate target navigation button
+  const targetBtn = document.getElementById(`nav-btn-${tabKey}`);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+    targetBtn.setAttribute('aria-selected', 'true');
+  }
+
+  if (tabKey === 'analytics' && typeof loadClinicalAnalytics === 'function') {
     loadClinicalAnalytics();
   }
 }
@@ -2612,14 +2614,16 @@ document.addEventListener('keydown', (e) => {
   } else if ((e.ctrlKey || e.altKey) && e.key === '1') {
     e.preventDefault(); switchMainTab('review');
   } else if ((e.ctrlKey || e.altKey) && e.key === '2') {
-    e.preventDefault(); switchMainTab('intake');
+    e.preventDefault(); switchMainTab('copilot');
   } else if ((e.ctrlKey || e.altKey) && e.key === '3') {
-    e.preventDefault(); switchMainTab('fhir');
+    e.preventDefault(); switchMainTab('intake');
   } else if ((e.ctrlKey || e.altKey) && e.key === '4') {
-    e.preventDefault(); switchMainTab('audit');
+    e.preventDefault(); switchMainTab('fhir');
   } else if ((e.ctrlKey || e.altKey) && e.key === '5') {
+    e.preventDefault(); switchMainTab('audit');
+  } else if ((e.ctrlKey || e.altKey) && e.key === '6') {
     e.preventDefault(); switchMainTab('analytics');
-  } else if ((e.ctrlKey || e.altKey) && (e.key === '6' || e.key === 'd' || e.key === 'D')) {
+  } else if ((e.ctrlKey || e.altKey) && (e.key === '7' || e.key === 'd' || e.key === 'D')) {
     e.preventDefault(); openJudgeDemoModal();
   } else if (e.key === 'Escape') {
     toggleSettingsSidebar(false);
