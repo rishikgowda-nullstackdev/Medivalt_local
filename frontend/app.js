@@ -148,6 +148,7 @@ function updateThemeUI(isLight) {
   const title = document.getElementById('sidebar-theme-title');
   const btn = document.getElementById('sidebar-theme-btn');
   const icon = document.getElementById('sidebar-theme-icon');
+  const headerIcon = document.getElementById('header-theme-icon');
   if (title && btn && icon) {
     if (isLight) {
       title.textContent = 'Light Mode Active';
@@ -159,7 +160,87 @@ function updateThemeUI(isLight) {
       icon.className = 'fa-solid fa-sun text-amber-400 mr-1';
     }
   }
+  if (headerIcon) {
+    headerIcon.className = isLight ? 'fa-solid fa-moon text-xs text-teal-400' : 'fa-solid fa-sun text-xs text-amber-400';
+  }
 }
+
+// ═══════════════════════════════════════════
+//  COLLAPSIBLE 3D MATRIX ACCORDION CONTROLLER
+// ═══════════════════════════════════════════
+function toggleHologramAccordion() {
+  const body = document.getElementById('hologram-expandable-body');
+  const text = document.getElementById('text-toggle-hologram');
+  const icon = document.getElementById('icon-toggle-hologram');
+  if (!body) return;
+  const isHidden = body.style.display === 'none';
+  if (isHidden) {
+    body.style.display = 'block';
+    if (text) text.textContent = 'Collapse 3D';
+    if (icon) icon.className = 'fa-solid fa-chevron-up text-[10px]';
+    setTimeout(() => {
+      if (typeof globalHologram3DInstance !== 'undefined' && globalHologram3DInstance) {
+        globalHologram3DInstance.resize();
+      }
+    }, 60);
+  } else {
+    body.style.display = 'none';
+    if (text) text.textContent = 'Expand 3D';
+    if (icon) icon.className = 'fa-solid fa-eye text-[10px]';
+  }
+}
+window.toggleHologramAccordion = toggleHologramAccordion;
+
+// ═══════════════════════════════════════════
+//  RESULTS SUB-TABS CONTROLLER
+// ═══════════════════════════════════════════
+function switchResultsSubTab(tabName) {
+  const tabs = ['action', 'ai', 'pk'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`subtab-btn-${t}`);
+    const panel = document.getElementById(`subtab-panel-${t}`);
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      }
+    }
+    if (panel) {
+      panel.style.display = (t === tabName) ? 'block' : 'none';
+    }
+  });
+
+  if (tabName === 'ai' && typeof Chart !== 'undefined') {
+    const cv = document.getElementById('chart-egfr-trajectory');
+    if (cv && cv.__chartInstance) cv.__chartInstance.resize();
+  } else if (tabName === 'pk' && typeof Chart !== 'undefined') {
+    const cv = document.getElementById('chart-pk-clearance');
+    if (cv && cv.__chartInstance) cv.__chartInstance.resize();
+  }
+}
+window.switchResultsSubTab = switchResultsSubTab;
+
+// ═══════════════════════════════════════════
+//  QUICK TEST CASE PRESET HANDLER
+// ═══════════════════════════════════════════
+function onPresetBundleSelect(value) {
+  if (!value) return;
+  if (value === 'triple_whammy') {
+    setMultiPrescriptionPreset('Triple Whammy (Renal)', 'Tab Lisinopril 20mg PO QD\nTab Furosemide 40mg PO QD\nTab Advil 400mg PO TID');
+  } else if (value === 'asthma_bleed') {
+    setMultiPrescriptionPreset('Asthma + Bleed Risk', 'Tab Propranolol 40mg PO BID\nTab Aspirin 325mg PO QD');
+  } else if (value === 'penicillin_allergy') {
+    setMultiPrescriptionPreset('Penicillin Allergy', 'Tab Augmentin 625mg PO TID\nTab Paracetamol 650mg PO SOS');
+  } else if (value === 'beers_criteria') {
+    setMultiPrescriptionPreset('Geriatric Polypharmacy', 'Tab Diphenhydramine 50mg PO QHS\nTab Diazepam 5mg PO QHS');
+  } else if (value === 'safe_regimen') {
+    setMultiPrescriptionPreset('Safe Complex Regimen', 'Tab Amoxicillin 500mg PO TID\nTab Paracetamol 650mg PO TID\nCap Omeprazole 20mg PO OD ac');
+  }
+}
+window.onPresetBundleSelect = onPresetBundleSelect;
 
 // ═══════════════════════════════════════════
 //  MULTI-PAGE NAVIGATION CONTROLLER
@@ -666,10 +747,20 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   const nameEl = document.getElementById("display-patient-name");
   const metaEl = document.getElementById("display-patient-meta");
   const tokenEl = document.getElementById("display-patient-token");
+  const topNameEl = document.getElementById("top-patient-name");
+  const topMetaEl = document.getElementById("top-patient-meta");
 
-  if (nameEl) nameEl.textContent = patient.patient_name || patient.name || "Unknown Patient";
-  if (metaEl) metaEl.textContent = `ID: ${patient.patient_id} · Age: ${patient.age}y · ${patient.gender}`;
+  const patName = patient.patient_name || patient.name || "Unknown Patient";
+  const patId = patient.patient_id || "PT-101";
+  if (nameEl) nameEl.textContent = patName;
+  if (metaEl) metaEl.textContent = `ID: ${patId} · Age: ${patient.age || '64'}y · ${patient.gender || 'Patient'}`;
   if (tokenEl) tokenEl.textContent = patient.patient_id ? `ANON_${patient.patient_id}` : "ANON_UNVERIFIED";
+
+  if (topNameEl) topNameEl.textContent = `${patName} (${patId})`;
+  if (topMetaEl) {
+    const firstCond = (conditions && conditions[0]) ? (conditions[0].condition_name || conditions[0]) : "Profile Active";
+    topMetaEl.textContent = `${patId} · ${firstCond}`;
+  }
 
   // Conditions
   const condContainer = document.getElementById("patient-card-conditions") || document.getElementById("conditions-list");
@@ -1384,6 +1475,9 @@ function renderReviewResults(data) {
     const pkSec = document.getElementById("pk-simulation-section");
     if (pkSec) pkSec.style.display = "none";
   }
+
+  // Ensure default sub-tab is activated
+  switchResultsSubTab('action');
 }
 
 function renderEgfrTrajectory(data) {
