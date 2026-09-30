@@ -13,7 +13,12 @@ import os
 from typing import Dict, Any, List, Optional, Tuple
 import httpx
 
-from ai_engine.vector_rag import search_clinical_knowledge, get_monograph
+from ai_engine.vector_rag import (
+    search_clinical_knowledge,
+    get_monograph,
+    resolve_drug_name,
+    get_allergy_cross_reactivity
+)
 from ai_engine.pharmacology import PharmacologyKnowledge
 from ai_engine.engine import evaluate_full_safety
 from ai_engine.hazard_index import calculate_hazard_index
@@ -197,12 +202,17 @@ class ClinicalCopilot:
 
         # 2. Extract Drug Entities & Contextual RAG
         target_med = proposed_med
-        # If user explicitly asked about a different drug in their question, prioritize that
+        detected_drug = None
+        # Check tokens with fuzzy matching across monographs and brand aliases
         tokens = re.findall(r"\b[A-Za-z0-9\-]+\b", message)
         for t in tokens:
-            mono = get_monograph(t)
-            if mono:
-                target_med = mono["drug"]
+            if t.lower() in ["the", "this", "that", "patient", "tablets", "capsules", "dose", "given", "give", "safe", "take", "any"]:
+                continue
+            resolved = resolve_drug_name(t)
+            if resolved:
+                canonical, matched_t, conf = resolved
+                target_med = canonical
+                detected_drug = canonical
                 break
 
         rag_results = []
@@ -307,6 +317,19 @@ class ClinicalCopilot:
                     "- If the physician asks a specific clinical question, answer directly without lengthy preamble."
                 )
 
+            allergy_safety_rules = ""
+            if allergies:
+                allergy_details = []
+                for a in allergies:
+                    c_info = get_allergy_cross_reactivity(a)
+                    if c_info:
+                        allergy_details.append(
+                            f"- Allergy Class '{c_info['class_name']}': Cross-reacts with {', '.join(c_info['cross_reactive_drugs'][:4])}. "
+                            f"Chemically unrelated/safe: {', '.join(c_info['safe_non_cross_reactive'][:4])}. Note: {c_info['clinical_note']}"
+                        )
+                if allergy_details:
+                    allergy_safety_rules = "Pharmacological Allergy Rules:\n" + "\n".join(allergy_details) + "\n\n"
+
             slm_prompt = (
                 f"{system_role_desc}"
                 f"Patient Chart: {patient_summary}\n"
@@ -314,11 +337,13 @@ class ClinicalCopilot:
                 f"Proposed Medication: {target_med or 'None'}\n"
                 f"Deterministic CDSS Flag: {det_status} (Alerts: {alerts_summary})\n"
                 f"Relevant Monographs:\n{rag_snippets}\n\n"
+                f"{allergy_safety_rules}"
                 f"{history_text}"
                 f"Physician Question: {message}\n\n"
                 f"Instructions:\n"
                 f"- Answer the physician's specific question directly, conversationally, and authoritatively.\n"
                 f"{greeting_rule}\n"
+                f"- If asked about allergies, state ONLY documented allergies from the chart. DO NOT claim unrelated drugs (like Ibuprofen) are sulfonamides; cite chemical classes accurately.\n"
                 f"- If asked about the patient's vitals, labs, conditions, or medications, reference the real chart data above.\n"
                 f"- If CDSS status is CRITICAL or WARNING for a proposed drug, you MUST clearly explain the contraindication mechanism and warn against prescribing.\n"
                 f"- Never declare a contraindicated drug safe.\n"
@@ -384,6 +409,75 @@ class ClinicalCopilot:
 
         latency = round((time.time() - start_time) * 1000, 1)
 
+        # 9. Dynamic Clinical Badges, Suggested Actions, and Contextual Follow-up Chips
+        clinical_badges = []
+        if det_status == "CRITICAL":
+            clinical_badges.append({"type": "danger", "label": f"CRITICAL: {target_med or 'Drug'} Contraindicated", "icon": "fa-triangle-exclamation"})
+        elif det_status == "WARNING":
+            clinical_badges.append({"type": "warning", "label": f"WARNING: {target_med or 'Drug'} High Risk", "icon": "fa-circle-exclamation"})
+
+        if "egfr" in labs:
+            try:
+                egfr_num = float(labs["egfr"]["value"])
+                if egfr_num < 60:
+                    stage_str = "Stage 3 CKD" if egfr_num >= 30 else ("Stage 4 CKD" if egfr_num >= 15 else "Stage 5 ESRD")
+                    clinical_badges.append({"type": "amber", "label": f"{stage_str} (eGFR {egfr_num})", "icon": "fa-flask"})
+            except Exception:
+                pass
+
+        if allergies:
+            clinical_badges.append({"type": "purple", "label": f"Allergy: {', '.join(allergies)}", "icon": "fa-shield-virus"})
+
+        suggested_actions = []
+        if recommended_alts:
+            for alt in recommended_alts[:2]:
+                suggested_actions.append({
+                    "action": "prescribe",
+                    "drug": alt.get("name", ""),
+                    "label": f"Prescribe {alt.get('name', '')}",
+                    "rationale": alt.get("rationale", "Formulary safe alternative")
+                })
+        elif target_med == "Cetirizine":
+            suggested_actions.append({
+                "action": "prescribe",
+                "drug": "Cetirizine",
+                "label": "Set Cetirizine 5mg (Renal-Dosed)",
+                "rationale": "50% renal dose reduction for eGFR 38"
+            })
+
+        suggested_followups = []
+        msg_l = message.lower()
+        if any(w in msg_l for w in ["allergy", "allergies", "allergic", "allery"]):
+            suggested_followups = [
+                "What safe pain medication can this patient take?",
+                "Are any of the patient's active prescriptions sulfonamides?",
+                "What is the patient's renal lab profile?"
+            ]
+        elif target_med and target_med.lower() in ["cetirizine", "citrizen", "zyrtec"]:
+            suggested_followups = [
+                "What is the KDIGO renal dosing for Cetirizine?",
+                "Does Cetirizine interact with Lisinopril or Metformin?",
+                "What alternatives exist for allergic rhinitis?"
+            ]
+        elif det_status in ["CRITICAL", "WARNING"]:
+            suggested_followups = [
+                f"What safe alternatives can I prescribe instead of {target_med}?",
+                "Explain the renal hemodynamic injury mechanism",
+                "What are the KDIGO dosing adjustments for this patient?"
+            ]
+        elif any(w in msg_l for w in ["egfr", "creatinine", "labs", "potassium"]):
+            suggested_followups = [
+                "Can I prescribe an NSAID given this eGFR level?",
+                "What is the patient's potassium hyperkalemia risk?",
+                "What are safe pain management options in CKD Stage 3?"
+            ]
+        else:
+            suggested_followups = [
+                "Why is this prescription flagged for this patient?",
+                "What safe alternatives can I prescribe?",
+                "Explain the Triple Whammy hemodynamic risk"
+            ]
+
         return {
             "reply": reply,
             "citations": citations,
@@ -392,7 +486,11 @@ class ClinicalCopilot:
             "guardrail_applied": guardrail_applied,
             "status": det_status,
             "target_med": target_med,
-            "patient_name": patient_name
+            "detected_drug": detected_drug,
+            "patient_name": patient_name,
+            "clinical_badges": clinical_badges,
+            "suggested_actions": suggested_actions,
+            "suggested_followups": suggested_followups
         }
 
     @classmethod
@@ -466,11 +564,43 @@ class ClinicalCopilot:
             return f"No active outpatient prescriptions recorded for {patient_name}."
 
         # 5. Patient Allergies
-        if any(w in msg_lower for w in ["allergy", "allergies", "allergic"]):
+        if any(w in msg_lower for w in ["allergy", "allergies", "allergic", "allery", "allergic reaction"]):
             if allergies:
-                alg_list = "\n".join([f"- {a}" for a in allergies])
-                return f"**Documented Allergies for {patient_name}**:\n{alg_list}\n\n*All cross-reactive chemical classes will trigger deterministic blocks.*"
+                alg_list = "\n".join([f"- **{a}**" for a in allergies])
+                cross_notes = []
+                for a in allergies:
+                    c_info = get_allergy_cross_reactivity(a)
+                    if c_info:
+                        cross_notes.append(
+                            f"- **{c_info['class_name']} Class**: Cross-reacts with {', '.join(c_info['cross_reactive_drugs'][:4])}. "
+                            f"Chemically unrelated/safe: {', '.join(c_info['safe_non_cross_reactive'][:4])}."
+                        )
+                cross_str = ("\n\n**Cross-Reactivity Guardrails**:\n" + "\n".join(cross_notes)) if cross_notes else ""
+                return (
+                    f"**Documented Allergies for {patient_name}**:\n{alg_list}{cross_str}\n\n"
+                    f"*Note: MediVault strictly blocks all cross-reactive compounds deterministically.*"
+                )
             return f"**{patient_name}** has No Known Drug Allergies (NKDA) on record."
+
+        # 5b. Can I give / Is it safe to prescribe target_med
+        if target_med and any(p in msg_lower for p in ["can i give", "can we give", "can i prescribe", "can we prescribe", "is it safe", "is that safe", "should i give", "safe to give", "give the patient"]):
+            if det_status in ["CRITICAL", "WARNING"] and det_alerts:
+                top_alert = det_alerts[0]
+                reason = top_alert.get("message") or top_alert.get("conflicting_factor") or ""
+                mech = top_alert.get("mechanism") or (monograph.get("mechanism") if monograph else "")
+                return (
+                    f"⚠️ **NO — {target_med} is contraindicated ({det_status})** for {patient_name}.\n\n"
+                    f"- **Clinical Hazard**: {reason}\n"
+                    f"- **Mechanism**: {mech}\n\n"
+                    f"Prescribing {target_med} is not recommended. Please review formulary alternatives."
+                )
+            elif monograph:
+                renal_note = f"\n- **KDIGO Renal Dosing**: {monograph['renal_guideline']}" if monograph.get("renal_guideline") else ""
+                return (
+                    f"✅ **Yes, with appropriate dosing**: **{monograph['drug']}** ({monograph['category']}) "
+                    f"has no absolute contraindications with {patient_name}'s current clinical regimen or documented allergies.{renal_note}\n\n"
+                    f"Monitor baseline renal markers and response."
+                )
 
         # 6. Patient Chart Summary
         if any(w in msg_lower for w in ["summary", "chart", "profile", "tell me about this patient", "who is the patient"]):

@@ -1281,15 +1281,31 @@ async function triggerRedaction() {
       summaryBadge.textContent = "Safe Harbor § 164.514(b) Verified";
     }
 
+    // Use the real patient name and ID extracted pre-redaction
+    const extractedName = data.patient_name || "Unknown Patient";
+    const extractedId = data.patient_id_extracted || data.patient_token || "NEW";
+
+    // Store extracted data for Save Patient flow
+    window._lastIntakeExtraction = {
+      patient_name: extractedName,
+      patient_id: extractedId,
+      entities: data.entities || {},
+      biomarkers: (data.entities || {}).biomarkers || (data.entities || {}).clinical_labs || {},
+    };
+
     renderPatientCard(
-      { patient_name: "De-identified Note Patient", patient_id: data.patient_token, age: "Extracted", gender: "Extracted" },
+      { patient_name: extractedName, patient_id: extractedId, age: "Extracted", gender: "Extracted" },
       (data.entities.diagnosed_conditions || []).map(c => ({ condition_name: c })),
       (data.entities.current_medications || []).map(m => ({ medication_name: m, dosage: "" })),
       (data.entities.allergies || []).map(a => ({ allergen: a, reaction: "Extracted" })),
       data.entities.biomarkers || data.entities.clinical_labs
     );
 
-    showToast('De-Identification Complete', `Stripped ${data.phi_detected.length} PHI tokens. Token: ${data.patient_token}`, 'success', 3500);
+    // Show save patient button if we have a name
+    const saveBtn = document.getElementById("save-patient-btn");
+    if (saveBtn) saveBtn.style.display = "inline-flex";
+
+    showToast('De-Identification Complete', `Patient: ${extractedName} (${extractedId}) · Stripped ${data.phi_detected.length} PHI tokens`, 'success', 3500);
 
   } catch (e) {
     showToast('Redaction Error', e.message, 'error');
@@ -1300,6 +1316,53 @@ function transferToReview() {
   currentIntakeMode = 'raw';
   switchMainTab('review');
   showToast('Profile Transferred', 'Transferred de-identified patient record to CDSS Review Engine.', 'info', 2500);
+}
+
+async function savePatientFromIntake() {
+  const extraction = window._lastIntakeExtraction;
+  if (!extraction || !extraction.patient_name || extraction.patient_name === 'Unknown Patient') {
+    showToast('No Patient Data', 'Run de-identification first to extract patient details from a clinical note.', 'warning');
+    return;
+  }
+
+  const patientId = extraction.patient_id || `PT-${Date.now().toString(36).toUpperCase()}`;
+  const entities = extraction.entities || {};
+
+  try {
+    const res = await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient_id: patientId,
+        patient_name: extraction.patient_name,
+        age: null,
+        gender: null,
+        conditions: (entities.diagnosed_conditions || []).map(c => ({ condition_name: c })),
+        medications: (entities.current_medications || []).map(m => {
+          const parts = m.split(' ');
+          return { medication_name: parts[0], dosage: parts.slice(1).join(' ') || '' };
+        }),
+        allergies: (entities.allergies || []).map(a => ({ allergen: a })),
+        labs: extraction.biomarkers || {}
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatApiError(data, 'Failed to save patient'));
+    }
+
+    showToast('Patient Saved', `${extraction.patient_name} (${patientId}) added to local database.`, 'success', 3500);
+
+    // Refresh the patient list so the new patient shows up
+    if (typeof loadPatients === 'function') loadPatients();
+
+    // Hide save button after successful save
+    const saveBtn = document.getElementById('save-patient-btn');
+    if (saveBtn) saveBtn.style.display = 'none';
+
+  } catch (e) {
+    showToast('Save Error', e.message, 'error');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2831,6 +2894,7 @@ window.loadPatientProfile = loadPatientProfile;
 window.applySampleDischargeNote = applySampleDischargeNote;
 window.triggerRedaction = triggerRedaction;
 window.transferToReview = transferToReview;
+window.savePatientFromIntake = savePatientFromIntake;
 window.setProposedMed = setProposedMed;
 window.runSafetyCheck = runSafetyCheck;
 window.swapAndVerify = swapAndVerify;
@@ -3936,6 +4000,202 @@ function formatMarkdownText(text) {
     .replace(/\n/g, '<br/>');
 }
 
+function copyCopilotReply(btn) {
+  const container = btn.closest('.copilot-reply-card');
+  if (!container) return;
+  const textEl = container.querySelector('.copilot-text-body');
+  const text = textEl ? textEl.innerText.trim() : '';
+  if (!text) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-300">Copied!</span>`;
+      showToast('Copied to Clipboard', 'Clinical notes copied for EHR documentation.', 'success', 2500);
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }).catch(err => {
+      showToast('Copy Error', 'Clipboard write error: ' + err.message, 'warning', 2500);
+    });
+  } else {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('Copied to Clipboard', 'Clinical notes copied for EHR documentation.', 'success', 2500);
+  }
+}
+
+function speakCopilotReply(btn) {
+  if (!('speechSynthesis' in window)) {
+    showToast('TTS Unavailable', 'Speech synthesis is not supported on this browser/platform.', 'warning', 2500);
+    return;
+  }
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> <span>Listen</span>`;
+    return;
+  }
+  const container = btn.closest('.copilot-reply-card');
+  if (!container) return;
+  const textEl = container.querySelector('.copilot-text-body');
+  const text = textEl ? textEl.innerText.replace(/[*#_`]/g, '').trim() : '';
+  if (!text) return;
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 1.05;
+  utter.pitch = 1.0;
+  utter.onstart = () => {
+    btn.innerHTML = `<i class="fa-solid fa-stop text-amber-400"></i> <span class="text-amber-300">Stop</span>`;
+  };
+  utter.onend = () => {
+    btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> <span>Listen</span>`;
+  };
+  utter.onerror = () => {
+    btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> <span>Listen</span>`;
+  };
+  window.speechSynthesis.speak(utter);
+}
+
+function applyCopilotPrescription(drugName, rationale) {
+  const singleInput = document.getElementById('proposed-med-input');
+  if (singleInput) {
+    singleInput.value = drugName;
+    singleInput.classList.add('ring-2', 'ring-teal-400');
+    setTimeout(() => singleInput.classList.remove('ring-2', 'ring-teal-400'), 1500);
+  }
+  showToast('Medication Selected', `Formulary candidate '${drugName}' set for clinical decision support. ${rationale || ''}`, 'info', 3500);
+}
+
+function renderCopilotBubble(chatStream, data, displayReply, isTab = false) {
+  const replyBubble = document.createElement('div');
+  replyBubble.className = 'copilot-reply-card p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-2 shadow-lg';
+
+  // 1. Clinical Badges (Danger / Warning / Renal / Allergy)
+  let badgesHtml = '';
+  if (data.clinical_badges && data.clinical_badges.length > 0) {
+    badgesHtml = `
+      <div class="flex flex-wrap gap-1.5 mb-1.5">
+        ${data.clinical_badges.map(b => {
+          let badgeClass = 'bg-teal-500/15 text-teal-300 border-teal-500/40';
+          if (b.type === 'danger') badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-semibold';
+          else if (b.type === 'warning') badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-semibold';
+          else if (b.type === 'amber') badgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
+          else if (b.type === 'purple') badgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+          return `<span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded border ${badgeClass}">
+            <i class="fa-solid ${escapeHtml(b.icon || 'fa-circle-info')} mr-1"></i>
+            ${escapeHtml(b.label)}
+          </span>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // 2. Citations / Evidence
+  const citationsHtml = data.citations && data.citations.length > 0
+    ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+         <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
+         ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
+       </div>`
+    : '';
+
+  // 3. Suggested Prescribing Actions (1-Click Safe Order)
+  let actionsHtml = '';
+  if (data.suggested_actions && data.suggested_actions.length > 0) {
+    actionsHtml = `
+      <div class="mt-2 pt-2 border-t border-slate-800/70">
+        <div class="text-[10px] text-teal-400 font-semibold mb-1 flex items-center">
+          <i class="fa-solid fa-hand-holding-medical mr-1"></i> Suggested Clinical Actions:
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          ${data.suggested_actions.map(act => `
+            <button type="button" class="text-[10px] px-2.5 py-1 rounded bg-teal-950/70 hover:bg-teal-900/90 border border-teal-500/40 text-teal-200 transition-all flex items-center space-x-1" onclick="applyCopilotPrescription('${escapeHtml(act.drug)}', '${escapeHtml(act.rationale)}')">
+              <i class="fa-solid fa-plus-circle text-teal-400"></i>
+              <span>${escapeHtml(act.label)}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // 4. Contextual Suggested Follow-up Chips
+  let followupsHtml = '';
+  if (data.suggested_followups && data.suggested_followups.length > 0) {
+    const handlerFn = isTab ? 'askCopilotTabQuick' : 'askCopilotQuick';
+    followupsHtml = `
+      <div class="mt-2 pt-1.5 border-t border-slate-800/60 flex flex-wrap gap-1">
+        ${data.suggested_followups.map(q => {
+          const escapedQ = escapeHtml(q).replace(/'/g, "\\'");
+          return `<button type="button" class="text-[10px] text-slate-300 hover:text-teal-300 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/60 hover:border-teal-500/40 rounded-full px-2.5 py-0.5 transition-colors flex items-center" onclick="${handlerFn}('${escapedQ}')">
+            <i class="fa-regular fa-comment-dots text-teal-400 mr-1 text-[9px]"></i>
+            <span>${escapeHtml(q)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // 5. Action Bar (Copy to EHR, Voice Bedside TTS, Model + Latency)
+  const actionBarHtml = `
+    <div class="mt-2.5 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+      <div class="flex items-center space-x-2">
+        <button type="button" class="hover:text-teal-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900" onclick="copyCopilotReply(this)">
+          <i class="fa-regular fa-copy"></i>
+          <span>Copy to EHR</span>
+        </button>
+        <button type="button" class="hover:text-teal-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900" onclick="speakCopilotReply(this)">
+          <i class="fa-solid fa-volume-high"></i>
+          <span>Listen</span>
+        </button>
+      </div>
+      <div class="flex items-center space-x-1.5 text-slate-500 font-mono text-[9px]">
+        <span>${data.latency_ms || 12}ms</span>
+        <span>·</span>
+        <span>${data.model || '0-Cloud'}</span>
+      </div>
+    </div>
+  `;
+
+  replyBubble.innerHTML = `
+    <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+      <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
+      <span class="text-slate-500 font-mono">0-Cloud Local</span>
+    </div>
+    ${badgesHtml}
+    <div class="copilot-text-body text-slate-200 leading-normal"></div>
+    ${citationsHtml}
+    ${actionsHtml}
+    ${followupsHtml}
+    ${actionBarHtml}
+  `;
+
+  chatStream.appendChild(replyBubble);
+
+  // Typewriter streaming effect
+  const textBody = replyBubble.querySelector('.copilot-text-body');
+  const words = displayReply.split(' ');
+  if (words.length <= 4) {
+    textBody.innerHTML = formatMarkdownText(displayReply);
+    chatStream.scrollTop = chatStream.scrollHeight;
+  } else {
+    let wordIdx = 0;
+    const chunkSize = Math.max(3, Math.ceil(words.length / 20));
+    const timer = setInterval(() => {
+      wordIdx += chunkSize;
+      if (wordIdx >= words.length) {
+        wordIdx = words.length;
+        clearInterval(timer);
+        textBody.innerHTML = formatMarkdownText(displayReply);
+      } else {
+        textBody.innerHTML = formatMarkdownText(words.slice(0, wordIdx).join(' ') + ' ▋');
+      }
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }, 18);
+  }
+}
+
 async function sendCopilotMessage(explicitPrompt = null) {
   const inputEl = document.getElementById('copilot-user-input');
   const chatStream = document.getElementById('copilot-chat-stream');
@@ -4016,26 +4276,7 @@ async function sendCopilotMessage(explicitPrompt = null) {
     }
 
     if (chatStream) {
-      const replyBubble = document.createElement('div');
-      replyBubble.className = 'p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
-
-      const citationsHtml = data.citations && data.citations.length > 0
-        ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
-             <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
-             ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
-           </div>`
-        : '';
-
-      replyBubble.innerHTML = `
-        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
-          <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
-          <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
-        </div>
-        <div class="text-slate-200 leading-normal">${formatMarkdownText(displayReply)}</div>
-        ${citationsHtml}
-      `;
-      chatStream.appendChild(replyBubble);
-      chatStream.scrollTop = chatStream.scrollHeight;
+      renderCopilotBubble(chatStream, data, displayReply, false);
     }
 
   } catch (err) {

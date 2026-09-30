@@ -99,6 +99,29 @@ class TestClinicalCopilot(unittest.TestCase):
         self.assertFalse("i'm the sovereign clinical ai copilot" in reply.lower())
         self.assertFalse("i am the sovereign clinical copilot" in reply.lower())
 
+    def test_fuzzy_drug_resolution_citrizen(self):
+        """Verify typo 'Citrizen' is resolved to 'Cetirizine' with renal dosage instructions."""
+        res = ask_copilot(
+            message="Can I give the patient Citrizen tablets?",
+            patient_id="PT-101"
+        )
+        self.assertEqual(res["target_med"], "Cetirizine")
+        self.assertEqual(res["detected_drug"], "Cetirizine")
+        self.assertTrue("cetirizine" in res["reply"].lower())
+        self.assertIn("clinical_badges", res)
+        self.assertIn("suggested_actions", res)
+        self.assertIn("suggested_followups", res)
+
+    def test_allergy_cross_reactivity_and_typo(self):
+        """Verify 'does the patient has any allery' resolves allergy profile with class guardrails."""
+        res = ask_copilot(
+            message="does the patient has any allery",
+            patient_id="PT-101"
+        )
+        self.assertTrue("sulfonamide" in res["reply"].lower())
+        # Followups should be present
+        self.assertGreater(len(res["suggested_followups"]), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

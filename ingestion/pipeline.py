@@ -369,10 +369,83 @@ def extract_entities(text: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Patient Identity Extractor (Pre-Redaction)
+# ---------------------------------------------------------------------------
+# Compiled patterns for extracting patient name from labeled fields
+# Use [ \t]+ (not \s+) inside capture to prevent matching across newlines
+_PATIENT_NAME_PATTERNS = [
+    re.compile(r"(?i)\bpatient\s+name\s*[:#]?\s*([A-Za-z][A-Za-z'-]+(?:[ \t]+[A-Za-z][A-Za-z'-]+){0,3})"),
+    re.compile(r"(?i)\bpatient\s*:\s*([A-Z][a-z'-]+(?:[ \t]+[A-Z][a-z'-]+){0,3})"),
+    re.compile(r"(?i)\bname\s*:\s*([A-Z][a-z'-]+(?:[ \t]+[A-Z][a-z'-]+){0,3})"),
+]
+
+# Compiled patterns for extracting MRN / Patient ID from labeled fields
+_PATIENT_ID_PATTERNS = [
+    re.compile(r"(?i)\bpatient\s*id\s*[:#]?\s*([A-Z0-9][-A-Z0-9]{2,14})"),
+    re.compile(r"(?i)\bmrn\s*[:#]?\s*([A-Z0-9][-A-Z0-9]{2,14})"),
+    re.compile(r"(?i)\bmedical\s+record\s+(?:number|no\.?)\s*[:#]?\s*([A-Z0-9][-A-Z0-9]{2,14})"),
+]
+
+
+def extract_patient_identity(text: str) -> Dict[str, Optional[str]]:
+    """
+    Extracts patient name and patient ID (MRN) from raw clinical text
+    BEFORE redaction, so the treating doctor knows which patient they
+    are reviewing. These fields are never written to audit logs or
+    stored at rest — they exist only for live doctor-facing display.
+
+    Returns:
+        {
+            "patient_name": str or None,
+            "patient_id_extracted": str or None
+        }
+    """
+    if not text:
+        return {"patient_name": None, "patient_id_extracted": None}
+
+    # Extract patient name
+    patient_name: Optional[str] = None
+    for pattern in _PATIENT_NAME_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            candidate = match.group(1).strip()
+            # Skip if the "name" is a clinical keyword (diagnosis, medication, etc.)
+            lower = candidate.lower()
+            skip_words = {
+                "history", "diagnosis", "assessment", "plan", "allergies",
+                "medications", "unknown", "redacted", "none", "na",
+            }
+            if lower not in skip_words and len(candidate) >= 2:
+                patient_name = candidate
+                break
+
+    # Extract patient ID / MRN
+    patient_id_extracted: Optional[str] = None
+    for pattern in _PATIENT_ID_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            patient_id_extracted = match.group(1).strip()
+            break
+
+    return {
+        "patient_name": patient_name,
+        "patient_id_extracted": patient_id_extracted,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Full Clinical Note Processing (Unified Pipeline Call)
 # ---------------------------------------------------------------------------
 def process_clinical_note(raw_text: str) -> Dict[str, Any]:
-    """Runs full redaction and clinical extraction pipeline in one unified call."""
+    """Runs full redaction and clinical extraction pipeline in one unified call.
+
+    Extracts patient identity (name, MRN) from raw text BEFORE redaction so
+    the treating doctor can identify the patient. The redacted_text itself
+    remains fully HIPAA Safe Harbor compliant with all 18 identifiers replaced.
+    """
+    # Extract identity BEFORE redaction so the doctor knows who they're treating
+    identity = extract_patient_identity(raw_text)
+
     redacted_text, detected_phi, patient_token = redact_phi(raw_text)
     entities = extract_entities(raw_text)
 
@@ -380,7 +453,10 @@ def process_clinical_note(raw_text: str) -> Dict[str, Any]:
         "patient_token": patient_token,
         "redacted_text": redacted_text,
         "phi_detected": detected_phi,
-        "entities": entities
+        "entities": entities,
+        # Doctor-facing identity metadata (never stored in audit logs)
+        "patient_name": identity["patient_name"],
+        "patient_id_extracted": identity["patient_id_extracted"],
     }
 
 

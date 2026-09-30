@@ -2842,11 +2842,17 @@
             <textarea id="redacted-output-text" rows="5" class="clinical-input font-mono text-xs leading-relaxed" readonly placeholder="De-identified text will appear here after redaction..."></textarea>
           </div>
 
-          <!-- Pipeline Transfer Action Button -->
-          <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5 mt-2">
-            <span>Transfer De-Identified Profile to CDSS Review Engine</span>
-            <i class="fa-solid fa-arrow-right ml-2"></i>
-          </button>
+          <!-- Pipeline Action Buttons -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5">
+              <span>Transfer to CDSS Review Engine</span>
+              <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+            <button id="save-patient-btn" onclick="savePatientFromIntake()" class="w-full py-2.5 rounded-lg font-bold text-xs border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 transition flex items-center justify-center space-x-1.5" style="display:none">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Save Patient to Database</span>
+            </button>
+          </div>
         </div>
 
       </div>
