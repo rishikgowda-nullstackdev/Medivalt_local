@@ -175,28 +175,10 @@ function updateThemeUI(isLight) {
 }
 
 // ═══════════════════════════════════════════
-//  COLLAPSIBLE 3D MATRIX ACCORDION CONTROLLER
+//  COLLAPSIBLE 3D MATRIX ACCORDION CONTROLLER (No-Op Stub)
 // ═══════════════════════════════════════════
 function toggleHologramAccordion() {
-  const body = document.getElementById('hologram-expandable-body');
-  const text = document.getElementById('text-toggle-hologram');
-  const icon = document.getElementById('icon-toggle-hologram');
-  if (!body) return;
-  const isHidden = body.style.display === 'none';
-  if (isHidden) {
-    body.style.display = 'block';
-    if (text) text.textContent = 'Collapse 3D';
-    if (icon) icon.className = 'fa-solid fa-chevron-up text-[10px]';
-    setTimeout(() => {
-      if (typeof globalHologram3DInstance !== 'undefined' && globalHologram3DInstance) {
-        globalHologram3DInstance.resize();
-      }
-    }, 60);
-  } else {
-    body.style.display = 'none';
-    if (text) text.textContent = 'Expand 3D';
-    if (icon) icon.className = 'fa-solid fa-eye text-[10px]';
-  }
+  // No-op: 3D hologram matrix removed from UI per user request
 }
 window.toggleHologramAccordion = toggleHologramAccordion;
 

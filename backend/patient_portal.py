@@ -363,6 +363,16 @@ def get_patient_profile(request: Request):
     }
 
 
+# Condition keywords for dietary guideline matching (must be declared before use below)
+_CONDITION_KEYWORDS = [
+    "kidney disease",
+    "diabetes",
+    "hypertension",
+    "asthma",
+    "atrial fibrillation",
+]
+
+
 # ---------------------------------------------------------------------------
 # Endpoint 4: Personalized Food & Wellness Recommendations
 # ---------------------------------------------------------------------------
@@ -457,14 +467,6 @@ def get_patient_recommendations(request: Request):
     }
 
 
-# Condition keywords for dietary guideline matching
-_CONDITION_KEYWORDS = [
-    "kidney disease",
-    "diabetes",
-    "hypertension",
-    "asthma",
-    "atrial fibrillation",
-]
 
 
 # ---------------------------------------------------------------------------

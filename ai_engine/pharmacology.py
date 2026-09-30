@@ -94,7 +94,14 @@ BRAND_TO_GENERIC = {
     "zofran": "ondansetron",
     "pacerone": "amiodarone",
     "cordarone": "amiodarone",
-    "eldepryl": "selegiline"
+    "eldepryl": "selegiline",
+
+    # Proton Pump Inhibitors (PPIs) — required for safe bundle test (Omeprazole scenario)
+    "prilosec": "omeprazole",
+    "nexium": "esomeprazole",
+    "prevacid": "lansoprazole",
+    "protonix": "pantoprazole",
+    "aciphex": "rabeprazole"
 }
 
 # Chemical & Mechanistic Drug Classes for Polypharmacy Checking

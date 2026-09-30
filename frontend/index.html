@@ -1357,34 +1357,6 @@
       --sheen-opacity: 1;
     }
 
-    /* ─── 3D HOLOGRAPHIC VIEWPORT ─── */
-    .hologram-card {
-      position: relative;
-      background: radial-gradient(ellipse at 50% 40%, rgba(13, 148, 136, 0.1) 0%, rgba(8, 13, 24, 0.95) 75%);
-      border: 1px solid rgba(13, 148, 136, 0.35);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      box-shadow: inset 0 0 35px rgba(13, 148, 136, 0.12), 0 8px 30px rgba(0, 0, 0, 0.55);
-    }
-    .hologram-grid-overlay {
-      position: absolute;
-      inset: 0;
-      background-image: 
-        linear-gradient(rgba(13, 148, 136, 0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(13, 148, 136, 0.07) 1px, transparent 1px);
-      background-size: 24px 24px;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .hologram-scanline-bar {
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.8), rgba(6, 182, 212, 0.9), transparent);
-      box-shadow: 0 0 10px var(--teal-bright);
-      animation: hologramScanline 4s linear infinite;
-      pointer-events: none;
-      z-index: 2;
-    }
 
     /* ─── 3D FLIPPABLE ATTESTATION CARD MODAL ─── */
     .flip-card-stage {
@@ -2280,57 +2252,7 @@
       </div>
     </div>
 
-    <!-- 🌌 COLLAPSIBLE 3D HOLOGRAPHIC PHYSIOLOGICAL TARGET MATRIX (Fold-Saving Accordion) -->
-    <div id="hologram-accordion-wrap" class="clinical-card border-teal-500/25 overflow-hidden transition-all duration-200">
-      <!-- Compact Telemetry Strip (Always Visible 34px Header) -->
-      <div class="px-3.5 py-2 flex items-center justify-between bg-[var(--bg-card-subtle)] border-b border-[var(--border-main)] text-xs">
-        <div class="flex items-center space-x-2.5 flex-1 min-w-0">
-          <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse shrink-0"></span>
-          <span class="font-bold text-[var(--text-heading)] font-heading text-xs truncate">
-            <i class="fa-solid fa-cube text-teal-400 mr-1"></i> 3D Target Matrix:
-          </span>
-          <span id="hologram-hud-target" class="text-teal-400 font-mono text-[11px] truncate">Renal Glomerular Microvasculature</span>
-          <span class="text-[var(--text-faint)] hidden sm:inline">·</span>
-          <span id="hologram-hud-load" class="text-[var(--text-muted)] text-[10.5px] truncate hidden md:inline">Afferent Arteriolar Vasoconstriction Risk</span>
-        </div>
 
-        <div class="flex items-center space-x-2 shrink-0">
-          <!-- Status Badge -->
-          <div id="hologram-hud-status-badge" class="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/70 text-red-300 text-[10px] font-mono font-bold flex items-center space-x-1 shadow-sm">
-            <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
-            <span id="hologram-hud-status-text">CONTRAINDICATION HAZARD</span>
-          </div>
-
-          <!-- Expand / Collapse Toggle Button -->
-          <button id="btn-toggle-hologram" type="button" onclick="toggleHologramAccordion()" class="btn-clinical-secondary py-0.5 px-2 text-[11px] flex items-center space-x-1" title="Toggle 3D Viewport">
-            <i id="icon-toggle-hologram" class="fa-solid fa-eye text-[10px]"></i>
-            <span id="text-toggle-hologram">Expand 3D</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Expandable 3D Canvas Body (Collapsed by default, opens cleanly on click) -->
-      <div id="hologram-expandable-body" style="display:none;" class="p-3 bg-slate-950/90 space-y-2 border-t border-teal-500/20">
-        <!-- Controls Bar -->
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div class="flex items-center space-x-1.5 text-[10px] font-mono">
-            <button type="button" id="organ-tab-renal" onclick="switchHologramTarget('renal')" class="px-2.5 py-1 rounded bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition">Renal (Glomerular)</button>
-            <button type="button" id="organ-tab-cardiac" onclick="switchHologramTarget('cardiac')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Cardiopulmonary</button>
-            <button type="button" id="organ-tab-hepatic" onclick="switchHologramTarget('hepatic')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Hepatic</button>
-            <button type="button" id="organ-tab-shield" onclick="switchHologramTarget('shield')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Enclave Seal</button>
-          </div>
-          <div class="text-[9px] font-mono text-slate-400 flex items-center space-x-2">
-            <span><i class="fa-solid fa-hand-pointer text-teal-400 mr-1"></i> Drag to orbit</span>
-            <span>|</span>
-            <span id="hologram-hud-angle" class="text-teal-400">Pitch: 12° · Yaw: 45°</span>
-          </div>
-        </div>
-        <!-- Real-Time HTML5 3D Vector Canvas Viewport -->
-        <div class="relative w-full rounded-lg bg-slate-950 border border-teal-500/20 overflow-hidden flex items-center justify-center" style="height: 180px;">
-          <canvas id="canvas-hologram-3d" class="w-full h-full cursor-grab active:cursor-grabbing block"></canvas>
-        </div>
-      </div>
-    </div>
 
     <!-- MAIN TWO-COLUMN CLINICAL WORKSTATION SPLIT -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">

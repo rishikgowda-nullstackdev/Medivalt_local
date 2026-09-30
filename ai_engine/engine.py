@@ -300,6 +300,8 @@ def evaluate_prescription_set(
             "overall_status": "SAFE",
             "flagged": False,
             "total_alerts": 0,
+            "total_prescribed": 0,
+            "flagged_count": 0,
             "medication_evaluations": [],
             "summary_explanation": "No proposed medications provided to evaluate."
         }
