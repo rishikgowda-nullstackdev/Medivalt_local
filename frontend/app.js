@@ -262,7 +262,7 @@ function switchMainTab(tabKey) {
   });
 
   // Deactivate all navigation buttons
-  document.querySelectorAll('.step-nav-btn').forEach(btn => {
+  document.querySelectorAll('.step-nav-btn, .sidebar-nav-item').forEach(btn => {
     btn.classList.remove('active');
     btn.setAttribute('aria-selected', 'false');
   });
@@ -279,6 +279,25 @@ function switchMainTab(tabKey) {
   if (targetBtn) {
     targetBtn.classList.add('active');
     targetBtn.setAttribute('aria-selected', 'true');
+  }
+
+  // Update header breadcrumb/title dynamically
+  const breadcrumbs = {
+    review: { icon: 'fa-stethoscope', title: '1. CDSS Review', desc: 'Deterministic Safety Layer + SLM Review' },
+    copilot: { icon: 'fa-robot', title: '2. Sovereign AI Copilot', desc: 'On-Device Clinical Reasoning & Drug Monograph RAG' },
+    intake: { icon: 'fa-hospital-user', title: '3. Patient Intake & PHI', desc: 'HIPAA Safe Harbor § 164.514(b) Automated PHI Masking' },
+    fhir: { icon: 'fa-network-wired', title: '4. Hospital EHR & FHIR', desc: 'Offline FHIR Bundles & Air-Gap QR Transfer' },
+    audit: { icon: 'fa-database', title: '5. Sovereign Audit', desc: 'Tamper-Evident SHA-256 Digest Chain & Merkle Verification' },
+    analytics: { icon: 'fa-chart-line', title: '6. Clinical Analytics', desc: 'Offline Pharmacovigilance & Organ Hazard Distribution' }
+  };
+  const bc = breadcrumbs[tabKey];
+  if (bc) {
+    const iconEl = document.getElementById('header-section-icon');
+    const titleEl = document.getElementById('header-section-title');
+    const descEl = document.getElementById('header-section-desc');
+    if (iconEl) iconEl.className = `fa-solid ${bc.icon} text-teal-400 text-sm`;
+    if (titleEl) titleEl.textContent = bc.title;
+    if (descEl) descEl.textContent = bc.desc;
   }
 
   if (tabKey === 'analytics' && typeof loadClinicalAnalytics === 'function') {

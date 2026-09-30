@@ -307,63 +307,102 @@
       box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
     }
 
-    /* ─── 56PX LEFT RAIL NAVIGATION ─── */
-    .rail-nav-btn {
-      width: 40px;
-      height: 40px;
+    /* ─── LEFT VERTICAL NAVIGATION SIDEBAR ─── */
+    .sidebar-container {
+      width: 256px;
+      min-width: 256px;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-main);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 30;
+      user-select: none;
+      overflow-y: auto;
+      box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+    }
+    .sidebar-nav-item {
+      width: 100%;
       display: flex;
       align-items: center;
-      justify-content: center;
+      padding: 9px 12px;
       border-radius: var(--radius-md);
       color: var(--text-muted);
-      font-size: 15px;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
+      font-size: 12.5px;
+      font-weight: 500;
+      gap: 10px;
       background: transparent;
       border: 1px solid transparent;
       cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      text-decoration: none;
     }
-    .rail-nav-btn:hover {
+    .sidebar-nav-item:hover {
       color: var(--text-heading);
       background: rgba(255, 255, 255, 0.05);
       border-color: var(--border-main);
     }
-    .rail-nav-btn.active {
-      color: #14b8a6;
-      background: rgba(20, 184, 166, 0.14);
+    .sidebar-nav-item.active {
+      color: var(--teal-bright);
+      background: var(--bg-tab-active);
       border-color: rgba(20, 184, 166, 0.4);
-      box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+      box-shadow: 0 0 14px rgba(20, 184, 166, 0.15);
+      font-weight: 600;
     }
-    .rail-tooltip {
-      position: absolute;
-      left: calc(100% + 12px);
-      top: 50%;
-      transform: translateY(-50%);
-      background: #0f172a;
-      color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 4px 9px;
+    .sidebar-nav-item .nav-icon {
+      width: 28px;
+      height: 28px;
       border-radius: 6px;
-      font-size: 11px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s ease, transform 0.15s ease;
-      z-index: 50;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.15s ease;
+      flex-shrink: 0;
     }
-    html.light .rail-tooltip {
+    .sidebar-nav-item:hover .nav-icon {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .sidebar-nav-item.active .nav-icon {
+      background: rgba(20, 184, 166, 0.2);
+      color: var(--teal-bright);
+    }
+    .sidebar-section-heading {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      padding: 14px 10px 6px 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    html.light .sidebar-container {
       background: #ffffff;
+      border-right-color: #e2e8f0;
+      box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
+    }
+    html.light .sidebar-nav-item:hover {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
       color: #0f172a;
-      border-color: #cbd5e1;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .rail-nav-btn:hover .rail-tooltip {
-      opacity: 1;
-      transform: translateY(-50%) translateX(2px);
+    html.light .sidebar-nav-item.active {
+      background: rgba(13, 148, 136, 0.12);
+      border-color: rgba(13, 148, 136, 0.35);
+      color: #0d9488;
     }
+    html.light .sidebar-nav-item .nav-icon {
+      background: #f1f5f9;
+    }
+    html.light .sidebar-nav-item.active .nav-icon {
+      background: rgba(13, 148, 136, 0.18);
+      color: #0d9488;
+    }
+
 
     /* ─── RESULTS SUB-TABS ─── */
     .subtab-btn {
@@ -1195,54 +1234,120 @@
 ═══════════════════════════════════════════ -->
 <div id="main-app" class="flex min-h-screen relative z-10 w-full bg-[var(--bg-canvas)]">
 
-  <!-- 56px COLLAPSIBLE LEFT ICON RAIL -->
-  <aside id="left-nav-rail" class="w-14 shrink-0 bg-[var(--bg-card)] border-r border-[var(--border-main)] flex flex-col items-center py-3 z-30 select-none sticky top-0 h-screen shadow-sm">
-    <!-- Brand Mark Mini -->
-    <div class="mb-4">
-      <div class="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold text-sm shadow-sm hover:scale-105 transition-transform cursor-pointer" title="MediVault Sovereign Security Enclave">
-        <i class="fa-solid fa-shield-heart text-base"></i>
+  <!-- ═══════════════════════════════════════════
+       LEFT VERTICAL NAVIGATION SIDEBAR (256px DOCKED)
+  ═══════════════════════════════════════════ -->
+  <aside id="left-nav-sidebar" class="sidebar-container">
+    <!-- Brand Header -->
+    <div class="p-4 pb-3 border-b border-[var(--border-main)]">
+      <div class="flex items-center space-x-3">
+        <div class="brand-logo-3d-wrap">
+          <div class="brand-logo-3d w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 via-teal-600/30 to-teal-950 border border-teal-400/50 flex items-center justify-center text-teal-300 text-lg shadow-[0_0_15px_rgba(20,184,166,0.25)]">
+            <i class="fa-solid fa-shield-heart"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <span class="text-sm font-bold text-[var(--text-heading)] font-heading tracking-tight">MediVault</span>
+            <span class="text-xs text-teal-400 font-extrabold tracking-wide">LOCAL</span>
+          </div>
+          <div class="text-[10px] text-[var(--text-muted)] font-mono flex items-center space-x-1">
+            <span>Sovereign CDSS</span>
+            <span class="text-[var(--text-faint)]">·</span>
+            <span class="text-teal-400/90 font-semibold">v1.4</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Workspace Nav Icons with Tooltips -->
-    <div class="flex-1 w-full flex flex-col items-center space-y-2.5">
-      <!-- 1. CDSS -->
-      <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="rail-nav-btn active group relative" title="1. Clinical CDSS &amp; Review (Ctrl+1)">
-        <i class="fa-solid fa-stethoscope"></i>
-        <span class="rail-tooltip">1. Clinical CDSS &amp; Review</span>
+    <!-- Navigation Menu Items -->
+    <div class="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto">
+      <div class="sidebar-section-heading">CLINICAL WORKSPACES</div>
+
+      <!-- 1. CDSS Review -->
+      <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="sidebar-nav-item step-nav-btn active group" title="Clinical CDSS & Interaction Review (Ctrl+1)">
+        <span class="nav-icon"><i class="fa-solid fa-stethoscope text-teal-400"></i></span>
+        <span class="flex-1 text-left">1. CDSS Review</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+1</kbd>
       </button>
-      <!-- 2. Intake -->
-      <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="rail-nav-btn group relative" title="2. Patient Intake &amp; PHI (Ctrl+2)">
-        <i class="fa-solid fa-hospital-user"></i>
-        <span class="rail-tooltip">2. Patient Intake &amp; PHI</span>
+
+      <!-- 2. Sovereign AI Copilot -->
+      <button id="nav-btn-copilot" type="button" onclick="switchMainTab('copilot')" class="sidebar-nav-item step-nav-btn group" title="Sovereign AI Clinical Copilot & Local Vector RAG (Ctrl+2)">
+        <span class="nav-icon"><i class="fa-solid fa-robot text-teal-400"></i></span>
+        <span class="flex-1 text-left">2. AI Copilot</span>
+        <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold">SLM</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+2</kbd>
       </button>
-      <!-- 3. FHIR -->
-      <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="rail-nav-btn group relative" title="3. Hospital EHR &amp; FHIR (Ctrl+3)">
-        <i class="fa-solid fa-network-wired"></i>
-        <span class="rail-tooltip">3. Hospital EHR &amp; FHIR</span>
+
+      <!-- 3. Patient Intake & PHI -->
+      <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="sidebar-nav-item step-nav-btn group" title="Patient Intake & Safe Harbor Redaction (Ctrl+3)">
+        <span class="nav-icon"><i class="fa-solid fa-hospital-user text-cyan-400"></i></span>
+        <span class="flex-1 text-left">3. Intake &amp; PHI</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+3</kbd>
       </button>
-      <!-- 4. Audit -->
-      <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="rail-nav-btn group relative" title="4. Sovereign Audit Ledger (Ctrl+4)">
-        <i class="fa-solid fa-database"></i>
-        <span class="rail-tooltip">4. Sovereign Audit Ledger</span>
+
+      <!-- 4. Hospital EHR & FHIR -->
+      <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="sidebar-nav-item step-nav-btn group" title="Hospital EHR & FHIR R4 Interoperability (Ctrl+4)">
+        <span class="nav-icon"><i class="fa-solid fa-network-wired text-amber-400"></i></span>
+        <span class="flex-1 text-left">4. EHR &amp; FHIR</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+4</kbd>
       </button>
-      <!-- 5. Analytics -->
-      <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="rail-nav-btn group relative" title="5. Clinical Analytics (Ctrl+5)">
-        <i class="fa-solid fa-chart-line"></i>
-        <span class="rail-tooltip">5. Clinical Analytics</span>
+
+      <!-- 5. Sovereign Audit -->
+      <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="sidebar-nav-item step-nav-btn group" title="Sovereign Immutable Cryptographic Audit Ledger (Ctrl+5)">
+        <span class="nav-icon"><i class="fa-solid fa-database text-emerald-400"></i></span>
+        <span class="flex-1 text-left">5. Sovereign Audit</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+5</kbd>
+      </button>
+
+      <!-- 6. Clinical Analytics -->
+      <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="sidebar-nav-item step-nav-btn group" title="Clinical Analytics & Population Health Insights (Ctrl+6)">
+        <span class="nav-icon"><i class="fa-solid fa-chart-line text-emerald-400"></i></span>
+        <span class="flex-1 text-left">6. Clinical Analytics</span>
+        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+6</kbd>
+      </button>
+
+      <div class="sidebar-section-heading pt-3">DEMO &amp; TOOLS</div>
+
+      <!-- 7. Judge Demo Trigger -->
+      <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="w-full flex items-center space-x-2.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 hover:from-amber-500/30 hover:to-red-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold transition shadow-sm cursor-pointer group" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D)">
+        <span class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-bolt"></i>
+        </span>
+        <span class="flex-1 text-left">⚡ Judge Demo</span>
+        <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40">Ctrl+D</kbd>
+      </button>
+
+      <!-- Patient Portal Launcher -->
+      <a href="/patient-portal" target="_blank" class="sidebar-nav-item group" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
+        <span class="nav-icon"><i class="fa-solid fa-heart-pulse text-teal-400"></i></span>
+        <span class="flex-1 text-left font-medium">Patient Portal</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-[var(--text-faint)] group-hover:text-teal-400 transition-colors"></i>
+      </a>
+
+      <!-- Settings Button -->
+      <button type="button" onclick="toggleSettingsSidebar(true)" class="sidebar-nav-item group" title="Workstation Settings">
+        <span class="nav-icon"><i class="fa-solid fa-gear text-slate-400 group-hover:text-teal-400"></i></span>
+        <span class="flex-1 text-left font-medium">Settings &amp; Config</span>
       </button>
     </div>
 
-    <!-- Rail Footer -->
-    <div class="w-full flex flex-col items-center space-y-2.5 pt-3 border-t border-[var(--border-main)]">
-      <button type="button" onclick="openJudgeDemoModal()" class="rail-nav-btn text-amber-400 hover:text-amber-300 relative group" title="Interactive Judge Demo (Ctrl+D)">
-        <i class="fa-solid fa-bolt"></i>
-        <span class="rail-tooltip">Judge Demo (Ctrl+D)</span>
-      </button>
-      <button type="button" onclick="toggleSettingsSidebar(true)" class="rail-nav-btn relative group" title="Workstation Settings">
-        <i class="fa-solid fa-gear"></i>
-        <span class="rail-tooltip">Settings</span>
-      </button>
+    <!-- Sidebar Telemetry Footer -->
+    <div class="p-3 border-t border-[var(--border-main)]">
+      <div class="p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-main)] space-y-1.5 text-xs">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[10px] font-mono font-bold text-emerald-300">100% OFFLINE</span>
+          </div>
+          <span class="text-[9px] font-mono text-slate-500">127.0.0.1</span>
+        </div>
+        <div class="text-[10px] font-mono text-[var(--text-muted)] flex justify-between">
+          <span>Cloud Egress:</span>
+          <span class="text-emerald-400 font-bold">0 Bytes</span>
+        </div>
+        <div class="text-[9px] text-[var(--text-faint)] font-mono">HIPAA § 164.514 · Air-Gapped</div>
+      </div>
     </div>
   </aside>
 
@@ -1250,10 +1355,13 @@
   <div class="flex-1 flex flex-col min-w-0 min-h-screen">
     <!-- DOCKED SOVEREIGN CLINICAL HEADER -->
     <header class="px-5 py-2.5 border-b border-[var(--border-main)] bg-[var(--bg-header)] backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
-      <!-- Left: Title & Version -->
+      <!-- Left: Active Section Breadcrumb -->
       <div class="flex items-center space-x-2.5">
-        <h1 class="text-sm font-bold text-[var(--text-heading)] font-heading tracking-tight">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
-        <span class="text-[9px] bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-mono">v1.4-OFFLINE</span>
+        <i id="header-section-icon" class="fa-solid fa-stethoscope text-teal-400 text-sm"></i>
+        <div>
+          <h2 id="header-section-title" class="text-xs sm:text-sm font-bold text-[var(--text-heading)] font-heading leading-tight">1. CDSS Review</h2>
+          <span id="header-section-desc" class="hidden xl:inline text-[10px] text-[var(--text-muted)] font-mono">Deterministic Safety Layer + SLM Review</span>
+        </div>
       </div>
 
       <!-- Center: Active Patient Quick Context (Visible across all workspaces) -->
@@ -1265,109 +1373,90 @@
         <span id="top-patient-meta" class="text-[10px] text-teal-400 font-mono">PT-101 · Stage 3 CKD</span>
       </div>
 
-      <!-- Right: Telemetry & Actions -->
+      <!-- Right: Telemetry & Practitioner Actions -->
       <div class="flex items-center space-x-2 flex-wrap">
         <!-- Air-Gap Status Badge -->
         <div id="airgap-status-pill" class="flex items-center space-x-1.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="network-status-badge" class="font-semibold tracking-wide text-[11px]">100% OFFLINE</span>
-          <span id="egress-telemetry-text" class="text-emerald-400 text-[9px] hidden xl:inline">0 BYTES EGRESS</span>
+          <span id="network-status-badge" class="font-semibold tracking-wide text-[10px]">100% OFFLINE</span>
+          <span id="egress-telemetry-text" class="text-emerald-400 text-[9px] hidden 2xl:inline">0 BYTES EGRESS</span>
         </div>
 
-      <!-- Patient Portal Launcher Button -->
-      <a href="/patient-portal" target="_blank" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
-        <i class="fa-solid fa-heart-pulse text-teal-400"></i>
-        <span>Patient Portal</span>
-        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-teal-400/80"></i>
-      </a>
+        <!-- AI Engine Status Badge -->
+        <div id="ai-telemetry-badge" class="hidden lg:flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span id="ai-status-text" class="text-[10px] font-medium">Local Engine: Deterministic</span>
+          <span id="ai-status-pill" class="hidden"></span>
+        </div>
 
-      <!-- Sovereign AI Copilot Quick Launcher -->
-      <button id="btn-copilot-header-trigger" type="button" onclick="switchMainTab('copilot')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500/20 to-indigo-500/25 hover:from-teal-500/30 hover:to-indigo-500/35 border border-teal-500/50 text-teal-200 text-xs font-bold transition cursor-pointer shadow-sm" title="Open Sovereign AI Clinical Copilot & Vector RAG (Ctrl+2 / Alt+2)">
-        <i class="fa-solid fa-robot text-teal-300"></i>
-        <span>🤖 AI Copilot</span>
-        <span class="text-[9px] font-mono uppercase px-1 py-0.2 rounded bg-teal-900/80 text-teal-300 font-bold ml-0.5">SLM</span>
-      </button>
+        <!-- Practitioner Profile Button -->
+        <button type="button" onclick="showChangeDocModal()" class="flex items-center space-x-2 px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 transition cursor-pointer" title="Click to switch reviewing physician">
+          <div id="header-avatar" class="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-300 font-bold text-[10px] flex items-center justify-center border border-teal-500/40">GH</div>
+          <div class="text-left hidden md:block">
+            <div id="current-doctor-pill" class="text-[11px] font-bold text-slate-200 leading-tight">Dr. Gregory House, MD</div>
+            <div id="current-hospital-badge" class="text-[9px] text-teal-400 font-mono leading-none">Princeton Hospital</div>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 hidden md:inline ml-0.5"></i>
+        </button>
 
-      <!-- Judge Demo Mode Trigger Button -->
-      <button id="btn-judge-demo-trigger" type="button" onclick="openJudgeDemoModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-red-500/25 hover:from-amber-500/35 hover:to-red-500/35 border border-amber-500/60 text-amber-300 text-xs font-bold transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.25)]" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D / Alt+6)">
-        <i class="fa-solid fa-bolt text-amber-400"></i>
-        <span>⚡ Judge Demo</span>
-        <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40 hidden md:inline">Ctrl+D</kbd>
-      </button>
+        <!-- Theme Toggle Button -->
+        <button id="btn-theme-toggle" type="button" onclick="toggleTheme()" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Toggle Theme (Dark / Light)">
+          <i id="header-theme-icon" class="fa-solid fa-sun text-xs text-amber-400"></i>
+        </button>
 
-      <!-- Settings Launcher -->
-      <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Workstation Settings">
-        <i class="fa-solid fa-gear text-sm text-teal-400"></i>
-      </button>
-    </div>
-  </header>
+        <!-- Settings Launcher Button -->
+        <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Workstation Settings">
+          <i class="fa-solid fa-gear text-xs text-teal-400"></i>
+        </button>
+      </div>
+    </header>
 
-  <!-- WORKFLOW STEPPER NAVIGATION CONTROLLER (INLINE SAFEGUARD) -->
-  <script>
-    window.switchMainTab = function(tabKey) {
-      document.querySelectorAll('.page-view-panel').forEach(function(panel) {
-        panel.classList.remove('active');
-        panel.style.display = 'none';
-      });
-      document.querySelectorAll('.step-nav-btn').forEach(function(btn) {
-        btn.classList.remove('active');
-        btn.setAttribute('aria-selected', 'false');
-      });
-      var targetPanel = document.getElementById('page-view-' + tabKey);
-      if (targetPanel) {
-        targetPanel.classList.add('active');
-        targetPanel.style.display = 'block';
-      }
-      var targetBtn = document.getElementById('nav-btn-' + tabKey);
-      if (targetBtn) {
-        targetBtn.classList.add('active');
-        targetBtn.setAttribute('aria-selected', 'true');
-      }
-      if (tabKey === 'analytics' && typeof window.loadClinicalAnalytics === 'function') {
-        window.loadClinicalAnalytics();
-      }
-    };
-  </script>
+    <!-- INLINE NAVIGATION SYNCHRONIZATION CONTROLLER -->
+    <script>
+      window.switchMainTab = function(tabKey) {
+        document.querySelectorAll('.page-view-panel').forEach(function(panel) {
+          panel.classList.remove('active');
+          panel.style.display = 'none';
+        });
+        document.querySelectorAll('.step-nav-btn, .sidebar-nav-item').forEach(function(btn) {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
+        });
+        var targetPanel = document.getElementById('page-view-' + tabKey);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+          targetPanel.style.display = 'block';
+        }
+        var targetBtn = document.getElementById('nav-btn-' + tabKey);
+        if (targetBtn) {
+          targetBtn.classList.add('active');
+          targetBtn.setAttribute('aria-selected', 'true');
+        }
+        var breadcrumbs = {
+          review: { icon: 'fa-stethoscope', title: '1. CDSS Review', desc: 'Deterministic Safety Layer + SLM Review' },
+          copilot: { icon: 'fa-robot', title: '2. Sovereign AI Copilot', desc: 'On-Device Clinical Reasoning & Drug Monograph RAG' },
+          intake: { icon: 'fa-hospital-user', title: '3. Patient Intake & PHI', desc: 'HIPAA Safe Harbor § 164.514(b) Automated PHI Masking' },
+          fhir: { icon: 'fa-network-wired', title: '4. Hospital EHR & FHIR', desc: 'Offline FHIR Bundles & Air-Gap QR Transfer' },
+          audit: { icon: 'fa-database', title: '5. Sovereign Audit', desc: 'Tamper-Evident SHA-256 Digest Chain & Merkle Verification' },
+          analytics: { icon: 'fa-chart-line', title: '6. Clinical Analytics', desc: 'Offline Pharmacovigilance & Organ Hazard Distribution' }
+        };
+        var bc = breadcrumbs[tabKey];
+        if (bc) {
+          var iconEl = document.getElementById('header-section-icon');
+          var titleEl = document.getElementById('header-section-title');
+          var descEl = document.getElementById('header-section-desc');
+          if (iconEl) iconEl.className = 'fa-solid ' + bc.icon + ' text-teal-400 text-sm';
+          if (titleEl) titleEl.textContent = bc.title;
+          if (descEl) descEl.textContent = bc.desc;
+        }
+        if (tabKey === 'analytics' && typeof window.loadClinicalAnalytics === 'function') {
+          window.loadClinicalAnalytics();
+        }
+      };
+    </script>
 
-  <!-- WORKFLOW STEPPER NAVIGATION -->
-  <nav class="clinical-card p-1.5 flex items-center space-x-1.5 overflow-x-auto border-slate-800">
-    <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="step-nav-btn active" title="Clinical CDSS & Contraindication Review (Ctrl+1 / Alt+1)">
-      <i class="fa-solid fa-stethoscope text-teal-400"></i>
-      <span>1. CDSS Review</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+1</kbd>
-    </button>
-    <button id="nav-btn-copilot" type="button" onclick="switchMainTab('copilot')" class="step-nav-btn text-teal-300 border-teal-500/30 hover:border-teal-500/60" title="Sovereign AI Clinical Copilot & Local Vector RAG (Ctrl+2 / Alt+2)">
-      <i class="fa-solid fa-robot text-teal-400"></i>
-      <span>2. Sovereign AI Copilot</span>
-      <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold ml-1">SLM RAG</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+2</kbd>
-    </button>
-    <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="step-nav-btn" title="Patient Intake & Safe Harbor Redaction (Ctrl+3 / Alt+3)">
-      <i class="fa-solid fa-hospital-user text-cyan-400"></i>
-      <span>3. Patient Intake &amp; PHI</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+3</kbd>
-    </button>
-    <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="step-nav-btn" title="Hospital EHR & FHIR R4 Interoperability (Ctrl+4 / Alt+4)">
-      <i class="fa-solid fa-network-wired text-amber-400"></i>
-      <span>4. Hospital EHR &amp; FHIR</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+4</kbd>
-    </button>
-    <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="step-nav-btn" title="Sovereign Immutable Cryptographic Audit Ledger (Ctrl+5 / Alt+5)">
-      <i class="fa-solid fa-database text-emerald-400"></i>
-      <span>5. Sovereign Audit</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+5</kbd>
-    </button>
-    <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="step-nav-btn" title="Clinical Analytics & Population Health Insights (Ctrl+6 / Alt+6)">
-      <i class="fa-solid fa-chart-line text-emerald-400"></i>
-      <span>6. Clinical Analytics</span>
-      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+6</kbd>
-    </button>
-    <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="step-nav-btn text-amber-300 border-amber-500/30 hover:border-amber-500/60" title="Interactive Judge Demo Simulator (Ctrl+D / Alt+7)">
-      <i class="fa-solid fa-bolt text-amber-400"></i>
-      <span>7. Judge Demo</span>
-      <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold ml-0.5">Live</span>
-    </button>
-  </nav>
+    <!-- MAIN CLINICAL WORKSPACE VIEWPORT WRAPPER -->
+    <main class="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto max-w-7xl w-full mx-auto">
 
   <!-- ═══════════════════════════════════════════
        VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Fold-Optimized)
@@ -2729,9 +2818,8 @@
     </div>
 
   </div><!-- /page-view-analytics -->
-
-    </div><!-- /workspace content -->
-  </div><!-- /main viewport -->
+  </main><!-- /main workspace viewport -->
+  </div><!-- /main viewport container -->
 </div><!-- /main-app -->
 
 <!-- ═══════════════════════════════════════════
