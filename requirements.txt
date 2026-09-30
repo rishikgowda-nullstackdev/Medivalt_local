@@ -9,3 +9,4 @@ pymupdf>=1.23.0
 qrcode>=8.0
 rapidocr-onnxruntime>=1.2.0
 pillow>=10.0.0
+numpy>=1.26.0

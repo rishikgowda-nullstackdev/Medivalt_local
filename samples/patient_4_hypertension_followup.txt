@@ -1,0 +1,15 @@
+CITY GENERAL CLINIC - OUTPATIENT FOLLOW-UP NOTE
+PATIENT NAME: Priya Nair | DOB: 07/09/1985 | MRN: 6620318
+SSN: 444-55-6666 | PHONE: 98765 43210 | ADDRESS: 5 MG Road, Bengaluru, KA 560001
+REFERRING PHYSICIAN: Dr. Anita Rao, MD
+
+REASON FOR VISIT: Follow-up for essential hypertension.
+
+ASSESSMENT:
+Patient is a 40-year-old female. BP 148/92 mmHg on last visit.
+Serum creatinine 1.1 mg/dL. eGFR 78. No evidence of CKD.
+
+PLAN:
+- Amlodipine 5mg PO daily
+- Repeat BMP in 4 weeks
+- Low sodium diet, exercise 30 min/day

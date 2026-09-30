@@ -177,6 +177,8 @@ class UploadRecordResponse(BaseModel):
     entities: Optional[Dict[str, Any]] = None
     ocr_performed: Optional[bool] = False
     extraction_mode: Optional[str] = None
+    patient_name: Optional[str] = None
+    patient_id_extracted: Optional[str] = None
 
 class ReviewRequest(BaseModel):
     patient_id: Optional[str] = "PT-101"
@@ -226,6 +228,7 @@ class CopilotChatRequest(BaseModel):
     patient_id: Optional[str] = None
     proposed_med: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 
 class KnowledgeSearchRequest(BaseModel):
@@ -237,6 +240,18 @@ class KnowledgeSearchRequest(BaseModel):
 class IntakeAiExtractRequest(BaseModel):
     raw_text: str
     patient_id: Optional[str] = None
+
+
+class CreatePatientRequest(BaseModel):
+    """Request body for adding a new patient to the local database."""
+    patient_id: str
+    patient_name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    conditions: Optional[List[Dict[str, Any]]] = None
+    medications: Optional[List[Dict[str, Any]]] = None
+    allergies: Optional[List[Dict[str, Any]]] = None
+    labs: Optional[Dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +309,9 @@ async def upload_record_endpoint(file: UploadFile = File(...)):
         "phi_detected": processed.get("phi_detected"),
         "entities": processed.get("entities"),
         "ocr_performed": is_image,
-        "extraction_mode": "Sovereign On-Device OCR (RapidOCR)" if is_image else "Direct Text Parsing"
+        "extraction_mode": "Sovereign On-Device OCR (RapidOCR)" if is_image else "Direct Text Parsing",
+        "patient_name": processed.get("patient_name"),
+        "patient_id_extracted": processed.get("patient_id_extracted"),
     }
 
 
@@ -394,6 +411,83 @@ def list_patients():
     patients = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return {"patients": patients}
+
+
+@app.post("/api/patients")
+def create_patient(req: CreatePatientRequest):
+    """
+    Adds a new patient to the local database from the intake flow.
+    Accepts demographics plus optional conditions, medications, allergies, and labs
+    extracted from clinical notes.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check if patient_id already exists
+    cursor.execute("SELECT patient_id FROM patients WHERE patient_id = ?", (req.patient_id,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(
+            status_code=409,
+            detail=f"Patient ID '{req.patient_id}' already exists. Use a different ID or update the existing record."
+        )
+
+    # Insert patient demographics
+    cursor.execute(
+        "INSERT INTO patients (patient_id, patient_name, age, gender) VALUES (?, ?, ?, ?)",
+        (req.patient_id, req.patient_name, req.age, req.gender)
+    )
+
+    # Insert conditions if provided
+    if req.conditions:
+        for cond in req.conditions:
+            cond_name = cond.get("condition_name") or cond.get("name", "")
+            if cond_name:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO patient_conditions (patient_id, condition_name, icd10_code) VALUES (?, ?, ?)",
+                    (req.patient_id, cond_name, cond.get("icd10_code"))
+                )
+
+    # Insert medications if provided
+    if req.medications:
+        for med in req.medications:
+            med_name = med.get("medication_name") or med.get("name", "")
+            if med_name:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO patient_medications (patient_id, medication_name, dosage, frequency) VALUES (?, ?, ?, ?)",
+                    (req.patient_id, med_name, med.get("dosage", ""), med.get("frequency", ""))
+                )
+
+    # Insert allergies if provided
+    if req.allergies:
+        for allergy in req.allergies:
+            allergen = allergy.get("allergen") or allergy.get("name", "")
+            if allergen:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO patient_allergies (patient_id, allergen, reaction) VALUES (?, ?, ?)",
+                    (req.patient_id, allergen, allergy.get("reaction", ""))
+                )
+
+    # Insert lab biomarkers if provided (dict: { "eGFR": { "value": 38, "unit": "mL/min" }, ... })
+    if req.labs and isinstance(req.labs, dict):
+        for biomarker_name, lab_data in req.labs.items():
+            if isinstance(lab_data, dict) and "value" in lab_data:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO patient_labs (patient_id, biomarker_name, value, unit) VALUES (?, ?, ?, ?)",
+                    (req.patient_id, biomarker_name, lab_data["value"], lab_data.get("unit", ""))
+                )
+
+    conn.commit()
+    conn.close()
+
+    logger.info("New patient created: %s (%s)", req.patient_id, req.patient_name)
+
+    return {
+        "success": True,
+        "patient_id": req.patient_id,
+        "patient_name": req.patient_name,
+        "message": f"Patient '{req.patient_name}' ({req.patient_id}) added successfully."
+    }
 
 
 @app.get("/api/patients/{patient_id}")
@@ -1451,7 +1545,8 @@ def copilot_chat_endpoint(req: CopilotChatRequest):
         message=req.message,
         patient_id=req.patient_id,
         proposed_med=req.proposed_med,
-        context=req.context
+        context=req.context,
+        history=req.history
     )
     return result
 

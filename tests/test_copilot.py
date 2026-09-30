@@ -57,6 +57,71 @@ class TestClinicalCopilot(unittest.TestCase):
         self.assertFalse("is safe to take" in res["reply"].lower())
         self.assertIn("contraindicated", res["reply"].lower())
 
+    def test_copilot_multi_turn_history(self):
+        """Verify copilot handles multi-turn conversation history."""
+        history = [
+            {"role": "user", "content": "What is the patient eGFR?"},
+            {"role": "assistant", "content": "Patient PT-101 has an eGFR of 38 mL/min/1.73m² (CKD Stage 3b)."}
+        ]
+        res = ask_copilot(
+            message="Can we prescribe an NSAID given this level?",
+            patient_id="PT-101",
+            proposed_med="Ibuprofen",
+            history=history
+        )
+        self.assertIn(res["status"], ["CRITICAL", "WARNING"])
+        reply_lower = res["reply"].lower()
+        self.assertTrue("nsaid" in reply_lower or "ibuprofen" in reply_lower or "contraindicated" in reply_lower or "kidney" in reply_lower)
+
+    def test_copilot_lab_profile_inquiry(self):
+        """Verify copilot returns patient lab profile telemetry."""
+        res = ask_copilot(
+            message="What is the current patient lab profile and eGFR?",
+            patient_id="PT-101"
+        )
+        reply_lower = res["reply"].lower()
+        self.assertTrue("egfr" in reply_lower or "serum creatinine" in reply_lower or "potassium" in reply_lower)
+
+    def test_copilot_no_repeated_hello_on_subsequent_turns(self):
+        """Verify copilot does not prepend 'Hello, I am the Sovereign Clinical Copilot' on subsequent turns."""
+        history = [
+            {"role": "user", "content": "What is the patient allergy profile?"},
+            {"role": "assistant", "content": "Patient has a documented allergy to Sulfonamides."}
+        ]
+        res = ask_copilot(
+            message="does the patient has any allery",
+            patient_id="PT-101",
+            history=history
+        )
+        reply = res["reply"]
+        self.assertFalse(reply.lower().startswith("hello"))
+        self.assertFalse(reply.lower().startswith("good morning"))
+        self.assertFalse("i'm the sovereign clinical ai copilot" in reply.lower())
+        self.assertFalse("i am the sovereign clinical copilot" in reply.lower())
+
+    def test_fuzzy_drug_resolution_citrizen(self):
+        """Verify typo 'Citrizen' is resolved to 'Cetirizine' with renal dosage instructions."""
+        res = ask_copilot(
+            message="Can I give the patient Citrizen tablets?",
+            patient_id="PT-101"
+        )
+        self.assertEqual(res["target_med"], "Cetirizine")
+        self.assertEqual(res["detected_drug"], "Cetirizine")
+        self.assertTrue("cetirizine" in res["reply"].lower())
+        self.assertIn("clinical_badges", res)
+        self.assertIn("suggested_actions", res)
+        self.assertIn("suggested_followups", res)
+
+    def test_allergy_cross_reactivity_and_typo(self):
+        """Verify 'does the patient has any allery' resolves allergy profile with class guardrails."""
+        res = ask_copilot(
+            message="does the patient has any allery",
+            patient_id="PT-101"
+        )
+        self.assertTrue("sulfonamide" in res["reply"].lower())
+        # Followups should be present
+        self.assertGreater(len(res["suggested_followups"]), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

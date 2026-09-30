@@ -1,0 +1,9 @@
+   patient name :    priya   nair     ,,  
+DOB:1985-07-09    mrn:  0099
+ph 98765 43210 ; SSN 444556666
+Addr: 5 MG Road Bengaluru
+!!! ### ???
+
+		Dx:   CKD   stage 3 ;;; on Metformin 500mg
+phone (extra): 555.210.9988
+Caf\u00e9 \u00fcber \u4e2d\u6587 \U0001F600 weird unicode line

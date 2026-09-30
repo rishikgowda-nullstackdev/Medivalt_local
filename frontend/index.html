@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,64 +20,66 @@
 
   <style>
     /* ═══════════════════════════════════════════════════════════════════
-       MEDIVAULT SOVEREIGN DESIGN TOKENS (DARK MODE DEFAULT)
-       Asset Reference: assets/4010198914031322601 (ROUND_EIGHT, TONAL_SPOT)
+       ENTERPRISE CLINICAL DESIGN TOKENS
+       Option A (Default): Modern Light Clinical Theme (Recommended for Demos)
+       Dark Mode: High-Contrast Clinical Slate (#0b0f19)
     ═══════════════════════════════════════════════════════════════════ */
     :root {
-      /* Brand Clinical Accents (Linear/Vercel Obsidian) */
-      --teal-primary: #0d9488;
-      --teal-accent: #14b8a6;
-      --teal-bright: #2dd4bf;
-      --teal-glow: rgba(45, 212, 191, 0.15);
-      --cyan-accent: #06b6d4;
-
-      /* Spatial Canvas & Surfaces */
-      --bg-canvas: #070a13;
-      --bg-page: #0b0f1c;
-      --bg-card: #0e1424;
-      --bg-card-subtle: #121a2f;
-      --bg-input-well: #070a14;
-      --bg-header: rgba(11, 15, 28, 0.95);
-      --bg-tab-bar: rgba(255, 255, 255, 0.03);
-      --bg-tab-active: rgba(13, 148, 136, 0.22);
+      /* Dark Theme: High-Contrast Clinical Slate */
+      --bg-canvas: #0b0f19;
+      --bg-page: #0b0f19;
+      --bg-card: #111827;
+      --bg-card-subtle: #1e293b;
+      --bg-input-well: #0f172a;
+      --bg-header: rgba(17, 24, 39, 0.95);
+      --bg-tab-bar: #1e293b;
+      --bg-tab-active: #0284c7;
       
-      /* Crisp Linear Micro-Borders */
-      --border-main: rgba(255, 255, 255, 0.08);
-      --border-card: rgba(255, 255, 255, 0.09);
-      --border-focus: #14b8a6;
-      --border-hover: rgba(20, 184, 166, 0.4);
+      /* Sharp High-Contrast Slate Micro-Borders */
+      --border-main: #334155;
+      --border-card: #334155;
+      --border-focus: #0284c7;
+      --border-hover: #475569;
 
       /* Typography Contrast Tokens */
       --text-heading: #f8fafc;
-      --text-primary: #e2e8f0;
+      --text-primary: #f1f5f9;
+      --text-body: #cbd5e1;
       --text-muted: #94a3b8;
       --text-faint: #64748b;
 
-      /* Triage Status Colors */
-      --alert-critical-bg: rgba(69, 10, 10, 0.85);
+      /* Enterprise Clinical Status Accents */
+      --accent-blue: #0284c7;
+      --accent-blue-hover: #0369a1;
+      --accent-safe: #059669;
+      --accent-warning: #d97706;
+      --accent-critical: #dc2626;
+
+      /* Triage Status Colors (High Contrast) */
+      --alert-critical-bg: rgba(127, 29, 29, 0.45);
       --alert-critical-border: #ef4444;
-      --alert-critical-text: #fca5a5;
+      --alert-critical-text: #fecaca;
 
-      --alert-warning-bg: rgba(69, 26, 3, 0.85);
+      --alert-warning-bg: rgba(120, 53, 15, 0.45);
       --alert-warning-border: #f59e0b;
-      --alert-warning-text: #fde68a;
+      --alert-warning-text: #fef3c7;
 
-      --alert-safe-bg: rgba(2, 44, 34, 0.85);
+      --alert-safe-bg: rgba(6, 78, 59, 0.45);
       --alert-safe-border: #10b981;
-      --alert-safe-text: #a7f3d0;
+      --alert-safe-text: #d1fae5;
 
-      --alert-allergy-bg: rgba(59, 7, 100, 0.85);
+      --alert-allergy-bg: rgba(88, 28, 135, 0.45);
       --alert-allergy-border: #a855f7;
       --alert-allergy-text: #e9d5ff;
 
-      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+      --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
       --shadow-elevation: 0 12px 36px rgba(0, 0, 0, 0.6);
       --radius-sm: 6px;
       --radius-md: 8px;
       --radius-lg: 12px;
     }
 
-    /* ─── APPLE HEALTH LIGHT THEME OVERRIDES ─── */
+    /* ─── OPTION A: MODERN LIGHT CLINICAL THEME (RECOMMENDED FOR DEMOS) ─── */
     html.light {
       --bg-canvas: #f8fafc;
       --bg-page: #f1f5f9;
@@ -85,18 +87,25 @@
       --bg-card-subtle: #f8fafc;
       --bg-input-well: #ffffff;
       --bg-header: rgba(255, 255, 255, 0.95);
-      --bg-tab-bar: rgba(0, 0, 0, 0.04);
-      --bg-tab-active: rgba(13, 148, 136, 0.12);
+      --bg-tab-bar: #f1f5f9;
+      --bg-tab-active: #ffffff;
 
       --border-main: #e2e8f0;
       --border-card: #e2e8f0;
-      --border-focus: #0d9488;
-      --border-hover: #0d9488;
+      --border-focus: #0284c7;
+      --border-hover: #cbd5e1;
 
       --text-heading: #0f172a;
       --text-primary: #1e293b;
+      --text-body: #334155;
       --text-muted: #64748b;
       --text-faint: #94a3b8;
+
+      --accent-blue: #0284c7;
+      --accent-blue-hover: #0369a1;
+      --accent-safe: #059669;
+      --accent-warning: #d97706;
+      --accent-critical: #dc2626;
 
       --alert-critical-bg: #fef2f2;
       --alert-critical-border: #f87171;
@@ -110,8 +119,12 @@
       --alert-safe-border: #86efac;
       --alert-safe-text: #166534;
 
-      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(0, 0, 0, 0.04);
-      --shadow-elevation: 0 10px 25px rgba(0, 0, 0, 0.08);
+      --alert-allergy-bg: #faf5ff;
+      --alert-allergy-border: #d8b4fe;
+      --alert-allergy-text: #6b21a8;
+
+      --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-elevation: 0 10px 25px rgba(15, 23, 42, 0.1);
     }
 
     * { box-sizing: border-box; }
@@ -121,18 +134,31 @@
       margin: 0; padding: 0;
       background: var(--bg-canvas);
       color: var(--text-primary);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
       overflow-x: hidden;
-      transition: background 0.25s ease, color 0.25s ease;
+      transition: background 0.2s ease, color 0.2s ease;
+      -webkit-font-smoothing: antialiased;
     }
 
     h1, h2, h3, h4, .font-heading {
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--text-heading);
     }
 
-    .font-mono-telemetry {
-      font-family: 'JetBrains Mono', monospace;
+    .font-mono, .font-mono-telemetry {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0.02em;
     }
+
+    /* Subtext legibility enhancement: keep tokens at >= 11.5px / 12px with readable letter-spacing */
+    .text-xs { font-size: 12px !important; }
+    .text-\[11px\] { font-size: 11.5px !important; }
+    .text-\[10px\] { font-size: 11px !important; }
+    .text-\[9px\] { font-size: 10.5px !important; }
 
     /* ─── WORKSTATION CARD BASE ─── */
     .clinical-card {
@@ -145,6 +171,15 @@
     .clinical-card:hover {
       border-color: var(--border-hover);
     }
+    html.light .clinical-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    }
+    html.light .clinical-card:hover {
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08) !important;
+    }
 
     .card-header-strip {
       padding: 12px 16px;
@@ -155,13 +190,20 @@
     }
 
     .card-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--text-heading);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    html.light .card-title {
+      color: #0f172a !important;
+    }
+    html.light .card-title i {
+      color: #0284c7 !important;
     }
 
     /* ─── FORM & INPUT WELLS ─── */
@@ -177,18 +219,30 @@
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .clinical-input:focus {
-      border-color: var(--teal-primary);
-      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    html.light .clinical-input {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    html.light .clinical-input:focus {
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
     }
 
     .clinical-label {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 6px;
       display: block;
+    }
+    html.light .clinical-label {
+      color: #475569 !important;
     }
 
     /* ─── BUTTON HIERARCHY ─── */
@@ -198,27 +252,31 @@
       justify-content: center;
       gap: 8px;
       padding: 10px 18px;
-      background: var(--teal-primary);
-      border: 1px solid var(--teal-accent);
+      background: #0284c7;
+      border: 1px solid #0369a1;
       border-radius: var(--radius-md);
       color: #ffffff;
       font-weight: 700;
       font-size: 13px;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.02em;
       cursor: pointer;
-      box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35);
-      transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+      box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .btn-clinical-primary:hover:not(:disabled) {
-      background: #0f766e;
-      box-shadow: 0 4px 16px rgba(13, 148, 136, 0.5);
+      background: #0369a1;
+      border-color: #075985;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+      transform: translateY(-1px);
     }
     .btn-clinical-primary:active:not(:disabled) {
-      transform: translateY(1px);
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
     }
     .btn-clinical-primary:disabled {
-      opacity: 0.6;
+      opacity: 0.55;
       cursor: not-allowed;
+      transform: none !important;
     }
 
     .btn-clinical-secondary {
@@ -226,26 +284,37 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 14px;
-      background: rgba(13, 148, 136, 0.08);
-      border: 1px solid rgba(13, 148, 136, 0.3);
-      border-radius: var(--radius-md);
-      color: var(--teal-bright);
+      padding: 7px 13px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      color: #0f172a;
       font-weight: 600;
       font-size: 12px;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: all 0.15s ease;
     }
     .btn-clinical-secondary:hover {
-      background: rgba(13, 148, 136, 0.16);
-      border-color: var(--teal-accent);
+      background: #e2e8f0;
+      border-color: #94a3b8;
+      color: #0284c7;
+    }
+    html:not(.light) .btn-clinical-secondary {
+      background: #1e293b;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
+    html:not(.light) .btn-clinical-secondary:hover {
+      background: #334155;
+      border-color: #475569;
+      color: #38bdf8;
     }
 
     /* ─── PRESET TEST CHIPS ─── */
     .test-chip {
       padding: 5px 10px;
       border-radius: var(--radius-sm);
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 600;
       border: 1px solid transparent;
       cursor: pointer;
@@ -255,28 +324,65 @@
       transition: all 0.12s ease;
     }
     .test-chip-danger {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: rgba(239, 68, 68, 0.35);
-      color: #fca5a5;
+      background: #fef2f2 !important;
+      border-color: #fecaca !important;
+      color: #991b1b !important;
     }
     .test-chip-danger:hover {
-      background: rgba(239, 68, 68, 0.25);
+      background: #fee2e2 !important;
+      border-color: #f87171 !important;
+      transform: translateY(-1px);
     }
     .test-chip-warning {
-      background: rgba(245, 158, 11, 0.12);
-      border-color: rgba(245, 158, 11, 0.35);
-      color: #fde68a;
+      background: #fffbeb !important;
+      border-color: #fde68a !important;
+      color: #92400e !important;
     }
     .test-chip-warning:hover {
-      background: rgba(245, 158, 11, 0.25);
+      background: #fef3c7 !important;
+      border-color: #f59e0b !important;
+      transform: translateY(-1px);
+    }
+    .test-chip-safe {
+      background: #f0fdf4 !important;
+      border-color: #bbf7d0 !important;
+      color: #166534 !important;
+    }
+    .test-chip-safe:hover {
+      background: #dcfce7 !important;
+      border-color: #4ade80 !important;
+      transform: translateY(-1px);
     }
     .test-chip-purple {
-      background: rgba(168, 85, 247, 0.12);
-      border-color: rgba(168, 85, 247, 0.35);
-      color: #e9d5ff;
+      background: #faf5ff !important;
+      border-color: #e9d5ff !important;
+      color: #6b21a8 !important;
     }
     .test-chip-purple:hover {
-      background: rgba(168, 85, 247, 0.25);
+      background: #f3e8ff !important;
+      border-color: #c084fc !important;
+      transform: translateY(-1px);
+    }
+
+    html:not(.light) .test-chip-danger {
+      background: rgba(127, 29, 29, 0.5) !important;
+      border-color: #ef4444 !important;
+      color: #fca5a5 !important;
+    }
+    html:not(.light) .test-chip-warning {
+      background: rgba(120, 53, 15, 0.5) !important;
+      border-color: #f59e0b !important;
+      color: #fde68a !important;
+    }
+    html:not(.light) .test-chip-safe {
+      background: rgba(6, 78, 59, 0.5) !important;
+      border-color: #10b981 !important;
+      color: #a7f3d0 !important;
+    }
+    html:not(.light) .test-chip-purple {
+      background: rgba(88, 28, 135, 0.5) !important;
+      border-color: #a855f7 !important;
+      color: #e9d5ff !important;
     }
 
     /* ─── STATUS TRIAGE BANNERS ─── */
@@ -287,24 +393,70 @@
       align-items: flex-start;
       gap: 14px;
       border: 1px solid transparent;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .triage-banner.danger, .result-banner.danger {
-      background: var(--alert-critical-bg);
-      border-color: var(--alert-critical-border);
-      color: var(--alert-critical-text);
-      box-shadow: 0 0 24px rgba(239, 68, 68, 0.15);
+      background: #fef2f2 !important;
+      border-color: #f87171 !important;
+      color: #991b1b !important;
     }
     .triage-banner.warning, .result-banner.warning {
-      background: var(--alert-warning-bg);
-      border-color: var(--alert-warning-border);
-      color: var(--alert-warning-text);
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+      background: #fffbeb !important;
+      border-color: #fbbf24 !important;
+      color: #92400e !important;
     }
     .triage-banner.safe, .result-banner.safe {
-      background: var(--alert-safe-bg);
-      border-color: var(--alert-safe-border);
-      color: var(--alert-safe-text);
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+      background: #f0fdf4 !important;
+      border-color: #4ade80 !important;
+      color: #166534 !important;
+    }
+
+    html.light .triage-banner.danger #status-title,
+    html.light #status-title.text-red-200 {
+      color: #991b1b !important;
+    }
+    html.light .triage-banner.warning #status-title,
+    html.light #status-title.text-amber-200 {
+      color: #92400e !important;
+    }
+    html.light .triage-banner.safe #status-title,
+    html.light #status-title.text-emerald-200 {
+      color: #166534 !important;
+    }
+    html.light #status-explanation {
+      color: #334155 !important;
+      font-weight: 500 !important;
+    }
+    html.light .triage-banner.danger #alerts-count-badge {
+      background: #fee2e2 !important;
+      border: 1px solid #fca5a5 !important;
+      color: #991b1b !important;
+    }
+    html.light .triage-banner.warning #alerts-count-badge {
+      background: #fef3c7 !important;
+      border: 1px solid #fde68a !important;
+      color: #92400e !important;
+    }
+    html.light .triage-banner.safe #alerts-count-badge {
+      background: #dcfce7 !important;
+      border: 1px solid #86efac !important;
+      color: #166534 !important;
+    }
+
+    html:not(.light) .triage-banner.danger {
+      background: rgba(127, 29, 29, 0.5) !important;
+      border-color: #ef4444 !important;
+      color: #fecaca !important;
+    }
+    html:not(.light) .triage-banner.warning {
+      background: rgba(120, 53, 15, 0.5) !important;
+      border-color: #f59e0b !important;
+      color: #fef3c7 !important;
+    }
+    html:not(.light) .triage-banner.safe {
+      background: rgba(6, 78, 59, 0.5) !important;
+      border-color: #10b981 !important;
+      color: #d1fae5 !important;
     }
 
     /* ─── 56PX LEFT RAIL NAVIGATION ─── */
@@ -325,14 +477,25 @@
     }
     .rail-nav-btn:hover {
       color: var(--text-heading);
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(0, 0, 0, 0.04);
       border-color: var(--border-main);
     }
     .rail-nav-btn.active {
-      color: #14b8a6;
-      background: rgba(20, 184, 166, 0.14);
-      border-color: rgba(20, 184, 166, 0.4);
-      box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+      color: #0284c7;
+      background: #e0f2fe;
+      border-color: #bae6fd;
+      box-shadow: 0 1px 3px rgba(2, 132, 199, 0.12);
+    }
+    html:not(.light) .rail-nav-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #334155;
+    }
+    html:not(.light) .rail-nav-btn.active {
+      color: #38bdf8;
+      background: rgba(2, 132, 199, 0.2);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.25);
     }
     .rail-tooltip {
       position: absolute;
@@ -345,14 +508,14 @@
       padding: 4px 9px;
       border-radius: 6px;
       font-size: 11px;
-      font-family: 'Inter', sans-serif;
+      font-family: system-ui, sans-serif;
       font-weight: 500;
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.15s ease, transform 0.15s ease;
       z-index: 50;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     }
     html.light .rail-tooltip {
       background: #ffffff;
@@ -367,9 +530,9 @@
 
     /* ─── RESULTS SUB-TABS ─── */
     .subtab-btn {
-      padding: 6px 12px;
+      padding: 7px 14px;
       border-radius: var(--radius-sm);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
@@ -382,20 +545,23 @@
     }
     .subtab-btn:hover {
       color: var(--text-heading);
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .subtab-btn.active {
-      color: var(--teal-bright);
-      background: rgba(13, 148, 136, 0.15);
-      border-color: rgba(20, 184, 166, 0.4);
-    }
-    html.light .subtab-btn:hover {
       background: rgba(0, 0, 0, 0.04);
     }
-    html.light .subtab-btn.active {
-      color: #0f766e;
-      background: rgba(13, 148, 136, 0.12);
-      border-color: rgba(13, 148, 136, 0.35);
+    .subtab-btn.active {
+      color: #0284c7 !important;
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+      font-weight: 700 !important;
+    }
+    html:not(.light) .subtab-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    html:not(.light) .subtab-btn.active {
+      color: #38bdf8 !important;
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     }
 
     /* ─── SKELETON SHIMMER EFFECT ─── */
@@ -410,58 +576,327 @@
       100% { background-position: 200% 0; }
     }
 
-    /* ─── LIGHT THEME COMPREHENSIVE OVERRIDES ─── */
-    html.light .bg-slate-900, html.light .bg-slate-950, html.light .bg-slate-950\/70,
-    html.light .bg-slate-950\/80, html.light .bg-slate-950\/90, html.light .bg-slate-900\/60,
-    html.light .bg-slate-900\/80, html.light .bg-slate-900\/90 {
-      background-color: var(--bg-card) !important;
+    /* ─── BIOMARKER METRIC CARDS ─── */
+    #biomarkers-list > div {
+      border-radius: var(--radius-md) !important;
+      padding: 10px 12px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      border-left-width: 3px !important;
+      transition: all 0.15s ease !important;
     }
-    html.light .text-slate-100, html.light .text-slate-200, html.light .text-white {
+    html.light #biomarkers-list > div {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-left-width: 3px !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+    }
+    html.light #biomarkers-list > div:hover {
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08) !important;
+      transform: translateY(-1px);
+    }
+    html.light #biomarkers-list > div .text-\[10px\] {
+      color: #475569 !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.05em !important;
+      font-size: 11px !important;
+    }
+    html.light #biomarkers-list > div .text-sm {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+      font-size: 15px !important;
+    }
+    html.light #biomarkers-list > div span.text-\[9px\] {
+      display: inline-block !important;
+      padding: 2px 7px !important;
+      border-radius: 9999px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      width: fit-content !important;
+      margin-top: 4px !important;
+    }
+    html.light #biomarkers-list > div span.text-emerald-300,
+    html.light #biomarkers-list > div span.text-emerald-400 {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border: 1px solid #a7f3d0 !important;
+    }
+    html.light #biomarkers-list > div span.text-amber-300,
+    html.light #biomarkers-list > div span.text-amber-400 {
+      background: #fffbeb !important;
+      color: #b45309 !important;
+      border: 1px solid #fde68a !important;
+    }
+    html.light #biomarkers-list > div span.text-red-300,
+    html.light #biomarkers-list > div span.text-red-400 {
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+      border: 1px solid #fecaca !important;
+    }
+
+    html:not(.light) #biomarkers-list > div {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
+      border-left-width: 3px !important;
+    }
+    html:not(.light) #biomarkers-list > div .text-\[10px\] {
+      color: #94a3b8 !important;
+      font-weight: 700 !important;
+      font-size: 11px !important;
+    }
+    html:not(.light) #biomarkers-list > div .text-sm {
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+      font-size: 15px !important;
+    }
+    html:not(.light) #biomarkers-list > div span.text-\[9px\] {
+      display: inline-block !important;
+      padding: 2px 7px !important;
+      border-radius: 9999px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      width: fit-content !important;
+      margin-top: 4px !important;
+    }
+    html:not(.light) #biomarkers-list > div span.text-emerald-300 {
+      background: rgba(6, 78, 59, 0.6) !important;
+      color: #6ee7b7 !important;
+      border: 1px solid #059669 !important;
+    }
+    html:not(.light) #biomarkers-list > div span.text-amber-300 {
+      background: rgba(120, 53, 15, 0.6) !important;
+      color: #fde68a !important;
+      border: 1px solid #d97706 !important;
+    }
+    html:not(.light) #biomarkers-list > div span.text-red-300 {
+      background: rgba(127, 29, 29, 0.6) !important;
+      color: #fca5a5 !important;
+      border: 1px solid #dc2626 !important;
+    }
+
+    /* ─── STANDING-BY / IDLE HINT ─── */
+    #result-idle-hint {
+      background: #f8fafc !important;
+      border: 2px dashed #cbd5e1 !important;
+      border-radius: var(--radius-md) !important;
+      padding: 36px 20px !important;
+    }
+    html:not(.light) #result-idle-hint {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    #result-idle-hint i {
+      color: #0284c7 !important;
+      opacity: 0.65;
+    }
+    #result-idle-hint .text-xs {
+      color: var(--text-heading) !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      margin-top: 4px !important;
+    }
+    #result-idle-hint p {
+      color: var(--text-muted) !important;
+      font-size: 12px !important;
+      line-height: 1.6 !important;
+    }
+
+    /* ─── HAZARD GAUGE & SPEEDOMETER CONTRAST ─── */
+    html.light #hazard-gauge-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    html.light #hazard-gauge-card svg path:first-of-type {
+      stroke: #e2e8f0 !important;
+    }
+    html.light #hazard-gauge-card text {
+      fill: #64748b !important;
+    }
+    html.light #hazard-needle-group polygon {
+      fill: #0f172a !important;
+    }
+    html.light #hazard-needle-group circle:first-of-type {
+      fill: #ffffff !important;
+      stroke: #0284c7 !important;
+    }
+    html.light #hazard-needle-group circle:last-of-type {
+      fill: #0284c7 !important;
+    }
+
+    /* ─── LIGHT THEME COMPREHENSIVE CONTRAST OVERRIDES ─── */
+    html.light .bg-slate-900, 
+    html.light .bg-slate-950, 
+    html.light .bg-slate-950\/70,
+    html.light .bg-slate-950\/80, 
+    html.light .bg-slate-950\/90, 
+    html.light .bg-slate-900\/50,
+    html.light .bg-slate-900\/60,
+    html.light .bg-slate-900\/80, 
+    html.light .bg-slate-900\/90 {
+      background-color: var(--bg-card-subtle) !important;
+      color: var(--text-primary) !important;
+    }
+    html.light .border-slate-900,
+    html.light .border-slate-800, 
+    html.light .border-slate-700 {
+      border-color: var(--border-main) !important;
+    }
+    html.light .text-slate-100, 
+    html.light .text-slate-200, 
+    html.light .text-white {
       color: var(--text-heading) !important;
     }
-    html.light .text-slate-300, html.light .text-slate-400 {
-      color: var(--text-primary) !important;
+    html.light .text-slate-300, 
+    html.light .text-slate-400 {
+      color: var(--text-body) !important;
     }
     html.light .text-slate-500 {
       color: var(--text-muted) !important;
     }
-    html.light .border-slate-800, html.light .border-slate-700 {
-      border-color: var(--border-main) !important;
+    html.light .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+      border-color: #e2e8f0 !important;
     }
-    html.light .test-chip-danger {
+
+    /* Baseline Chips */
+    html.light #conditions-list span.bg-slate-800,
+    html.light #medications-list span.bg-slate-800 {
+      background: #f1f5f9 !important;
+      color: #1e293b !important;
+      border: 1px solid #cbd5e1 !important;
+      font-weight: 500 !important;
+    }
+    html.light #conditions-list span.bg-red-950\/60 {
       background: #fef2f2 !important;
+      color: #991b1b !important;
+      border: 1px solid #fecaca !important;
+      font-weight: 600 !important;
+    }
+    html.light #allergies-list span.bg-amber-950\/60 {
+      background: #fffbeb !important;
+      color: #92400e !important;
+      border: 1px solid #fde68a !important;
+      font-weight: 600 !important;
+    }
+
+    /* Results Action Panel Overrides */
+    html.light #itemized-medications-cards > div {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-left-width: 3px !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+    }
+    html.light #itemized-medications-cards > div.border-red-500\/80 {
+      border-left-color: #ef4444 !important;
+    }
+    html.light #itemized-medications-cards > div.border-amber-500\/70 {
+      border-left-color: #f59e0b !important;
+    }
+    html.light #itemized-medications-cards > div.border-emerald-500\/40 {
+      border-left-color: #10b981 !important;
+    }
+    html.light #itemized-medications-cards > div .bg-slate-950\/80 {
+      background: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+    }
+
+    /* Safe Alternatives */
+    html.light #alternatives-container > div > div > div.bg-slate-900 {
+      background: #ffffff !important;
+      border: 1px solid #a7f3d0 !important;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08) !important;
+    }
+    html.light #alternatives-container .text-emerald-300 {
+      color: #047857 !important;
+    }
+    html.light #alternatives-container .bg-emerald-950 {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border-color: #a7f3d0 !important;
+    }
+    html.light #alternatives-container .btn-clinical-secondary {
+      background: #f0fdf4 !important;
+      border-color: #86efac !important;
+      color: #047857 !important;
+    }
+    html.light #alternatives-container .btn-clinical-secondary:hover {
+      background: #dcfce7 !important;
+    }
+
+    /* Cumulative Polypharmacy */
+    html.light #polypharmacy-container > div {
+      background: #fef2f2 !important;
+      border: 2px solid #ef4444 !important;
+      color: #991b1b !important;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
+    }
+    html.light #polypharmacy-container > div .text-red-300,
+    html.light #polypharmacy-container > div .text-red-200 {
+      color: #991b1b !important;
+    }
+    html.light #polypharmacy-container > div .text-amber-300 {
+      color: #b45309 !important;
+      font-weight: 700 !important;
+    }
+    html.light #polypharmacy-container > div .bg-red-900\/40 {
+      background: #fee2e2 !important;
       border-color: #fca5a5 !important;
       color: #991b1b !important;
     }
-    html.light .test-chip-warning {
-      background: #fffbeb !important;
-      border-color: #fde68a !important;
-      color: #92400e !important;
+
+    /* Discrete Alerts */
+    html.light #alerts-container > div {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
     }
-    html.light .test-chip-purple {
-      background: #faf5ff !important;
-      border-color: #e9d5ff !important;
-      color: #6b21a8 !important;
+    html.light #alerts-container > div .bg-slate-950 {
+      background: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+      color: #0284c7 !important;
     }
-    html.light .test-chip-safe {
-      background: #f0fdf4 !important;
-      border-color: #bbf7d0 !important;
-      color: #166534 !important;
+
+    /* Mode Buttons (Text / Upload Rx / Single Drug) */
+    html.light #presc-mode-text.bg-teal-700,
+    html.light #presc-mode-file.bg-teal-700,
+    html.light #presc-mode-single.bg-teal-700 {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25) !important;
+    }
+
+    /* Prescribing file dropzone */
+    html.light #presc-file-dropzone {
+      border-color: #cbd5e1 !important;
+      background: #f8fafc !important;
+    }
+    html.light #presc-file-dropzone:hover {
+      border-color: #0284c7 !important;
+      background: #f0f9ff !important;
     }
 
     /* ─── DROP ZONE ─── */
     .drop-zone-clinical {
-      border: 2px dashed rgba(13, 148, 136, 0.35);
+      border: 2px dashed rgba(2, 132, 199, 0.35);
       border-radius: var(--radius-md);
       padding: 24px;
       text-align: center;
       cursor: pointer;
-      background: rgba(13, 148, 136, 0.02);
+      background: rgba(2, 132, 199, 0.02);
       transition: border-color 0.15s ease, background 0.15s ease;
     }
     .drop-zone-clinical:hover, .drop-zone--over {
-      border-color: var(--teal-accent);
-      background: rgba(13, 148, 136, 0.06);
+      border-color: var(--accent-blue);
+      background: rgba(2, 132, 199, 0.06);
+    }
+    html.light .drop-zone-clinical {
+      border: 2px dashed #cbd5e1 !important;
+      background: #f8fafc !important;
+    }
+    html.light .drop-zone-clinical:hover {
+      border-color: #0284c7 !important;
+      background: #f0f9ff !important;
     }
 
     /* ─── AUDIT TABLE ─── */
@@ -482,13 +917,28 @@
     }
     .audit-table-clinical td {
       padding: 11px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       color: var(--text-muted);
     }
     .audit-table-clinical tr:hover td {
-      background: rgba(13, 148, 136, 0.04);
+      background: rgba(2, 132, 199, 0.04);
       color: var(--text-primary);
     }
+    html.light .audit-table-clinical th {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      border-bottom: 1px solid #cbd5e1 !important;
+    }
+    html.light .audit-table-clinical td {
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #334155 !important;
+    }
+    html.light .audit-table-clinical tr:hover td {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+
 
     /* ─── NAVIGATION STEP TABS ─── */
     .step-nav-btn {
@@ -1293,6 +1743,11 @@
         <i class="fa-solid fa-bolt text-amber-400"></i>
         <span>⚡ Judge Demo</span>
         <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40 hidden md:inline">Ctrl+D</kbd>
+      </button>
+
+      <!-- Theme Toggle Quick Button -->
+      <button type="button" onclick="toggleTheme()" class="p-2 rounded-xl border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--border-hover)] text-[var(--text-muted)] hover:text-slate-800 transition cursor-pointer" title="Toggle Dark / Light Mode">
+        <i id="header-theme-icon" class="fa-solid fa-moon text-xs text-slate-600"></i>
       </button>
 
       <!-- Settings Launcher -->
@@ -2143,7 +2598,7 @@
             </div>
             <div class="flex items-center space-x-1.5 text-[11px] text-slate-400">
               <span>Meds:</span>
-              <span class="text-slate-300 font-mono">Lisinopril, Furosemide</span>
+              <span id="copilot-chart-meds" class="text-slate-300 font-mono">Lisinopril, Metformin</span>
             </div>
           </div>
 
@@ -2151,17 +2606,20 @@
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Quick Clinical Inquiries:</span>
             <div class="flex flex-wrap gap-1.5 text-xs">
-              <button type="button" onclick="askCopilotQuick('Why is Ketorolac contraindicated in this patient?')" class="test-chip test-chip-danger">
-                <i class="fa-solid fa-circle-question"></i> Why is Ketorolac flagged?
+              <button type="button" onclick="askCopilotTabQuick('Why is this proposed drug contraindicated in this patient?')" class="test-chip test-chip-danger">
+                <i class="fa-solid fa-circle-question"></i> Why flagged?
               </button>
-              <button type="button" onclick="askCopilotQuick('What safe alternatives can I prescribe for acute pain?')" class="test-chip test-chip-purple">
-                <i class="fa-solid fa-arrows-rotate"></i> Safe painkiller alternatives?
+              <button type="button" onclick="askCopilotTabQuick('What safe alternatives can I prescribe for acute pain?')" class="test-chip test-chip-purple">
+                <i class="fa-solid fa-arrows-rotate"></i> Safe alternatives?
               </button>
-              <button type="button" onclick="askCopilotQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip test-chip-warning">
+              <button type="button" onclick="askCopilotTabQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip test-chip-warning">
                 <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy risk
               </button>
-              <button type="button" onclick="askCopilotQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">
+              <button type="button" onclick="askCopilotTabQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">
                 <i class="fa-solid fa-book-medical"></i> Renal dosing guidelines
+              </button>
+              <button type="button" onclick="askCopilotTabQuick('What is the current patient lab profile and eGFR?')" class="test-chip bg-sky-500/10 text-sky-300 border-sky-500/30">
+                <i class="fa-solid fa-flask"></i> Patient Labs &amp; eGFR
               </button>
             </div>
           </div>
@@ -2384,11 +2842,17 @@
             <textarea id="redacted-output-text" rows="5" class="clinical-input font-mono text-xs leading-relaxed" readonly placeholder="De-identified text will appear here after redaction..."></textarea>
           </div>
 
-          <!-- Pipeline Transfer Action Button -->
-          <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5 mt-2">
-            <span>Transfer De-Identified Profile to CDSS Review Engine</span>
-            <i class="fa-solid fa-arrow-right ml-2"></i>
-          </button>
+          <!-- Pipeline Action Buttons -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <button onclick="transferToReview()" class="btn-clinical-primary w-full py-2.5">
+              <span>Transfer to CDSS Review Engine</span>
+              <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+            <button id="save-patient-btn" onclick="savePatientFromIntake()" class="w-full py-2.5 rounded-lg font-bold text-xs border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 transition flex items-center justify-center space-x-1.5" style="display:none">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Save Patient to Database</span>
+            </button>
+          </div>
         </div>
 
       </div>
