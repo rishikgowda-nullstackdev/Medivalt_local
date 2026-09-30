@@ -174,7 +174,7 @@ function updateThemeUI(isLight) {
 //  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
-  const tabs = ['review', 'intake', 'fhir', 'audit', 'analytics'];
+  const tabs = ['review', 'copilot', 'intake', 'fhir', 'audit', 'analytics'];
   tabs.forEach(t => {
     const btn = document.getElementById(`nav-btn-${t}`);
     const panel = document.getElementById(`page-view-${t}`);
@@ -4071,6 +4071,158 @@ window.askCopilotQuick = askCopilotQuick;
 window.clearCopilotChat = clearCopilotChat;
 window.searchKnowledgeBase = searchKnowledgeBase;
 window.triggerAiNoteSynthesis = triggerAiNoteSynthesis;
+
+async function sendTabCopilotMessage(explicitPrompt = null) {
+  const inputEl = document.getElementById('tab-copilot-input');
+  const chatStream = document.getElementById('tab-copilot-chat-stream');
+  const sendBtn = document.getElementById('tab-btn-copilot-send');
+  const modelBadge = document.getElementById('tab-copilot-model-badge');
+
+  const message = explicitPrompt || (inputEl ? inputEl.value.trim() : '');
+  if (!message) return;
+
+  if (inputEl && !explicitPrompt) inputEl.value = '';
+
+  // Render Physician Question bubble
+  if (chatStream) {
+    const userBubble = document.createElement('div');
+    userBubble.className = 'p-3 rounded-lg bg-teal-950/50 border border-teal-500/30 text-teal-200 text-xs ml-4';
+    userBubble.innerHTML = `
+      <div class="flex items-center justify-between text-[10px] text-teal-400 mb-1 font-semibold">
+        <span><i class="fa-solid fa-user-md mr-1"></i> Physician</span>
+        <span class="text-slate-500 font-mono">Just now</span>
+      </div>
+      <div>${escapeHtml(message)}</div>
+    `;
+    chatStream.appendChild(userBubble);
+
+    const thinkingBubble = document.createElement('div');
+    thinkingBubble.id = 'tab-copilot-thinking-bubble';
+    thinkingBubble.className = 'p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-400 text-xs animate-pulse';
+    thinkingBubble.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-teal-400 mr-1.5"></i> Synthesizing clinical pharmacology &amp; patient telemetry...`;
+    chatStream.appendChild(thinkingBubble);
+    chatStream.scrollTop = chatStream.scrollHeight;
+  }
+
+  if (sendBtn) sendBtn.disabled = true;
+
+  const patientId = currentPatientId || 'PT-101';
+  let proposedMed = 'Ketorolac';
+
+  try {
+    const res = await fetch('/api/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message,
+        patient_id: patientId,
+        proposed_med: proposedMed
+      })
+    });
+
+    const thinkingBubble = document.getElementById('tab-copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+
+    if (!res.ok) {
+      throw new Error(`Copilot response error: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    if (modelBadge && data.model) {
+      modelBadge.textContent = data.model;
+    }
+
+    if (chatStream) {
+      const replyBubble = document.createElement('div');
+      replyBubble.className = 'p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
+
+      const citationsHtml = data.citations && data.citations.length > 0
+        ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+             <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
+             ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
+           </div>`
+        : '';
+
+      replyBubble.innerHTML = `
+        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+          <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
+          <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
+        </div>
+        <div class="text-slate-200 leading-normal">${formatMarkdownText(data.reply)}</div>
+        ${citationsHtml}
+      `;
+      chatStream.appendChild(replyBubble);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+  } catch (err) {
+    const thinkingBubble = document.getElementById('tab-copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+    showToast('Copilot Error', err.message, 'error', 3500);
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
+async function searchTabKnowledgeBase(customQuery = null) {
+  const inputEl = document.getElementById('tab-rag-search-input');
+  const container = document.getElementById('tab-rag-results-container');
+  const query = customQuery || (inputEl ? inputEl.value.trim() : '');
+  if (!query) return;
+
+  if (inputEl && customQuery) inputEl.value = customQuery;
+
+  if (container) {
+    container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-sky-400 mr-1.5"></i> Running NumPy cosine vector retrieval across 32 monographs...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/knowledge/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, top_k: 4 })
+    });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (!container) return;
+    if (results.length === 0) {
+      container.innerHTML = `<div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-slate-400 text-xs">No clinical monographs found matching "${escapeHtml(query)}".</div>`;
+      return;
+    }
+
+    container.innerHTML = results.map(r => `
+      <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-sky-300 text-xs">${escapeHtml(r.drug)}</span>
+            <span class="text-[10px] font-mono bg-sky-950/80 border border-sky-500/40 text-sky-300 px-1.5 py-0.2 rounded">${escapeHtml(r.category)}</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 font-bold">${Math.round(r.similarity * 100)}% match</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">${escapeHtml(r.snippet)}</p>
+        ${r.boxed_warning ? `<div class="text-[10px] text-rose-300 bg-rose-950/40 border border-rose-900/50 p-1.5 rounded"><strong class="text-rose-400">Boxed Warning:</strong> ${escapeHtml(r.boxed_warning)}</div>` : ''}
+        ${r.renal_guideline ? `<div class="text-[10px] text-amber-300 bg-amber-950/30 border border-amber-900/40 p-1.5 rounded"><strong class="text-amber-400">KDIGO Renal Guide:</strong> ${escapeHtml(r.renal_guideline)}</div>` : ''}
+        ${r.safe_alternatives && r.safe_alternatives.length > 0 ? `<div class="text-[10px] text-teal-300 bg-teal-950/30 border border-teal-900/40 p-1.5 rounded"><strong class="text-teal-400">Safe Formulary Alternatives:</strong> ${escapeHtml(r.safe_alternatives.join(', '))}</div>` : ''}
+      </div>
+    `).join('');
+
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<div class="p-2.5 text-rose-400 text-xs">Search error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+function quickRAGSearch(query) {
+  searchTabKnowledgeBase(query);
+}
+
+window.sendTabCopilotMessage = sendTabCopilotMessage;
+window.searchTabKnowledgeBase = searchTabKnowledgeBase;
+window.quickRAGSearch = quickRAGSearch;
+
 
 
 
