@@ -1,0 +1,3 @@
+CLINICAL NOTE (DE-IDENTIFIED)
+Patient is a 66-year-old male with Stage 3 CKD, hypertension and type 2 diabetes.
+Serum creatinine 2.1 mg/dL. eGFR 34. Metformin 500mg PO BID. Lisinopril 20mg PO daily.
