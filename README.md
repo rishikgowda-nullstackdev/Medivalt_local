@@ -8,7 +8,7 @@
 
 ---
 
-## 1. Executive Summary & Problem Statement
+## 1. Executive Summary & Problem Statement.
 
 Hospitals and clinical practitioners face a critical dilemma: **they cannot legally transmit confidential patient health records to cloud-hosted Large Language Models (LLMs)** without severe regulatory violations under HIPAA and the India DPDP Act. At the same time, clinical cognitive overload causes dangerous prescription contraindications to slip through (e.g., prescribing NSAIDs to a Stage 3 CKD patient, triggering Triple Whammy acute kidney injury, or ordering non-selective beta-blockers for an asthmatic).
 
@@ -20,7 +20,7 @@ Hospitals and clinical practitioners face a critical dilemma: **they cannot lega
 
 ---
 
-## 2. System Architecture
+## 2. System Architecture.
 
 ```
    ┌──────────────────────────────────────────────────────────┐
