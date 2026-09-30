@@ -24,7 +24,7 @@
        Asset Reference: assets/4010198914031322601 (ROUND_EIGHT, TONAL_SPOT)
     ═══════════════════════════════════════════════════════════════════ */
     :root {
-      /* Brand Clinical Accents */
+      /* Brand Clinical Accents (Linear/Vercel Obsidian) */
       --teal-primary: #0d9488;
       --teal-accent: #14b8a6;
       --teal-bright: #2dd4bf;
@@ -32,20 +32,20 @@
       --cyan-accent: #06b6d4;
 
       /* Spatial Canvas & Surfaces */
-      --bg-canvas: #070b14;
-      --bg-page: #0a0f1e;
-      --bg-card: #0d1527;
-      --bg-card-subtle: #0f1a30;
-      --bg-input-well: #050811;
-      --bg-header: rgba(10, 15, 30, 0.95);
+      --bg-canvas: #070a13;
+      --bg-page: #0b0f1c;
+      --bg-card: #0e1424;
+      --bg-card-subtle: #121a2f;
+      --bg-input-well: #070a14;
+      --bg-header: rgba(11, 15, 28, 0.95);
       --bg-tab-bar: rgba(255, 255, 255, 0.03);
       --bg-tab-active: rgba(13, 148, 136, 0.22);
       
-      /* Crisp Structural Borders */
-      --border-main: #1e293b;
-      --border-card: #1e293b;
-      --border-focus: #0d9488;
-      --border-hover: rgba(20, 184, 166, 0.35);
+      /* Crisp Linear Micro-Borders */
+      --border-main: rgba(255, 255, 255, 0.08);
+      --border-card: rgba(255, 255, 255, 0.09);
+      --border-focus: #14b8a6;
+      --border-hover: rgba(20, 184, 166, 0.4);
 
       /* Typography Contrast Tokens */
       --text-heading: #f8fafc;
@@ -70,33 +70,33 @@
       --alert-allergy-border: #a855f7;
       --alert-allergy-text: #e9d5ff;
 
-      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
       --shadow-elevation: 0 12px 36px rgba(0, 0, 0, 0.6);
       --radius-sm: 6px;
       --radius-md: 8px;
       --radius-lg: 12px;
     }
 
-    /* ─── LIGHT THEME OVERRIDES ─── */
+    /* ─── APPLE HEALTH LIGHT THEME OVERRIDES ─── */
     html.light {
-      --bg-canvas: #e2e8f0;
+      --bg-canvas: #f8fafc;
       --bg-page: #f1f5f9;
       --bg-card: #ffffff;
       --bg-card-subtle: #f8fafc;
       --bg-input-well: #ffffff;
       --bg-header: rgba(255, 255, 255, 0.95);
       --bg-tab-bar: rgba(0, 0, 0, 0.04);
-      --bg-tab-active: rgba(13, 148, 136, 0.14);
+      --bg-tab-active: rgba(13, 148, 136, 0.12);
 
-      --border-main: #cbd5e1;
+      --border-main: #e2e8f0;
       --border-card: #e2e8f0;
       --border-focus: #0d9488;
       --border-hover: #0d9488;
 
       --text-heading: #0f172a;
       --text-primary: #1e293b;
-      --text-muted: #475569;
-      --text-faint: #64748b;
+      --text-muted: #64748b;
+      --text-faint: #94a3b8;
 
       --alert-critical-bg: #fef2f2;
       --alert-critical-border: #f87171;
@@ -110,8 +110,8 @@
       --alert-safe-border: #86efac;
       --alert-safe-text: #166534;
 
-      --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
-      --shadow-elevation: 0 10px 25px rgba(0, 0, 0, 0.1);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(0, 0, 0, 0.04);
+      --shadow-elevation: 0 10px 25px rgba(0, 0, 0, 0.08);
     }
 
     * { box-sizing: border-box; }
@@ -305,6 +305,148 @@
       border-color: var(--alert-safe-border);
       color: var(--alert-safe-text);
       box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    }
+
+    /* ─── 56PX LEFT RAIL NAVIGATION ─── */
+    .rail-nav-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-size: 15px;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .rail-nav-btn:hover {
+      color: var(--text-heading);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-main);
+    }
+    .rail-nav-btn.active {
+      color: #14b8a6;
+      background: rgba(20, 184, 166, 0.14);
+      border-color: rgba(20, 184, 166, 0.4);
+      box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+    }
+    .rail-tooltip {
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 50;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    html.light .rail-tooltip {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .rail-nav-btn:hover .rail-tooltip {
+      opacity: 1;
+      transform: translateY(-50%) translateX(2px);
+    }
+
+    /* ─── RESULTS SUB-TABS ─── */
+    .subtab-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      background: transparent;
+    }
+    .subtab-btn:hover {
+      color: var(--text-heading);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .subtab-btn.active {
+      color: var(--teal-bright);
+      background: rgba(13, 148, 136, 0.15);
+      border-color: rgba(20, 184, 166, 0.4);
+    }
+    html.light .subtab-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    html.light .subtab-btn.active {
+      color: #0f766e;
+      background: rgba(13, 148, 136, 0.12);
+      border-color: rgba(13, 148, 136, 0.35);
+    }
+
+    /* ─── SKELETON SHIMMER EFFECT ─── */
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ─── LIGHT THEME COMPREHENSIVE OVERRIDES ─── */
+    html.light .bg-slate-900, html.light .bg-slate-950, html.light .bg-slate-950\/70,
+    html.light .bg-slate-950\/80, html.light .bg-slate-950\/90, html.light .bg-slate-900\/60,
+    html.light .bg-slate-900\/80, html.light .bg-slate-900\/90 {
+      background-color: var(--bg-card) !important;
+    }
+    html.light .text-slate-100, html.light .text-slate-200, html.light .text-white {
+      color: var(--text-heading) !important;
+    }
+    html.light .text-slate-300, html.light .text-slate-400 {
+      color: var(--text-primary) !important;
+    }
+    html.light .text-slate-500 {
+      color: var(--text-muted) !important;
+    }
+    html.light .border-slate-800, html.light .border-slate-700 {
+      border-color: var(--border-main) !important;
+    }
+    html.light .test-chip-danger {
+      background: #fef2f2 !important;
+      border-color: #fca5a5 !important;
+      color: #991b1b !important;
+    }
+    html.light .test-chip-warning {
+      background: #fffbeb !important;
+      border-color: #fde68a !important;
+      color: #92400e !important;
+    }
+    html.light .test-chip-purple {
+      background: #faf5ff !important;
+      border-color: #e9d5ff !important;
+      color: #6b21a8 !important;
+    }
+    html.light .test-chip-safe {
+      background: #f0fdf4 !important;
+      border-color: #bbf7d0 !important;
+      color: #166534 !important;
     }
 
     /* ─── DROP ZONE ─── */
@@ -1049,55 +1191,88 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     MAIN CLINICAL WORKSTATION SHELL
+     MAIN CLINICAL WORKSTATION SHELL (LINEAR / VERCEL MINIMALIST)
 ═══════════════════════════════════════════ -->
-<div id="main-app" class="relative z-10 max-w-7xl mx-auto px-4 py-3 space-y-3">
+<div id="main-app" class="flex min-h-screen relative z-10 w-full bg-[var(--bg-canvas)]">
 
-  <!-- DOCKED SOVEREIGN CLINICAL HEADER -->
-  <header class="clinical-card px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-slate-800">
-    <!-- 3D Brand & Trust Beacon -->
-    <div class="flex items-center space-x-3">
-      <div class="brand-logo-3d-wrap" title="MediVault Sovereign Security Enclave">
-        <div class="brand-logo-3d">
-          <i class="fa-solid fa-shield-heart text-teal-300"></i>
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <h1 class="text-base font-bold tracking-tight text-white font-heading">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
-          <span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v1.4-OFFLINE</span>
-        </div>
-        <p class="text-xs text-slate-400">Sovereign Clinical Decision Support &amp; Contraindication Reviewer</p>
+  <!-- 56px COLLAPSIBLE LEFT ICON RAIL -->
+  <aside id="left-nav-rail" class="w-14 shrink-0 bg-[var(--bg-card)] border-r border-[var(--border-main)] flex flex-col items-center py-3 z-30 select-none sticky top-0 h-screen shadow-sm">
+    <!-- Brand Mark Mini -->
+    <div class="mb-4">
+      <div class="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold text-sm shadow-sm hover:scale-105 transition-transform cursor-pointer" title="MediVault Sovereign Security Enclave">
+        <i class="fa-solid fa-shield-heart text-base"></i>
       </div>
     </div>
 
-    <!-- Hardware & Profile Telemetry -->
-    <div class="flex items-center space-x-2.5 flex-wrap">
-      <!-- Air-Gap Status Badge -->
-      <div class="flex items-center space-x-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="network-status-badge" class="font-semibold tracking-wide">100% OFFLINE</span>
-        <span id="egress-telemetry-text" class="text-emerald-400 text-[10px] hidden sm:inline">0 BYTES EGRESS (127.0.0.1)</span>
-      </div>
-
-      <!-- Local AI Model Telemetry Pill -->
-      <div class="flex items-center space-x-1.5 bg-slate-900 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono">
-        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-        <span id="ai-status-text">Ollama SLM: Checking...</span>
-      </div>
-
-      <!-- Active Physician Pill Button -->
-      <button id="header-profile-btn" type="button" onclick="toggleSettingsSidebar(true)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-850 border border-slate-700 text-slate-200 text-xs transition cursor-pointer shadow-sm group">
-        <div class="relative">
-          <div id="header-avatar" class="w-6 h-6 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white text-[10px] font-bold shadow">
-            GH
-          </div>
-          <div class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900"></div>
-        </div>
-        <span id="current-doctor-pill" class="font-medium text-slate-100 group-hover:text-teal-300 transition">Dr. Gregory House, MD</span>
-        <span id="current-hospital-badge" class="bg-slate-800 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-mono hidden md:inline">Princeton Plainsboro</span>
-        <i class="fa-solid fa-chevron-down text-[10px] text-teal-400"></i>
+    <!-- Workspace Nav Icons with Tooltips -->
+    <div class="flex-1 w-full flex flex-col items-center space-y-2.5">
+      <!-- 1. CDSS -->
+      <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="rail-nav-btn active group relative" title="1. Clinical CDSS &amp; Review (Ctrl+1)">
+        <i class="fa-solid fa-stethoscope"></i>
+        <span class="rail-tooltip">1. Clinical CDSS &amp; Review</span>
       </button>
+      <!-- 2. Intake -->
+      <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="rail-nav-btn group relative" title="2. Patient Intake &amp; PHI (Ctrl+2)">
+        <i class="fa-solid fa-hospital-user"></i>
+        <span class="rail-tooltip">2. Patient Intake &amp; PHI</span>
+      </button>
+      <!-- 3. FHIR -->
+      <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="rail-nav-btn group relative" title="3. Hospital EHR &amp; FHIR (Ctrl+3)">
+        <i class="fa-solid fa-network-wired"></i>
+        <span class="rail-tooltip">3. Hospital EHR &amp; FHIR</span>
+      </button>
+      <!-- 4. Audit -->
+      <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="rail-nav-btn group relative" title="4. Sovereign Audit Ledger (Ctrl+4)">
+        <i class="fa-solid fa-database"></i>
+        <span class="rail-tooltip">4. Sovereign Audit Ledger</span>
+      </button>
+      <!-- 5. Analytics -->
+      <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="rail-nav-btn group relative" title="5. Clinical Analytics (Ctrl+5)">
+        <i class="fa-solid fa-chart-line"></i>
+        <span class="rail-tooltip">5. Clinical Analytics</span>
+      </button>
+    </div>
+
+    <!-- Rail Footer -->
+    <div class="w-full flex flex-col items-center space-y-2.5 pt-3 border-t border-[var(--border-main)]">
+      <button type="button" onclick="openJudgeDemoModal()" class="rail-nav-btn text-amber-400 hover:text-amber-300 relative group" title="Interactive Judge Demo (Ctrl+D)">
+        <i class="fa-solid fa-bolt"></i>
+        <span class="rail-tooltip">Judge Demo (Ctrl+D)</span>
+      </button>
+      <button type="button" onclick="toggleSettingsSidebar(true)" class="rail-nav-btn relative group" title="Workstation Settings">
+        <i class="fa-solid fa-gear"></i>
+        <span class="rail-tooltip">Settings</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+    <!-- DOCKED SOVEREIGN CLINICAL HEADER -->
+    <header class="px-5 py-2.5 border-b border-[var(--border-main)] bg-[var(--bg-header)] backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
+      <!-- Left: Title & Version -->
+      <div class="flex items-center space-x-2.5">
+        <h1 class="text-sm font-bold text-[var(--text-heading)] font-heading tracking-tight">MediVault <span class="text-teal-400 font-extrabold">Local</span></h1>
+        <span class="text-[9px] bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-mono">v1.4-OFFLINE</span>
+      </div>
+
+      <!-- Center: Active Patient Quick Context (Visible across all workspaces) -->
+      <div class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-main)] text-xs shadow-inner">
+        <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+        <span class="text-[10px] text-[var(--text-muted)] font-mono uppercase">Patient:</span>
+        <span id="top-patient-name" class="font-bold text-[var(--text-primary)]">John Doe (Renal Profile)</span>
+        <span class="text-[var(--text-faint)]">·</span>
+        <span id="top-patient-meta" class="text-[10px] text-teal-400 font-mono">PT-101 · Stage 3 CKD</span>
+      </div>
+
+      <!-- Right: Telemetry & Actions -->
+      <div class="flex items-center space-x-2 flex-wrap">
+        <!-- Air-Gap Status Badge -->
+        <div id="airgap-status-pill" class="flex items-center space-x-1.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="network-status-badge" class="font-semibold tracking-wide text-[11px]">100% OFFLINE</span>
+          <span id="egress-telemetry-text" class="text-emerald-400 text-[9px] hidden xl:inline">0 BYTES EGRESS</span>
+        </div>
 
       <!-- Patient Portal Launcher Button -->
       <a href="/patient-portal" target="_blank" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
@@ -1195,31 +1370,30 @@
   </nav>
 
   <!-- ═══════════════════════════════════════════
-       VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Two-Column Workstation)
-       Stitch Ref: Screen 2a6160b66fcc470ea54c7b68b7b61944
+       VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Fold-Optimized)
   ═══════════════════════════════════════════ -->
   <div id="page-view-review" class="page-view-panel active space-y-3" style="display:block">
     
     <!-- Top Active Patient Demographics Bar -->
-    <div class="clinical-card px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-slate-800">
+    <div class="clinical-card px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-[var(--border-main)]">
       <div>
         <div class="flex items-center space-x-2">
-          <span class="text-[11px] font-semibold text-teal-400 uppercase tracking-wide">Active Patient Record:</span>
-          <h2 id="display-patient-name" class="text-sm font-bold text-white font-heading">John Doe (Renal Profile)</h2>
+          <span class="text-[10px] font-semibold text-teal-400 uppercase tracking-wide">Active Patient Record:</span>
+          <h2 id="display-patient-name" class="text-xs sm:text-sm font-bold text-[var(--text-heading)] font-heading">John Doe (Renal Profile)</h2>
         </div>
-        <div id="display-patient-meta" class="text-xs text-slate-400 font-mono mt-0.5">
+        <div id="display-patient-meta" class="text-xs text-[var(--text-muted)] font-mono mt-0.5">
           ID: PT-101 · Age: 64 · Male
         </div>
       </div>
       <div class="flex items-center space-x-2 flex-wrap">
         <!-- Direct Fast Switch Dropdown -->
-        <select id="patient-select-header" onchange="selectPatient(this.value)" class="clinical-input text-xs py-1 px-2.5 bg-slate-900 border-teal-500/40 text-teal-300 font-medium cursor-pointer rounded-lg shadow-sm" title="Quick Switch Patient Profile">
+        <select id="patient-select-header" onchange="selectPatient(this.value)" class="clinical-input text-xs py-1 px-2.5 bg-[var(--bg-input-well)] border-teal-500/40 text-teal-300 font-medium cursor-pointer rounded-lg shadow-sm" title="Quick Switch Patient Profile">
           <option value="PT-101">PT-101: John Doe (Stage 3 CKD)</option>
           <option value="PT-102">PT-102: Sarah Connor (Asthma / Resp)</option>
           <option value="PT-103">PT-103: Robert Smith (AFib / Coag)</option>
         </select>
 
-        <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Token:</span>
+        <span class="text-[10px] text-[var(--text-muted)] font-mono hidden md:inline">Token:</span>
         <span id="display-patient-token" class="text-xs font-mono bg-teal-950/80 border border-teal-500/30 text-teal-300 px-2 py-1 rounded-lg">
           ANON_A9F201
         </span>
@@ -1233,13 +1407,13 @@
     </div>
 
     <!-- Quantitative Biomarkers (Renal / Hepatic / Cardiac Panel) -->
-    <div class="clinical-card card-3d-tilt p-3.5 border-slate-800">
-      <div class="flex items-center justify-between mb-2.5">
+    <div class="clinical-card p-3 border-[var(--border-main)]">
+      <div class="flex items-center justify-between mb-2">
         <span class="card-title text-xs">
           <i class="fa-solid fa-flask-vial text-teal-400"></i>
           <span>Quantitative Organ Function Biomarkers</span>
         </span>
-        <span class="text-[10px] text-slate-400 font-mono">Live Labs · Threshold Triggers</span>
+        <span class="text-[10px] text-[var(--text-muted)] font-mono">Live Labs · Threshold Triggers</span>
       </div>
       <div id="biomarkers-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
         <div class="col-span-full py-2 text-center text-xs text-slate-500 font-mono animate-pulse">
@@ -1248,78 +1422,54 @@
       </div>
     </div>
 
-    <!-- 🌌 SOVEREIGN 3D HOLOGRAPHIC PHYSIOLOGICAL TARGET MATRIX -->
-    <div class="hologram-card card-3d-tilt p-3.5 border-teal-500/30">
-      <div class="hologram-grid-overlay"></div>
-      <div class="hologram-scanline-bar"></div>
-      <div class="relative z-10">
-        <!-- Hologram Header Strip -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 pb-2 border-b border-teal-500/20">
-          <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-ping"></span>
-            <span class="card-title text-xs text-teal-300 font-heading">
-              <i class="fa-solid fa-cube text-teal-400"></i>
-              <span>3D Holographic Physiological Target Matrix</span>
-            </span>
-            <span class="text-[9px] font-mono bg-teal-950/80 border border-teal-500/40 text-teal-300 px-1.5 py-0.5 rounded">
-              PURE OFFLINE CANVAS 3D
-            </span>
-          </div>
-
-          <!-- Organ Selector Toggles -->
-          <div class="flex items-center space-x-1.5 text-[10px] font-mono flex-wrap">
-            <button type="button" id="organ-tab-renal" onclick="switchHologramTarget('renal')" class="px-2.5 py-1 rounded bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition">
-              <i class="fa-solid fa-droplet mr-1 text-teal-400"></i>Renal (Glomerular)
-            </button>
-            <button type="button" id="organ-tab-cardiac" onclick="switchHologramTarget('cardiac')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
-              <i class="fa-solid fa-heart mr-1 text-rose-400"></i>Cardiopulmonary
-            </button>
-            <button type="button" id="organ-tab-hepatic" onclick="switchHologramTarget('hepatic')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
-              <i class="fa-solid fa-filter mr-1 text-amber-400"></i>Hepatic
-            </button>
-            <button type="button" id="organ-tab-shield" onclick="switchHologramTarget('shield')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">
-              <i class="fa-solid fa-shield-halved mr-1 text-emerald-400"></i>Enclave Seal
-            </button>
-          </div>
+    <!-- 🌌 COLLAPSIBLE 3D HOLOGRAPHIC PHYSIOLOGICAL TARGET MATRIX (Fold-Saving Accordion) -->
+    <div id="hologram-accordion-wrap" class="clinical-card border-teal-500/25 overflow-hidden transition-all duration-200">
+      <!-- Compact Telemetry Strip (Always Visible 34px Header) -->
+      <div class="px-3.5 py-2 flex items-center justify-between bg-[var(--bg-card-subtle)] border-b border-[var(--border-main)] text-xs">
+        <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse shrink-0"></span>
+          <span class="font-bold text-[var(--text-heading)] font-heading text-xs truncate">
+            <i class="fa-solid fa-cube text-teal-400 mr-1"></i> 3D Target Matrix:
+          </span>
+          <span id="hologram-hud-target" class="text-teal-400 font-mono text-[11px] truncate">Renal Glomerular Microvasculature</span>
+          <span class="text-[var(--text-faint)] hidden sm:inline">·</span>
+          <span id="hologram-hud-load" class="text-[var(--text-muted)] text-[10.5px] truncate hidden md:inline">Afferent Arteriolar Vasoconstriction Risk</span>
         </div>
 
-        <!-- 3D Canvas Viewport + Live HUD Overlays -->
-        <div class="relative w-full rounded-lg bg-slate-950/70 border border-teal-500/20 overflow-hidden flex items-center justify-center" style="height: 190px;">
-          <!-- Real-Time HTML5 3D Vector Canvas -->
+        <div class="flex items-center space-x-2 shrink-0">
+          <!-- Status Badge -->
+          <div id="hologram-hud-status-badge" class="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/70 text-red-300 text-[10px] font-mono font-bold flex items-center space-x-1 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
+            <span id="hologram-hud-status-text">CONTRAINDICATION HAZARD</span>
+          </div>
+
+          <!-- Expand / Collapse Toggle Button -->
+          <button id="btn-toggle-hologram" type="button" onclick="toggleHologramAccordion()" class="btn-clinical-secondary py-0.5 px-2 text-[11px] flex items-center space-x-1" title="Toggle 3D Viewport">
+            <i id="icon-toggle-hologram" class="fa-solid fa-eye text-[10px]"></i>
+            <span id="text-toggle-hologram">Expand 3D</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable 3D Canvas Body (Collapsed by default, opens cleanly on click) -->
+      <div id="hologram-expandable-body" style="display:none;" class="p-3 bg-slate-950/90 space-y-2 border-t border-teal-500/20">
+        <!-- Controls Bar -->
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center space-x-1.5 text-[10px] font-mono">
+            <button type="button" id="organ-tab-renal" onclick="switchHologramTarget('renal')" class="px-2.5 py-1 rounded bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition">Renal (Glomerular)</button>
+            <button type="button" id="organ-tab-cardiac" onclick="switchHologramTarget('cardiac')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Cardiopulmonary</button>
+            <button type="button" id="organ-tab-hepatic" onclick="switchHologramTarget('hepatic')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Hepatic</button>
+            <button type="button" id="organ-tab-shield" onclick="switchHologramTarget('shield')" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 transition">Enclave Seal</button>
+          </div>
+          <div class="text-[9px] font-mono text-slate-400 flex items-center space-x-2">
+            <span><i class="fa-solid fa-hand-pointer text-teal-400 mr-1"></i> Drag to orbit</span>
+            <span>|</span>
+            <span id="hologram-hud-angle" class="text-teal-400">Pitch: 12° · Yaw: 45°</span>
+          </div>
+        </div>
+        <!-- Real-Time HTML5 3D Vector Canvas Viewport -->
+        <div class="relative w-full rounded-lg bg-slate-950 border border-teal-500/20 overflow-hidden flex items-center justify-center" style="height: 180px;">
           <canvas id="canvas-hologram-3d" class="w-full h-full cursor-grab active:cursor-grabbing block"></canvas>
-          
-          <!-- Top Left HUD Telemetry -->
-          <div class="absolute top-2.5 left-3 pointer-events-none text-[10px] font-mono space-y-1">
-            <div class="flex items-center space-x-1.5">
-              <span class="text-slate-400">Target Structure:</span>
-              <span id="hologram-hud-target" class="text-teal-300 font-bold">Renal Glomerular Microvasculature</span>
-            </div>
-            <div class="flex items-center space-x-1.5">
-              <span class="text-slate-400">Local Receptor Load:</span>
-              <span id="hologram-hud-load" class="text-emerald-400 font-bold">Afferent Arteriolar Vasoconstriction Risk</span>
-            </div>
-          </div>
-
-          <!-- Top Right HUD Status Pill -->
-          <div class="absolute top-2.5 right-3 pointer-events-none">
-            <div id="hologram-hud-status-badge" class="px-2.5 py-1 rounded-full bg-red-950/80 border border-red-500/70 text-red-300 text-[10px] font-mono font-bold flex items-center space-x-1.5 shadow-lg glow-critical-pulse">
-              <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
-              <span id="hologram-hud-status-text">CONTRAINDICATION HAZARD</span>
-            </div>
-          </div>
-
-          <!-- Bottom HUD Controls & Angle Telemetry -->
-          <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono text-slate-400 pointer-events-none">
-            <div class="flex items-center space-x-2">
-              <span><i class="fa-solid fa-hand-pointer text-teal-400 mr-1"></i> Drag to orbit 3D view</span>
-              <span class="text-slate-600">|</span>
-              <span id="hologram-hud-angle" class="text-teal-400">Pitch: 12° · Yaw: 45°</span>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-slate-500">Render: 60 FPS Vector Wireframe</span>
-              <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>0-Cloud Egress</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1331,7 +1481,7 @@
       <div class="lg:col-span-5 space-y-3">
         
         <!-- Active Patient Baseline: Conditions, Meds, Allergies -->
-        <div class="clinical-card card-3d-tilt p-3.5 space-y-3 border-slate-800">
+        <div class="clinical-card card-3d-tilt p-3.5 space-y-3 border-[var(--border-main)]">
           <div class="card-title text-xs">
             <i class="fa-solid fa-clipboard-user text-teal-400"></i>
             <span>Patient Clinical Baseline</span>
@@ -1339,7 +1489,7 @@
 
           <!-- Diagnosed Conditions -->
           <div>
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+            <div class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center">
               <i class="fa-solid fa-notes-medical text-teal-400 mr-1.5"></i> Diagnosed Conditions
             </div>
             <div id="conditions-list" class="flex flex-wrap gap-1.5">
@@ -1349,7 +1499,7 @@
 
           <!-- Active Medications -->
           <div>
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+            <div class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center">
               <i class="fa-solid fa-pills text-cyan-400 mr-1.5"></i> Current Outpatient Regimen
             </div>
             <div id="medications-list" class="flex flex-wrap gap-1.5">
@@ -1359,7 +1509,7 @@
 
           <!-- Documented Allergies -->
           <div>
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center">
+            <div class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i> Documented Allergies
             </div>
             <div id="allergies-list" class="flex flex-wrap gap-1.5">
@@ -1369,7 +1519,7 @@
         </div>
 
         <!-- Proposed Prescription Input Well -->
-        <div class="clinical-card p-4 space-y-3.5 border-slate-800">
+        <div class="clinical-card p-4 space-y-3 border-[var(--border-main)]">
           <div class="flex items-center justify-between">
             <div class="card-title text-xs">
               <i class="fa-solid fa-prescription-bottle-medical text-teal-400"></i>
@@ -1381,38 +1531,51 @@
           </div>
 
           <!-- Input Mode Tabs -->
-          <div class="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
-            <button id="presc-mode-text" type="button" onclick="switchPrescriptionMode('text')" class="flex-1 py-1.5 rounded bg-teal-700 text-white transition text-center">
+          <div class="flex items-center space-x-1.5 bg-[var(--bg-input-well)] p-1 rounded-lg border border-[var(--border-main)] text-xs font-semibold">
+            <button id="presc-mode-text" type="button" onclick="switchPrescriptionMode('text')" class="flex-1 py-1.5 rounded bg-teal-700 text-white transition text-center shadow-sm">
               <i class="fa-solid fa-file-lines mr-1"></i> Multi-Drug Text
             </button>
-            <button id="presc-mode-file" type="button" onclick="switchPrescriptionMode('file')" class="flex-1 py-1.5 rounded text-slate-400 hover:text-slate-200 transition text-center">
+            <button id="presc-mode-file" type="button" onclick="switchPrescriptionMode('file')" class="flex-1 py-1.5 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition text-center">
               <i class="fa-solid fa-file-arrow-up mr-1"></i> Upload Rx (.pdf/.txt)
             </button>
-            <button id="presc-mode-single" type="button" onclick="switchPrescriptionMode('single')" class="flex-1 py-1.5 rounded text-slate-400 hover:text-slate-200 transition text-center">
+            <button id="presc-mode-single" type="button" onclick="switchPrescriptionMode('single')" class="flex-1 py-1.5 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition text-center">
               <i class="fa-solid fa-pills mr-1"></i> Single Quick Drug
             </button>
+          </div>
+
+          <!-- Quick Test Case Selector Strip -->
+          <div class="flex items-center justify-between text-xs pt-0.5">
+            <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wide">⚡ Quick Test Case:</span>
+            <select id="preset-bundle-select" onchange="onPresetBundleSelect(this.value)" class="clinical-input text-[11px] py-1 px-2.5 bg-[var(--bg-input-well)] border-teal-500/40 text-teal-400 font-medium cursor-pointer rounded-lg shadow-sm w-auto max-w-[240px]">
+              <option value="">-- Select Preset Challenge --</option>
+              <option value="triple_whammy">🔴 Triple Whammy (Renal Crisis)</option>
+              <option value="asthma_bleed">🔴 Propranolol + Aspirin (Asthma)</option>
+              <option value="penicillin_allergy">🟣 Augmentin + Paracetamol (Allergy)</option>
+              <option value="beers_criteria">🟣 Beers Criteria (Polypharmacy)</option>
+              <option value="safe_regimen">🟢 Safe 3-Drug Care Plan</option>
+            </select>
           </div>
 
           <!-- Mode 1: Multi-Drug Clinical Textarea -->
           <div id="presc-box-text" class="space-y-2">
             <div class="flex items-center justify-between">
-              <label class="clinical-label">Prescription Orders / Sig Formulations:</label>
+              <label class="clinical-label m-0">Prescription Orders / Sig Formulations:</label>
               <span id="presc-parsed-count" class="text-[10px] text-teal-400 font-mono">1 order parsed</span>
             </div>
             <textarea id="proposed-prescription-text" rows="3" class="clinical-input font-mono text-xs leading-relaxed" placeholder="e.g.&#10;1. Tab Augmentin 625mg PO 1-0-1 x 5 days&#10;2. Cap Omeprazole 20mg OD before breakfast&#10;3. Tab Paracetamol 650mg SOS&#10;or simple list: Advil 400mg TID, Lisinopril 20mg QD">Tab Ibuprofen 400mg PO TID</textarea>
-            <p class="text-[10px] text-slate-400">
-              <i class="fa-solid fa-wand-magic-sparkles text-teal-400 mr-1"></i> Supports natural clinical formats, dosage, route, frequency, and custom medications.
+            <p class="text-[10px] text-[var(--text-muted)]">
+              <i class="fa-solid fa-wand-magic-sparkles text-teal-400 mr-1"></i> Supports natural clinical sig, dosage, route, and custom medications.
             </p>
           </div>
 
           <!-- Mode 2: Prescription File Upload Dropzone -->
           <div id="presc-box-file" class="space-y-2" style="display:none">
             <label class="clinical-label">Upload E-Prescription Slip or Scanned Paper Photo (.pdf, .txt, .png, .jpg):</label>
-            <div id="presc-file-dropzone" onclick="document.getElementById('presc-file-input').click()" class="border-2 border-dashed border-teal-500/40 hover:border-teal-400/80 bg-slate-900/60 rounded-xl p-4 text-center cursor-pointer transition group">
+            <div id="presc-file-dropzone" onclick="document.getElementById('presc-file-input').click()" class="border-2 border-dashed border-teal-500/40 hover:border-teal-400/80 bg-[var(--bg-input-well)] rounded-xl p-4 text-center cursor-pointer transition group">
               <input type="file" id="presc-file-input" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" class="hidden" onchange="handlePrescriptionFileUpload(event)" />
               <i class="fa-solid fa-camera-retro text-2xl text-teal-400 group-hover:scale-110 transition-transform mb-1"></i>
-              <div class="text-xs font-semibold text-slate-200">Drop prescription paper slip, photo, or PDF here</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Supports Scanned Photos (PNG/JPG) &amp; Digital PDFs · Sovereign On-Device OCR</div>
+              <div class="text-xs font-semibold text-[var(--text-primary)]">Drop prescription paper slip, photo, or PDF here</div>
+              <div class="text-[10px] text-[var(--text-muted)] mt-0.5">Supports Scanned Photos (PNG/JPG) &amp; Digital PDFs · Sovereign On-Device OCR</div>
             </div>
             <div id="presc-file-status" class="hidden p-2.5 rounded bg-teal-950/60 border border-teal-500/40 text-xs text-teal-200 flex items-center justify-between">
               <span id="presc-file-filename" class="font-mono truncate"><i class="fa-solid fa-file-lines mr-1.5"></i> prescription.pdf</span>
@@ -1435,30 +1598,27 @@
             </div>
           </div>
 
-          <!-- Preset Multi-Drug Challenge Cases -->
-          <div>
-            <div class="text-[11px] text-slate-400 mb-2">Preset Clinical Challenge Bundles:</div>
-            <div class="flex flex-wrap gap-1.5">
-              <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Triple Whammy (Renal)','Tab Lisinopril 20mg PO QD\nTab Furosemide 40mg PO QD\nTab Advil 400mg PO TID')">
-                <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy (Renal Crisis)
-              </button>
-              <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Asthma + Bleed Risk','Tab Propranolol 40mg PO BID\nTab Aspirin 325mg PO QD')">
-                <i class="fa-solid fa-lungs"></i> Propranolol + Aspirin (Asthma)
-              </button>
-              <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Penicillin Allergy','Tab Augmentin 625mg PO TID\nTab Paracetamol 650mg PO SOS')">
-                <i class="fa-solid fa-shield-virus"></i> Augmentin + Paracetamol (Allergy)
-              </button>
-              <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Geriatric Polypharmacy','Tab Diphenhydramine 50mg PO QHS\nTab Diazepam 5mg PO QHS')">
-                <i class="fa-solid fa-person-cane"></i> Beers Criteria Bundle
-              </button>
-              <button type="button" class="test-chip test-chip-safe" onclick="setMultiPrescriptionPreset('Safe Complex Regimen','Tab Amoxicillin 500mg PO TID\nTab Paracetamol 650mg PO TID\nCap Omeprazole 20mg PO OD ac')">
-                <i class="fa-solid fa-circle-check"></i> Safe 3-Drug Care Plan
-              </button>
-            </div>
+          <!-- Quick Test Chips -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Triple Whammy (Renal)','Tab Lisinopril 20mg PO QD\nTab Furosemide 40mg PO QD\nTab Advil 400mg PO TID')">
+              <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy
+            </button>
+            <button type="button" class="test-chip test-chip-danger" onclick="setMultiPrescriptionPreset('Asthma + Bleed Risk','Tab Propranolol 40mg PO BID\nTab Aspirin 325mg PO QD')">
+              <i class="fa-solid fa-lungs"></i> Asthma Risk
+            </button>
+            <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Penicillin Allergy','Tab Augmentin 625mg PO TID\nTab Paracetamol 650mg PO SOS')">
+              <i class="fa-solid fa-shield-virus"></i> Penicillin Allergy
+            </button>
+            <button type="button" class="test-chip test-chip-purple" onclick="setMultiPrescriptionPreset('Geriatric Polypharmacy','Tab Diphenhydramine 50mg PO QHS\nTab Diazepam 5mg PO QHS')">
+              <i class="fa-solid fa-person-cane"></i> Beers Criteria
+            </button>
+            <button type="button" class="test-chip test-chip-safe" onclick="setMultiPrescriptionPreset('Safe Complex Regimen','Tab Amoxicillin 500mg PO TID\nTab Paracetamol 650mg PO TID\nCap Omeprazole 20mg PO OD ac')">
+              <i class="fa-solid fa-circle-check"></i> Safe 3-Drug
+            </button>
           </div>
 
           <!-- Primary CTA Button -->
-          <button id="btn-run-review" class="btn-clinical-primary w-full py-3" onclick="runSafetyCheck()">
+          <button id="btn-run-review" class="btn-clinical-primary w-full py-3 shadow-md" onclick="runSafetyCheck()">
             <i class="fa-solid fa-stethoscope"></i>
             <span>RUN OFFLINE CONTRAINDICATION REVIEW</span>
             <span class="text-[10px] opacity-75 font-mono ml-1">[Ctrl+Enter]</span>
@@ -1471,19 +1631,19 @@
       <div class="lg:col-span-7 space-y-3">
         
         <!-- Results Card Wrapper -->
-        <div class="clinical-card p-4 border-slate-800">
+        <div class="clinical-card p-4 border-[var(--border-main)]">
           
           <!-- Idle State Hint -->
           <div id="result-idle-hint" class="text-center py-12 text-slate-500 space-y-2">
             <i class="fa-solid fa-shield-halved text-4xl block text-teal-500/30"></i>
-            <div class="text-xs font-semibold text-slate-400">Clinical Safety Engine Standing By</div>
-            <p class="text-[11px] text-slate-500 max-w-sm mx-auto">
-              Type or upload a multi-medicine prescription bundle and click <strong>"Run Offline Contraindication Review"</strong> to verify safety against local deterministic SQLite pharmacology matrices.
+            <div class="text-xs font-semibold text-[var(--text-heading)]">Clinical Safety Engine Standing By</div>
+            <p class="text-[11px] text-[var(--text-muted)] max-w-sm mx-auto">
+              Select a clinical challenge preset or enter medications and click <strong>"Run Offline Contraindication Review"</strong> to verify safety against local deterministic SQLite pharmacology matrices.
             </p>
           </div>
 
           <!-- Live Results Container -->
-          <div id="result-content" style="display:none" class="space-y-3.5" role="region" aria-live="polite" aria-label="Clinical Decision Support Results">
+          <div id="result-content" style="display:none" class="space-y-3" role="region" aria-live="polite" aria-label="Clinical Decision Support Results">
             
             <!-- Triage Status Banner -->
             <div id="status-banner" class="triage-banner danger">
@@ -1498,7 +1658,7 @@
             </div>
 
             <!-- Clinical Hazard Index & Patient Vulnerability Gauge -->
-            <div id="hazard-gauge-card" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+            <div id="hazard-gauge-card" class="p-3.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-main)] space-y-2.5">
               <div class="flex items-center justify-between">
                 <div class="card-title text-xs">
                   <i class="fa-solid fa-gauge-high text-teal-400"></i>
@@ -1548,16 +1708,16 @@
 
                   <!-- Numeric Score Callout -->
                   <div class="mt-[-10px] text-center">
-                    <span id="hazard-score-number" class="text-2xl font-black font-heading text-white tracking-tight">0</span>
-                    <span class="text-xs text-slate-400 font-mono">/ 100</span>
+                    <span id="hazard-score-number" class="text-2xl font-black font-heading text-[var(--text-heading)] tracking-tight">0</span>
+                    <span class="text-xs text-[var(--text-muted)] font-mono">/ 100</span>
                   </div>
                 </div>
 
                 <!-- Category Breakdown & Primary Driver (7 cols) -->
                 <div class="md:col-span-7 space-y-2 text-xs">
-                  <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-                    <span class="text-[10px] text-slate-400 uppercase font-semibold block tracking-wider">Primary Risk Driver:</span>
-                    <span id="hazard-primary-driver" class="text-slate-200 font-medium text-[11px] leading-tight block mt-0.5">
+                  <div class="p-2 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] uppercase font-semibold block tracking-wider">Primary Risk Driver:</span>
+                    <span id="hazard-primary-driver" class="text-[var(--text-primary)] font-medium text-[11px] leading-tight block mt-0.5">
                       Normal baseline clearance with low pharmacological friction.
                     </span>
                   </div>
@@ -1566,44 +1726,44 @@
                   <div class="space-y-1.5 pt-1">
                     <!-- Organ Stress -->
                     <div>
-                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                      <div class="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5">
                         <span class="flex items-center"><i class="fa-solid fa-lungs text-sky-400 mr-1.5 w-3.5"></i> Organ Clearance Stress</span>
-                        <span id="hazard-score-organ" class="font-mono text-slate-400">0 / 40</span>
+                        <span id="hazard-score-organ" class="font-mono text-[var(--text-muted)]">0 / 40</span>
                       </div>
-                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
                         <div id="hazard-bar-organ" class="bg-sky-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                       </div>
                     </div>
 
                     <!-- Drug Interactions -->
                     <div>
-                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                      <div class="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5">
                         <span class="flex items-center"><i class="fa-solid fa-burst text-rose-400 mr-1.5 w-3.5"></i> Interaction Danger</span>
-                        <span id="hazard-score-interaction" class="font-mono text-slate-400">0 / 35</span>
+                        <span id="hazard-score-interaction" class="font-mono text-[var(--text-muted)]">0 / 35</span>
                       </div>
-                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
                         <div id="hazard-bar-interaction" class="bg-rose-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                       </div>
                     </div>
 
                     <!-- Polypharmacy -->
                     <div>
-                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                      <div class="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5">
                         <span class="flex items-center"><i class="fa-solid fa-pills text-amber-400 mr-1.5 w-3.5"></i> Polypharmacy Load</span>
-                        <span id="hazard-score-polypharmacy" class="font-mono text-slate-400">0 / 15</span>
+                        <span id="hazard-score-polypharmacy" class="font-mono text-[var(--text-muted)]">0 / 15</span>
                       </div>
-                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
                         <div id="hazard-bar-polypharmacy" class="bg-amber-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                       </div>
                     </div>
 
                     <!-- Immunologic / Allergy -->
                     <div>
-                      <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+                      <div class="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5">
                         <span class="flex items-center"><i class="fa-solid fa-shield-virus text-purple-400 mr-1.5 w-3.5"></i> Allergy &amp; Age Factors</span>
-                        <span id="hazard-score-allergy" class="font-mono text-slate-400">0 / 10</span>
+                        <span id="hazard-score-allergy" class="font-mono text-[var(--text-muted)]">0 / 10</span>
                       </div>
-                      <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
                         <div id="hazard-bar-allergy" class="bg-purple-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                       </div>
                     </div>
@@ -1612,168 +1772,194 @@
               </div>
 
               <!-- Recommendation Footer Strip -->
-              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                <div class="text-slate-300 flex items-center">
+              <div class="pt-2 border-t border-[var(--border-main)] flex items-center justify-between text-[11px]">
+                <div class="text-[var(--text-muted)] flex items-center">
                   <i class="fa-solid fa-shield-heart text-teal-400 mr-1.5"></i>
                   <span id="hazard-recommendation-text" class="truncate max-w-md">Therapy Cleared: Clean safety profile.</span>
                 </div>
-                <span class="text-[10px] text-slate-500 font-mono">0-Byte Local Telemetry</span>
+                <span class="text-[10px] text-[var(--text-muted)] font-mono">0-Byte Local Telemetry</span>
               </div>
             </div>
 
-            <!-- Itemized Per-Medication Breakdown Cards -->
-            <div id="itemized-medications-section" class="space-y-2">
-              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                <span><i class="fa-solid fa-tablets text-teal-400 mr-1.5"></i> Prescribed Medication Breakdown</span>
-                <span id="prescribed-bundle-summary" class="text-[10px] font-mono text-slate-500"></span>
-              </div>
-              <div id="itemized-medications-cards" class="space-y-2.5"></div>
+            <!-- ─── SEGMENTED SUB-TABS (Saves 700px+ vertical scroll) ─── -->
+            <div class="flex items-center space-x-1 p-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-xs font-semibold">
+              <button id="subtab-btn-action" type="button" onclick="switchResultsSubTab('action')" class="subtab-btn active flex-1 py-1.5 rounded text-center transition">
+                <i class="fa-solid fa-prescription-bottle-medical mr-1 text-teal-400"></i>
+                <span>Prescribing Actions</span>
+              </button>
+              <button id="subtab-btn-ai" type="button" onclick="switchResultsSubTab('ai')" class="subtab-btn flex-1 py-1.5 rounded text-center transition">
+                <i class="fa-solid fa-chart-line mr-1 text-cyan-400"></i>
+                <span>eGFR Perfusion</span>
+              </button>
+              <button id="subtab-btn-pk" type="button" onclick="switchResultsSubTab('pk')" class="subtab-btn flex-1 py-1.5 rounded text-center transition">
+                <i class="fa-solid fa-wave-square mr-1 text-indigo-400"></i>
+                <span>PK Simulation</span>
+              </button>
             </div>
 
-            <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
-            <div id="polypharmacy-container" class="space-y-2"></div>
-
-            <!-- Discrete Interaction Alerts -->
-            <div id="alerts-container" class="space-y-2.5"></div>
-
-            <!-- Dynamic eGFR Trajectory & Acute Kidney Perfusion Projector -->
-            <div id="egfr-trajectory-section" class="clinical-card p-3.5 border-teal-500/30 space-y-3 bg-slate-900/90">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-                <div class="card-title text-xs">
-                  <i class="fa-solid fa-chart-line text-teal-400"></i>
-                  <span>Pharmacodynamic eGFR Trajectory &amp; Perfusion Forecast</span>
+            <!-- SUB-PANEL 1: PRESCRIBING ACTIONS & ALTERNATIVES (Default) -->
+            <div id="subtab-panel-action" class="space-y-3">
+              <!-- Itemized Per-Medication Breakdown Cards -->
+              <div id="itemized-medications-section" class="space-y-2">
+                <div class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center justify-between">
+                  <span><i class="fa-solid fa-tablets text-teal-400 mr-1.5"></i> Prescribed Medication Breakdown</span>
+                  <span id="prescribed-bundle-summary" class="text-[10px] font-mono text-[var(--text-muted)]"></span>
                 </div>
-                <span id="trajectory-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40 font-bold">
-                  AKI COLLAPSE PREDICTED
-                </span>
+                <div id="itemized-medications-cards" class="space-y-2"></div>
               </div>
 
-              <!-- Trajectory Chart Canvas Container -->
-              <div class="relative w-full" style="height: 170px;">
-                <canvas id="chart-egfr-trajectory"></canvas>
-              </div>
+              <!-- Cumulative Polypharmacy Alert Section (Triple Whammy / QTc) -->
+              <div id="polypharmacy-container" class="space-y-2"></div>
 
-              <!-- Hemodynamic Pressure Cascade Strip -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-slate-800">
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Afferent Tone:</span>
-                  <span id="telemetry-afferent-tone" class="font-mono text-red-400 font-bold text-[11px]">Constricted (NSAID)</span>
-                </div>
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Efferent Tone:</span>
-                  <span id="telemetry-efferent-tone" class="font-mono text-amber-400 font-bold text-[11px]">Dilated (ACEi)</span>
-                </div>
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Net Filtration:</span>
-                  <span id="telemetry-net-filtration" class="font-mono text-teal-300 font-bold text-[11px]">-42% Hydrostatic</span>
-                </div>
-              </div>
+              <!-- Discrete Interaction Alerts -->
+              <div id="alerts-container" class="space-y-2"></div>
+
+              <!-- Clinical Safe Alternatives Formulary (1-Click Swap) -->
+              <div id="alternatives-container" class="space-y-2"></div>
             </div>
 
-            <!-- Clinical Pharmacology: Interactive PK Clearance & Accumulation Simulator -->
-            <div id="pk-simulation-section" class="clinical-card p-3.5 border-indigo-500/30 space-y-3 bg-slate-900/90" style="display:none">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-                <div class="card-title text-xs flex items-center gap-2">
-                  <i class="fa-solid fa-wave-square text-indigo-400"></i>
-                  <span>Clinical Pharmacology — Pharmacokinetic (PK) Clearance Simulator</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span id="pk-drug-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/40 font-bold">
-                    KETOROLAC
-                  </span>
-                  <span id="pk-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40 font-bold">
-                    TOXIC ACCUMULATION
-                  </span>
-                </div>
-              </div>
-
-              <!-- Rowland & Tozer Model Information Header -->
-              <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5">
-                  <i class="fa-solid fa-atom text-teal-400"></i>
-                  <span class="text-slate-400">Model:</span>
-                  <span class="font-medium text-slate-200">1-Compartment Rowland &amp; Tozer Glomerular Scaling (72h Multi-Dose Oral)</span>
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono">
-                  k_e = k_norm · [(1 - f_e) + f_e · (eGFR / 90)]
-                </div>
-              </div>
-
-              <!-- Multi-Dose PK Curve Chart Canvas Container -->
-              <div class="relative w-full" style="height: 190px;">
-                <canvas id="chart-pk-clearance"></canvas>
-              </div>
-
-              <!-- 4-Stat Telemetry Strip -->
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Half-Life (t½):</span>
-                  <span id="pk-stat-halflife" class="font-mono text-amber-400 font-bold text-[11px]">11.9h (vs 5.3h)</span>
-                  <span id="pk-stat-halflife-mult" class="text-[9px] text-amber-500/80 block font-mono">2.2x Prolonged</span>
-                </div>
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Accumulation (R_acc):</span>
-                  <span id="pk-stat-racc" class="font-mono text-purple-400 font-bold text-[11px]">3.42</span>
-                  <span class="text-[9px] text-slate-500 block font-mono">Normal: 1.84</span>
-                </div>
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Peak C_max / Toxic:</span>
-                  <span id="pk-stat-cpeak" class="font-mono text-red-400 font-bold text-[11px]">5.12 mg/L</span>
-                  <span id="pk-stat-ctoxic" class="text-[9px] text-red-400/80 block font-mono">Ceiling: 4.50 mg/L</span>
-                </div>
-                <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Trough C_min / MEC:</span>
-                  <span id="pk-stat-ctrough" class="font-mono text-teal-300 font-bold text-[11px]">3.61 mg/L</span>
-                  <span id="pk-stat-cmec" class="text-[9px] text-slate-400 block font-mono">MEC: 0.80 mg/L</span>
-                </div>
-              </div>
-
-              <!-- Interactive Renal Titration Control Panel -->
-              <div class="p-2.5 rounded-lg bg-slate-950 border border-indigo-900/40 space-y-2">
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="font-bold text-indigo-300 flex items-center gap-1.5">
-                    <i class="fa-solid fa-sliders text-indigo-400"></i>
-                    <span>Renal Dose Titration Simulator (Physician Override Tool):</span>
-                  </span>
-                  <span id="pk-titration-live-flag" class="text-[10px] font-mono text-emerald-400 hidden">
-                    <i class="fa-solid fa-check-circle"></i> Dose within Safe Window
-                  </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <!-- Dose Reduction Buttons -->
-                  <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Dose Adjustment:</label>
-                    <div class="grid grid-cols-4 gap-1" id="pk-dose-buttons">
-                      <button type="button" class="btn-pk-dose active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold" data-fraction="1.0" onclick="setPKDoseFactor(1.0, this)">100%</button>
-                      <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.75" onclick="setPKDoseFactor(0.75, this)">75%</button>
-                      <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.50" onclick="setPKDoseFactor(0.50, this)">50%</button>
-                      <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.25" onclick="setPKDoseFactor(0.25, this)">25%</button>
-                    </div>
+            <!-- SUB-PANEL 2: eGFR PERFUSION CASCADE -->
+            <div id="subtab-panel-ai" class="space-y-3" style="display:none">
+              <div id="egfr-trajectory-section" class="clinical-card p-3.5 border-teal-500/30 space-y-3 bg-[var(--bg-card-subtle)]">
+                <div class="flex items-center justify-between pb-2 border-b border-[var(--border-main)]">
+                  <div class="card-title text-xs">
+                    <i class="fa-solid fa-chart-line text-teal-400"></i>
+                    <span>Pharmacodynamic eGFR Trajectory &amp; Perfusion Forecast</span>
                   </div>
+                  <span id="trajectory-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40 font-bold">
+                    AKI COLLAPSE PREDICTED
+                  </span>
+                </div>
 
-                  <!-- Interval Extension Buttons -->
-                  <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Dosing Interval (τ):</label>
-                    <div class="grid grid-cols-4 gap-1" id="pk-interval-buttons">
-                      <button type="button" class="btn-pk-interval active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold" data-interval="6" onclick="setPKInterval(6, this)">q6h</button>
-                      <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="8" onclick="setPKInterval(8, this)">q8h</button>
-                      <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="12" onclick="setPKInterval(12, this)">q12h</button>
-                      <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="24" onclick="setPKInterval(24, this)">q24h</button>
-                    </div>
+                <!-- Trajectory Chart Canvas Container -->
+                <div class="relative w-full" style="height: 170px;">
+                  <canvas id="chart-egfr-trajectory"></canvas>
+                </div>
+
+                <!-- Hemodynamic Pressure Cascade Strip -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-[var(--border-main)]">
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Afferent Tone:</span>
+                    <span id="telemetry-afferent-tone" class="font-mono text-red-400 font-bold text-[11px]">Constricted (NSAID)</span>
+                  </div>
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Efferent Tone:</span>
+                    <span id="telemetry-efferent-tone" class="font-mono text-amber-400 font-bold text-[11px]">Dilated (ACEi)</span>
+                  </div>
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Net Filtration:</span>
+                    <span id="telemetry-net-filtration" class="font-mono text-teal-300 font-bold text-[11px]">-42% Hydrostatic</span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- Live Recommendation Box -->
-                <div class="p-2 rounded bg-indigo-950/40 border border-indigo-800/40 text-[11px] flex items-start gap-2">
-                  <i class="fa-solid fa-prescription-bottle-medical text-indigo-400 mt-0.5"></i>
-                  <div class="flex-1">
-                    <span class="text-indigo-300 font-semibold block text-[10px] uppercase">Pharmacological Titration Directive:</span>
-                    <span id="pk-titration-text" class="text-slate-200 text-[11px] leading-snug">
-                      Evaluating renal excretion dynamics...
+            <!-- SUB-PANEL 3: CLINICAL PK SIMULATION -->
+            <div id="subtab-panel-pk" class="space-y-3" style="display:none">
+              <div id="pk-simulation-section" class="clinical-card p-3.5 border-indigo-500/30 space-y-3 bg-[var(--bg-card-subtle)]">
+                <div class="flex items-center justify-between pb-2 border-b border-[var(--border-main)]">
+                  <div class="card-title text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-indigo-400"></i>
+                    <span>Clinical Pharmacology — Pharmacokinetic (PK) Clearance Simulator</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span id="pk-drug-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/40 font-bold">
+                      KETOROLAC
+                    </span>
+                    <span id="pk-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40 font-bold">
+                      TOXIC ACCUMULATION
                     </span>
                   </div>
-                  <button type="button" onclick="resetPKTitration()" class="text-[10px] text-slate-400 hover:text-white underline">Reset</button>
+                </div>
+
+                <!-- Rowland & Tozer Model Information Header -->
+                <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[11px] text-[var(--text-muted)] flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-atom text-teal-400"></i>
+                    <span class="text-[var(--text-muted)]">Model:</span>
+                    <span class="font-medium text-[var(--text-primary)]">1-Compartment Rowland &amp; Tozer Glomerular Scaling (72h Oral)</span>
+                  </div>
+                  <div class="text-[10px] text-[var(--text-muted)] font-mono">
+                    k_e = k_norm · [(1 - f_e) + f_e · (eGFR / 90)]
+                  </div>
+                </div>
+
+                <!-- Multi-Dose PK Curve Chart Canvas Container -->
+                <div class="relative w-full" style="height: 190px;">
+                  <canvas id="chart-pk-clearance"></canvas>
+                </div>
+
+                <!-- 4-Stat Telemetry Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Half-Life (t½):</span>
+                    <span id="pk-stat-halflife" class="font-mono text-amber-400 font-bold text-[11px]">11.9h (vs 5.3h)</span>
+                    <span id="pk-stat-halflife-mult" class="text-[9px] text-amber-500/80 block font-mono">2.2x Prolonged</span>
+                  </div>
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Accumulation (R_acc):</span>
+                    <span id="pk-stat-racc" class="font-mono text-purple-400 font-bold text-[11px]">3.42</span>
+                    <span class="text-[9px] text-slate-500 block font-mono">Normal: 1.84</span>
+                  </div>
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Peak C_max / Toxic:</span>
+                    <span id="pk-stat-cpeak" class="font-mono text-red-400 font-bold text-[11px]">5.12 mg/L</span>
+                    <span id="pk-stat-ctoxic" class="text-[9px] text-red-400/80 block font-mono">Ceiling: 4.50 mg/L</span>
+                  </div>
+                  <div class="p-2 rounded bg-[var(--bg-input-well)] border border-[var(--border-main)]">
+                    <span class="text-[10px] text-[var(--text-muted)] block font-semibold">Trough C_min / MEC:</span>
+                    <span id="pk-stat-ctrough" class="font-mono text-teal-300 font-bold text-[11px]">3.61 mg/L</span>
+                    <span id="pk-stat-cmec" class="text-[9px] text-slate-400 block font-mono">MEC: 0.80 mg/L</span>
+                  </div>
+                </div>
+
+                <!-- Interactive Renal Titration Control Panel -->
+                <div class="p-2.5 rounded-lg bg-[var(--bg-input-well)] border border-indigo-900/40 space-y-2">
+                  <div class="flex items-center justify-between text-[11px]">
+                    <span class="font-bold text-indigo-300 flex items-center gap-1.5">
+                      <i class="fa-solid fa-sliders text-indigo-400"></i>
+                      <span>Renal Dose Titration Simulator (Physician Override Tool):</span>
+                    </span>
+                    <span id="pk-titration-live-flag" class="text-[10px] font-mono text-emerald-400 hidden">
+                      <i class="fa-solid fa-check-circle"></i> Dose within Safe Window
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <!-- Dose Reduction Buttons -->
+                    <div>
+                      <label class="text-[10px] text-[var(--text-muted)] block mb-1">Dose Adjustment:</label>
+                      <div class="grid grid-cols-4 gap-1" id="pk-dose-buttons">
+                        <button type="button" class="btn-pk-dose active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold" data-fraction="1.0" onclick="setPKDoseFactor(1.0, this)">100%</button>
+                        <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.75" onclick="setPKDoseFactor(0.75, this)">75%</button>
+                        <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.50" onclick="setPKDoseFactor(0.50, this)">50%</button>
+                        <button type="button" class="btn-pk-dose px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-fraction="0.25" onclick="setPKDoseFactor(0.25, this)">25%</button>
+                      </div>
+                    </div>
+
+                    <!-- Interval Extension Buttons -->
+                    <div>
+                      <label class="text-[10px] text-[var(--text-muted)] block mb-1">Dosing Interval (τ):</label>
+                      <div class="grid grid-cols-4 gap-1" id="pk-interval-buttons">
+                        <button type="button" class="btn-pk-interval active px-1.5 py-1 text-[10px] font-mono rounded bg-indigo-900/60 border border-indigo-500/80 text-white font-bold" data-interval="6" onclick="setPKInterval(6, this)">q6h</button>
+                        <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="8" onclick="setPKInterval(8, this)">q8h</button>
+                        <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="12" onclick="setPKInterval(12, this)">q12h</button>
+                        <button type="button" class="btn-pk-interval px-1.5 py-1 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-200" data-interval="24" onclick="setPKInterval(24, this)">q24h</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Live Recommendation Box -->
+                  <div class="p-2 rounded bg-indigo-950/40 border border-indigo-800/40 text-[11px] flex items-start gap-2">
+                    <i class="fa-solid fa-prescription-bottle-medical text-indigo-400 mt-0.5"></i>
+                    <div class="flex-1">
+                      <span class="text-indigo-300 font-semibold block text-[10px] uppercase">Pharmacological Titration Directive:</span>
+                      <span id="pk-titration-text" class="text-slate-200 text-[11px] leading-snug">
+                        Evaluating renal excretion dynamics...
+                      </span>
+                    </div>
+                    <button type="button" onclick="resetPKTitration()" class="text-[10px] text-slate-400 hover:text-white underline">Reset</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1865,14 +2051,14 @@
 
 
             <!-- Cryptographic Proof Bar -->
-            <div class="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              <div class="flex items-center space-x-2 font-mono text-slate-400">
+            <div class="border-t border-[var(--border-main)] pt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center space-x-2 font-mono text-[var(--text-muted)]">
                 <i class="fa-solid fa-fingerprint text-teal-400"></i>
                 <span>SHA-256 Seal:</span>
-                <span id="audit-hash-display" class="text-slate-200 font-mono">Pending</span>
+                <span id="audit-hash-display" class="text-[var(--text-primary)] font-mono">Pending</span>
               </div>
-              <div class="flex items-center space-x-2.5 text-slate-400">
-                <span>Latency: <strong id="exec-time-display" class="text-slate-200 font-mono">18ms</strong></span>
+              <div class="flex items-center space-x-2 text-[var(--text-muted)]">
+                <span>Latency: <strong id="exec-time-display" class="text-[var(--text-primary)] font-mono">18ms</strong></span>
                 <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Zero-Cloud Verified</span>
                 <button id="btn-beam-qr" onclick="openClearanceQrModal()" class="btn-clinical-secondary py-1 px-2 text-xs">
                   <i class="fa-solid fa-qrcode"></i>
@@ -2119,7 +2305,7 @@
           <div id="file-drop-zone" class="drop-zone-clinical">
             <input type="file" id="file-upload-input" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" style="display:none" />
             <i class="fa-solid fa-camera-retro text-2xl text-teal-400 mb-1.5 block"></i>
-            <div class="text-xs font-semibold text-slate-200">Drag &amp; drop PDF, TXT note, or Scanned Lab Slip / Paper Photo (.png, .jpg)</div>
+            <div id="file-drop-label" class="text-xs font-semibold text-slate-200">Drag &amp; drop PDF, TXT note, or Scanned Lab Slip / Paper Photo (.png, .jpg)</div>
             <div class="text-[10px] text-slate-400 mt-1">Sovereign On-Device OCR (RapidOCR) &amp; PyMuPDF · Zero Disk Persistence</div>
           </div>
 
@@ -2544,6 +2730,8 @@
 
   </div><!-- /page-view-analytics -->
 
+    </div><!-- /workspace content -->
+  </div><!-- /main viewport -->
 </div><!-- /main-app -->
 
 <!-- ═══════════════════════════════════════════

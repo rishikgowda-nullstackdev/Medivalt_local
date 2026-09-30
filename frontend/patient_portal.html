@@ -108,6 +108,129 @@
             body { background: white; color: black; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; }
         }
+
+        /* Dark Theme Parity (Linear Obsidian & Apple Health Light) */
+        html:not(.light) body {
+            background-color: #090a0f !important;
+            color: #f0f6fc !important;
+        }
+        html:not(.light) header {
+            background-color: rgba(13, 17, 23, 0.95) !important;
+            border-color: #21262d !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+        }
+        html:not(.light) .bg-white {
+            background-color: #0d1117 !important;
+        }
+        html:not(.light) .bg-slate-50, 
+        html:not(.light) .bg-slate-50\/50, 
+        html:not(.light) .bg-slate-50\/80, 
+        html:not(.light) .bg-slate-50\/90 {
+            background-color: #161b22 !important;
+        }
+        html:not(.light) .border-slate-200, 
+        html:not(.light) .border-slate-200\/80, 
+        html:not(.light) .border-slate-200\/90, 
+        html:not(.light) .border-slate-100 {
+            border-color: #21262d !important;
+        }
+        html:not(.light) .border-slate-300 {
+            border-color: #30363d !important;
+        }
+        html:not(.light) .text-slate-900, 
+        html:not(.light) .text-slate-800 {
+            color: #f0f6fc !important;
+        }
+        html:not(.light) .text-slate-700, 
+        html:not(.light) .text-slate-600 {
+            color: #c9d1d9 !important;
+        }
+        html:not(.light) .text-slate-500 {
+            color: #8b949e !important;
+        }
+        html:not(.light) input, 
+        html:not(.light) select, 
+        html:not(.light) textarea {
+            background-color: #161b22 !important;
+            color: #f0f6fc !important;
+            border-color: #30363d !important;
+        }
+        html:not(.light) .bg-slate-100 {
+            background-color: #21262d !important;
+            color: #c9d1d9 !important;
+        }
+        html:not(.light) .hover\:bg-slate-200:hover {
+            background-color: #30363d !important;
+        }
+        html:not(.light) .bg-slate-200 {
+            background-color: #21262d !important;
+        }
+        html:not(.light) #auth-gate {
+            background-color: #0d1117 !important;
+            border-color: #21262d !important;
+        }
+        html:not(.light) #footer {
+            border-color: #21262d !important;
+        }
+        html:not(.light) .card-sanctuary-3d {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(13, 148, 136, 0.08) !important;
+        }
+        html:not(.light) #diet-narrative-container {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(13, 17, 23, 0.95)) !important;
+            border-color: rgba(20, 184, 166, 0.3) !important;
+        }
+        html:not(.light) .bg-emerald-50\/50 {
+            background-color: rgba(16, 185, 129, 0.08) !important;
+            border-color: rgba(16, 185, 129, 0.25) !important;
+        }
+        html:not(.light) .bg-rose-50\/50 {
+            background-color: rgba(244, 63, 94, 0.08) !important;
+            border-color: rgba(244, 63, 94, 0.25) !important;
+        }
+        html:not(.light) .bg-teal-50\/50 {
+            background-color: rgba(20, 184, 166, 0.08) !important;
+            border-color: rgba(20, 184, 166, 0.25) !important;
+        }
+        html:not(.light) .text-emerald-900 {
+            color: #6ee7b7 !important;
+        }
+        html:not(.light) .text-rose-900 {
+            color: #fda4af !important;
+        }
+        html:not(.light) .text-teal-900, 
+        html:not(.light) .text-teal-950 {
+            color: #5eead4 !important;
+        }
+        html:not(.light) .bg-teal-50,
+        html:not(.light) .bg-teal-50\/80 {
+            background-color: rgba(20, 184, 166, 0.12) !important;
+            border-color: rgba(20, 184, 166, 0.3) !important;
+        }
+        html:not(.light) .bg-amber-50 {
+            background-color: rgba(245, 158, 11, 0.1) !important;
+            border-color: rgba(245, 158, 11, 0.3) !important;
+        }
+        html:not(.light) .text-amber-900,
+        html:not(.light) .text-amber-950 {
+            color: #fcd34d !important;
+        }
+        html:not(.light) .text-amber-800 {
+            color: #fde68a !important;
+        }
+        html:not(.light) .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        html:not(.light) .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.1) !important;
+            border-color: rgba(168, 85, 247, 0.3) !important;
+        }
+        html:not(.light) .text-purple-700 {
+            color: #d8b4fe !important;
+        }
+        html:not(.light) .text-blue-700 {
+            color: #93c5fd !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-3 sm:p-6 lg:p-8 selection:bg-teal-500 selection:text-white">
@@ -141,6 +264,12 @@
                 <i class="fa-solid fa-user-doctor text-slate-500 text-xs"></i>
                 <span class="hidden sm:inline">Doctor View</span>
             </a>
+
+            <!-- Theme Toggle Button -->
+            <button id="portal-theme-toggle" onclick="togglePortalTheme()" class="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200 shadow-sm cursor-pointer" title="Toggle Dark/Light Mode">
+                <i id="portal-theme-icon" class="fa-solid fa-moon text-teal-500"></i>
+                <span id="portal-theme-text" class="hidden sm:inline">Theme</span>
+            </button>
 
             <!-- Header Logout Button (Rendered dynamically when logged in) -->
             <button id="header-logout-btn" onclick="handleLogout()" class="hidden px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-full border border-rose-200 transition items-center">
@@ -1294,6 +1423,7 @@
 
         // Initialize on Load
         document.addEventListener('DOMContentLoaded', () => {
+            initPortalTheme();
             if (token) {
                 loadDashboard();
             } else {
