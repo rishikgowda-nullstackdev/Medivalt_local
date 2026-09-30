@@ -27,3 +27,7 @@ Thumbs.db
 ~$*.pptx
 ~$*.docx
 ~$*.xlsx
+
+# Temporary & Test Caches
+scratch/
+.pytest_cache/
