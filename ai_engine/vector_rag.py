@@ -8,6 +8,7 @@ Zero cloud egress guaranteed.
 
 import math
 import re
+import difflib
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 
@@ -376,6 +377,45 @@ CLINICAL_MONOGRAPHS: List[Dict[str, Any]] = [
         "cyp_interactions": "Displaces highly bound drugs. Synergistic GI bleeding when combined with SSRIs, Anticoagulants, or systemic corticosteroids.",
         "beers_criteria": "Avoid for primary prevention of cardiovascular disease in adults >= 70 years due to lack of net benefit and significant bleeding risk.",
         "safe_alternatives": ["Clopidogrel (if aspirin hypersensitivity)"]
+    },
+    {
+        "drug": "Cetirizine",
+        "brand_names": ["Zyrtec", "Citrizen", "Cetrizine", "Aller-Tec", "Reactine"],
+        "category": "Antihistamine",
+        "mechanism": "Second-generation selective peripheral H1-receptor antagonist; suppresses histamine-mediated allergic reactions with minimal CNS sedation.",
+        "boxed_warnings": "None. Low anticholinergic side-effect profile compared to first-generation antihistamines (Diphenhydramine).",
+        "contraindications": ["Known Hypersensitivity to Cetirizine or Hydroxyzine", "End-Stage Renal Disease (CrCl < 10 mL/min) on hemodialysis"],
+        "renal_guideline": "CrCl >= 50 mL/min: 5-10 mg PO daily. CrCl 30-49 mL/min: 5 mg PO daily. CrCl 10-29 mL/min: 5 mg PO every 48 hours. CrCl < 10: Contraindicated.",
+        "hepatic_guideline": "In hepatic impairment, initiate at 5 mg PO daily.",
+        "cyp_interactions": "Negligible CYP450 metabolism; low drug-interaction liability. Mild additive sedation with CNS depressants or alcohol.",
+        "beers_criteria": "Preferred over first-generation antihistamines (Diphenhydramine, Hydroxyzine) in older adults to prevent delirium, falls, and urinary retention.",
+        "safe_alternatives": ["Fexofenadine (Allegra)", "Loratadine (Claritin)", "Levocetirizine (Xyzal)"]
+    },
+    {
+        "drug": "Acetaminophen",
+        "brand_names": ["Tylenol", "Paracetamol", "APAP", "Panadol"],
+        "category": "Analgesic / Antipyretic",
+        "mechanism": "Central nervous system prostaglandin synthesis inhibition and activation of descending serotonergic inhibitory pathways.",
+        "boxed_warnings": "Hepatotoxicity: Exceeding maximum daily dose (4000 mg/day; 2000-3000 mg/day in chronic hepatic impairment) can cause acute liver failure resulting in transplantation or death.",
+        "contraindications": ["Severe Hepatic Impairment or Active Severe Liver Disease", "Known Hypersensitivity"],
+        "renal_guideline": "Non-nephrotoxic; safe in Chronic Kidney Disease (CKD Stages 1-5). Preferred first-line analgesic when NSAIDs are contraindicated.",
+        "hepatic_guideline": "Reduce maximum dose to 2000 mg/day in cirrhosis or chronic alcoholism. Avoid in acute hepatic failure.",
+        "cyp_interactions": "Minor CYP2E1 metabolism to toxic metabolite NAPQI (detoxified by glutathione). Chronic alcohol induces CYP2E1.",
+        "beers_criteria": "Preferred first-line agent for pain management in older adults over NSAIDs.",
+        "safe_alternatives": ["Topical Lidocaine", "Topical Capsaicin", "Duloxetine (for neuropathic/chronic pain)"]
+    },
+    {
+        "drug": "Celecoxib",
+        "brand_names": ["Celebrex"],
+        "category": "NSAID (COX-2 Selective)",
+        "mechanism": "Selective cyclooxygenase-2 (COX-2) inhibitor sparing COX-1 at therapeutic doses, lowering gastroduodenal mucosal injury risk.",
+        "boxed_warnings": "Cardiovascular thrombotic risk (MI, stroke) and gastrointestinal ulceration/bleeding risk.",
+        "contraindications": ["Sulfa Allergy (contains sulfonamide moiety)", "Severe Renal Impairment (eGFR < 30)", "Active GI Bleed", "CABG Surgery"],
+        "renal_guideline": "Avoid in eGFR < 30 mL/min. Sparing COX-1 does NOT protect renal blood flow; COX-2 is constitutively expressed in kidneys and mediates glomerular filtration.",
+        "hepatic_guideline": "Reduce dose by 50% in moderate hepatic impairment (Child-Pugh B).",
+        "cyp_interactions": "Substrate of CYP2C9 and inhibitor of CYP2D6. Interacts with Fluconazole and Warfarin.",
+        "beers_criteria": "Less GI bleeding risk than non-selective NSAIDs when gastroprotection is co-prescribed, but cardiorenal risks remain identical.",
+        "safe_alternatives": ["Acetaminophen", "Topical Diclofenac", "Physical therapy / Non-pharmacologic"]
     }
 ]
 
@@ -614,3 +654,89 @@ def get_monograph(drug_name: str) -> Optional[Dict[str, Any]]:
 def list_monographs() -> List[Dict[str, Any]]:
     """Global function interface to list monographs."""
     return vector_rag.list_monographs()
+
+
+ALLERGY_CROSS_REACTIVITY: Dict[str, Dict[str, Any]] = {
+    "sulfonamides": {
+        "class_name": "Sulfonamides (Sulfa)",
+        "cross_reactive_drugs": [
+            "Sulfamethoxazole", "Bactrim", "Septra", "Sulfadiazine", 
+            "Sulfasalazine", "Celecoxib"
+        ],
+        "safe_non_cross_reactive": [
+            "Ibuprofen", "Ketorolac", "Naproxen", "Acetaminophen", 
+            "Penicillins", "Amoxicillin", "Cephalosporins", "Aspirin", "Cetirizine"
+        ],
+        "clinical_note": "Ibuprofen and other non-selective NSAIDs are chemically distinct propionic acids without a sulfonamide arylamine group and DO NOT cross-react with sulfa allergies."
+    },
+    "penicillins": {
+        "class_name": "Penicillins (Beta-Lactam)",
+        "cross_reactive_drugs": [
+            "Amoxicillin", "Ampicillin", "Piperacillin", "Augmentin", "Unasyn", "Zosyn"
+        ],
+        "safe_non_cross_reactive": [
+            "Vancomycin", "Linezolid", "Ciprofloxacin", "Levofloxacin", 
+            "Azithromycin", "Doxycycline", "Acetaminophen", "NSAIDs", "Cetirizine"
+        ],
+        "clinical_note": "Cross-reactivity with 3rd/4th generation cephalosporins (Ceftriaxone, Cefepime) is very low (<2%). Aztreonam has zero cross-reactivity except with ceftazidime."
+    },
+    "nsaids": {
+        "class_name": "NSAIDs / Salicylates",
+        "cross_reactive_drugs": [
+            "Ibuprofen", "Ketorolac", "Naproxen", "Aspirin", "Diclofenac", 
+            "Meloxicam", "Indomethacin"
+        ],
+        "safe_non_cross_reactive": [
+            "Acetaminophen (at doses <= 1000mg)", "Topical Lidocaine", 
+            "Tramadol", "Sulfonamides", "Penicillins", "Cetirizine"
+        ],
+        "clinical_note": "In Aspirin-Exacerbated Respiratory Disease (AERD), all COX-1 inhibitors cross-react causing bronchospasm. Acetaminophen up to 1000mg is generally tolerated."
+    }
+}
+
+
+def get_allergy_cross_reactivity(allergy_query: str) -> Optional[Dict[str, Any]]:
+    """Look up structured cross-reactivity and non-cross-reactivity clinical data for an allergy."""
+    q_lower = allergy_query.strip().lower()
+    for key, data in ALLERGY_CROSS_REACTIVITY.items():
+        if key in q_lower or data["class_name"].lower() in q_lower:
+            return data
+        if any(d.lower() in q_lower for d in data["cross_reactive_drugs"]):
+            return data
+    return None
+
+
+def resolve_drug_name(token: str) -> Optional[Tuple[str, str, float]]:
+    """
+    Fuzzy resolve a drug name or typo against the indexed formulary.
+    Returns (canonical_generic_name, matched_token, confidence) or None.
+    e.g. 'Citrizen' -> ('Cetirizine', 'citrizen', 0.88)
+         'toradol' -> ('Ketorolac', 'toradol', 1.0)
+    """
+    if not token or len(token.strip()) < 3:
+        return None
+    t_clean = token.strip().lower()
+
+    # Exact match on generic or brand
+    for doc in CLINICAL_MONOGRAPHS:
+        if doc["drug"].lower() == t_clean:
+            return (doc["drug"], doc["drug"], 1.0)
+        for b in doc.get("brand_names", []):
+            if b.lower() == t_clean:
+                return (doc["drug"], b, 1.0)
+
+    # Fuzzy match across all generics and brand aliases
+    all_targets = {}
+    for doc in CLINICAL_MONOGRAPHS:
+        all_targets[doc["drug"].lower()] = doc["drug"]
+        for b in doc.get("brand_names", []):
+            all_targets[b.lower()] = doc["drug"]
+
+    matches = difflib.get_close_matches(t_clean, list(all_targets.keys()), n=1, cutoff=0.68)
+    if matches:
+        best_match = matches[0]
+        canonical = all_targets[best_match]
+        ratio = difflib.SequenceMatcher(None, t_clean, best_match).ratio()
+        return (canonical, best_match, round(ratio, 2))
+
+    return None

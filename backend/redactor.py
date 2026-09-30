@@ -202,7 +202,31 @@ class ClinicalRedactor:
 
     @classmethod
     def process_clinical_note(cls, raw_text: str) -> Dict[str, Any]:
-        """Runs full redaction and clinical extraction pipeline in one call."""
+        """Runs full redaction and clinical extraction pipeline in one call.
+
+        Extracts patient identity (name, MRN) from raw text BEFORE redaction
+        so the treating doctor can identify the patient on screen.
+        """
+        # Extract identity BEFORE redaction
+        patient_name = None
+        patient_id_extracted = None
+
+        name_match = re.search(
+            r"(?i)\bpatient(?:\s+name)?\s*[:#]?\s*([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})",
+            raw_text,
+        )
+        if name_match:
+            candidate = name_match.group(1).strip()
+            if candidate.lower() not in {"history", "diagnosis", "assessment", "plan", "allergies", "medications", "unknown", "none", "na"}:
+                patient_name = candidate
+
+        id_match = re.search(
+            r"(?i)\b(?:mrn|patient\s*id|medical\s+record\s+(?:number|no\.?))\s*[:#]?\s*([A-Z0-9][-A-Z0-9]{2,14})",
+            raw_text,
+        )
+        if id_match:
+            patient_id_extracted = id_match.group(1).strip()
+
         redacted_text, detected_phi, patient_token = cls.redact_phi(raw_text)
         entities = cls.extract_entities(raw_text)
 
@@ -210,7 +234,9 @@ class ClinicalRedactor:
             "patient_token": patient_token,
             "redacted_text": redacted_text,
             "phi_detected": detected_phi,
-            "entities": entities
+            "entities": entities,
+            "patient_name": patient_name,
+            "patient_id_extracted": patient_id_extracted,
         }
 
 
