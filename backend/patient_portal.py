@@ -59,6 +59,10 @@ class PatientLoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 
+class PatientCompanionChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=1000)
+
+
 # ---------------------------------------------------------------------------
 # Auth Helpers
 # ---------------------------------------------------------------------------
@@ -472,3 +476,162 @@ def logout_patient(response: Response):
     resp = JSONResponse({"success": True, "message": "You have been signed out."})
     resp.delete_cookie("medivault_patient_session")
     return resp
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 6: Sovereign AI Patient Health Companion Chat
+# ---------------------------------------------------------------------------
+@patient_router.post("/companion/chat")
+def patient_companion_chat(req: PatientCompanionChatRequest, request: Request):
+    """
+    Empathetic, jargon-free offline AI health companion for patients.
+    Grounded in the patient's active conditions, medications, and lab values.
+    Enforces strict patient safety guardrails with zero cloud calls.
+    """
+    patient = _require_patient(request)
+    patient_id = patient["patient_id"]
+    full_name = patient.get("full_name", "Friend")
+    first_name = full_name.split()[0] if full_name else "there"
+
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    # Fetch conditions
+    cursor.execute(
+        "SELECT condition_name FROM patient_conditions WHERE patient_id = ?",
+        (patient_id,)
+    )
+    conditions = [r["condition_name"] for r in cursor.fetchall()]
+
+    # Fetch meds
+    cursor.execute(
+        "SELECT medication_name FROM patient_medications WHERE patient_id = ?",
+        (patient_id,)
+    )
+    medications = [r["medication_name"] for r in cursor.fetchall()]
+
+    # Fetch labs
+    cursor.execute(
+        "SELECT biomarker_name, value, unit FROM patient_labs WHERE patient_id = ?",
+        (patient_id,)
+    )
+    labs = {r["biomarker_name"].lower(): f"{r['value']} {r['unit']}" for r in cursor.fetchall()}
+    conn.close()
+
+    user_msg = req.message.strip()
+    msg_lower = user_msg.lower()
+
+    # 1. Deterministic Safety Guardrails Check
+    # Safety Rule 1: Patient asking about taking NSAIDs (Ibuprofen, Advil, Aleve, Motrin) with Kidney Disease
+    has_ckd = any("kidney" in c.lower() or "ckd" in c.lower() or "renal" in c.lower() for c in conditions)
+    asks_nsaid = any(n in msg_lower for n in ["ibuprofen", "advil", "motrin", "aleve", "naproxen", "toradol", "painkiller"])
+
+    if has_ckd and asks_nsaid:
+        reply = (
+            f"Hello {first_name}. Because your medical chart notes kidney sensitivity, "
+            f"it is very important to **avoid non-steroidal anti-inflammatory medicines like Ibuprofen, Advil, or Aleve**. "
+            f"These medications reduce blood supply to your kidneys and can make your kidney function drop suddenly. "
+            f"For mild everyday aches, doctors often recommend **Acetaminophen (Tylenol)** or warm compresses instead. "
+            f"Please check with your doctor or pharmacist before taking any new over-the-counter pain pills."
+        )
+        return {
+            "reply": reply,
+            "suggested_followups": [
+                "What foods should I eat to protect my kidneys?",
+                "What dose of Tylenol is safe for me?",
+                "How much water should I drink each day?"
+            ],
+            "model": "Sovereign Clinical Safety Engine (Local)"
+        }
+
+    # 2. Try Local Ollama SLM
+    reply = None
+    model_used = "MediVault Local Wellness Assistant"
+
+    if ai_bridge.is_online():
+        prompt = (
+            f"You are a kind, compassionate offline healthcare companion speaking with a patient named {first_name}.\n"
+            f"Patient conditions: {', '.join(conditions) if conditions else 'General wellness'}.\n"
+            f"Current medications: {', '.join(medications) if medications else 'None'}.\n"
+            f"Lab results: {', '.join([f'{k}: {v}' for k, v in labs.items()]) if labs else 'Normal'}.\n\n"
+            f"Patient asks: '{user_msg}'\n\n"
+            f"Rules for response:\n"
+            f"1. Explain in simple, friendly, comforting language (6th-grade reading level, no complex medical jargon).\n"
+            f"2. Keep the answer to 3-5 sentences.\n"
+            f"3. Never diagnose new diseases or tell them to stop prescribed medications without speaking to their doctor.\n"
+            f"4. If they have kidney disease or high blood pressure, remind them about low sodium and kidney-friendly habits.\n"
+            f"5. Address them warmly as {first_name}."
+        )
+        try:
+            import httpx
+            with httpx.Client(timeout=3.5) as client:
+                res = client.post(
+                    "http://127.0.0.1:11434/api/generate",
+                    json={
+                        "model": "llama3.2:3b",
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"temperature": 0.2, "num_predict": 180}
+                    }
+                )
+                if res.status_code == 200:
+                    raw_text = res.json().get("response", "").strip()
+                    if raw_text and len(raw_text) > 20:
+                        reply = raw_text
+                        model_used = "Ollama Local (llama3.2:3b)"
+        except Exception:
+            pass
+
+    # 3. Deterministic Empathetic Fallback
+    if not reply:
+        if any(w in msg_lower for w in ["diet", "food", "eat", "meal", "nutrition"]):
+            if has_ckd:
+                reply = (
+                    f"Hi {first_name}! For protecting your kidneys, focusing on fresh, low-sodium meals is wonderful. "
+                    f"Enjoy foods like cauliflower, blueberries, red bell peppers, and lean proteins like egg whites or skinless poultry. "
+                    f"Try to limit high-sodium processed foods, canned soups, and salty seasonings, as keeping your salt intake low helps keep your blood pressure gentle on your kidneys."
+                )
+            else:
+                reply = (
+                    f"Hi {first_name}! Eating a colorful mix of vegetables, fruits, and lean proteins is one of the best things you can do for your health. "
+                    f"Drinking plenty of water and swapping out processed snacks for fresh fruits like apples or berries will keep your energy steady all day."
+                )
+        elif any(w in msg_lower for w in ["water", "drink", "fluid", "hydration"]):
+            reply = (
+                f"Staying hydrated is great for your overall wellness, {first_name}! "
+                f"Unless your doctor has given you a specific daily fluid restriction for your heart or kidneys, "
+                f"aiming for about 6 to 8 glasses of water spread evenly throughout the day is a healthy baseline. "
+                f"Sipping steadily is much easier on your system than drinking large amounts all at once."
+            )
+        elif any(w in msg_lower for w in ["lab", "result", "egfr", "creatinine", "test"]):
+            if "egfr" in labs:
+                reply = (
+                    f"Your most recent eGFR lab showed **{labs['egfr']}**, {first_name}. "
+                    f"eGFR measures how efficiently your kidneys filter your bloodstream. "
+                    f"Keeping your blood pressure well-controlled with your prescribed medications and staying well-hydrated are two of the best everyday ways to keep this number stable."
+                )
+            else:
+                reply = (
+                    f"Hi {first_name}, your lab results reflect your body's overall balance. "
+                    f"If you'd like to review any specific number like blood pressure or kidney filtration, "
+                    f"your doctor's team can help walk through your trend over time during your next checkup."
+                )
+        else:
+            reply = (
+                f"Hello {first_name}! I am your offline MediVault Health Companion. "
+                f"I can help explain your lab numbers, dietary guidelines, and general wellness habits in plain language. "
+                f"Feel free to ask about foods that support your health, safe everyday habits, or how your prescribed routine works together."
+            )
+
+    suggested = [
+        "What foods should I eat to protect my kidneys?",
+        "How much water should I drink daily?",
+        "Can I take Tylenol for a headache?"
+    ]
+
+    return {
+        "reply": reply,
+        "suggested_followups": suggested,
+        "model": model_used
+    }
+

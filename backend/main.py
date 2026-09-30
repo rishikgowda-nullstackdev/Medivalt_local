@@ -12,6 +12,9 @@ import sqlite3
 from io import BytesIO, StringIO
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any, Union
+import logging
+
+logger = logging.getLogger("medivault.main")
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -208,6 +211,24 @@ class PKSimulateRequest(BaseModel):
     total_hours: float = 72.0
 
 
+class CopilotChatRequest(BaseModel):
+    message: str
+    patient_id: Optional[str] = None
+    proposed_med: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+
+class KnowledgeSearchRequest(BaseModel):
+    query: str
+    category: Optional[str] = None
+    top_k: Optional[int] = 3
+
+
+class IntakeAiExtractRequest(BaseModel):
+    raw_text: str
+    patient_id: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # CONTRACTS.md Endpoints (Person A & Frontend Integration)
 # ---------------------------------------------------------------------------
@@ -398,8 +419,8 @@ def get_patient_profile(patient_id: str):
                 "unit": r["unit"],
                 "display": f"{r['value']} {r['unit']}"
             }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Failed to retrieve labs for patient %s: %s", patient_id, e)
 
     conn.close()
     return {
@@ -1403,6 +1424,66 @@ def simulate_pk_endpoint(req: PKSimulateRequest):
     )
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Sovereign AI Suite: Copilot, Vector RAG & Note Intelligence Endpoints
+# ---------------------------------------------------------------------------
+@app.post("/api/copilot/chat")
+def copilot_chat_endpoint(req: CopilotChatRequest):
+    """
+    Sovereign Clinical Copilot second-opinion assistant.
+    Grounded in active patient labs, vitals, PK curve, and deterministic CDSS rules.
+    """
+    from ai_engine.copilot import ask_copilot
+    result = ask_copilot(
+        message=req.message,
+        patient_id=req.patient_id,
+        proposed_med=req.proposed_med,
+        context=req.context
+    )
+    return result
+
+
+@app.post("/api/knowledge/search")
+def knowledge_search_endpoint(req: KnowledgeSearchRequest):
+    """
+    Local Clinical Vector RAG search across embedded monographs.
+    Uses pure on-device NumPy cosine similarity with zero external egress.
+    """
+    from ai_engine.vector_rag import search_clinical_knowledge
+    results = search_clinical_knowledge(
+        query=req.query,
+        category=req.category,
+        top_k=req.top_k or 3
+    )
+    return {"query": req.query, "category": req.category, "results": results, "total": len(results)}
+
+
+@app.get("/api/knowledge/monographs")
+def list_knowledge_monographs():
+    """Lists all available indexed clinical monographs."""
+    from ai_engine.vector_rag import list_monographs
+    return {"monographs": list_monographs()}
+
+
+@app.post("/api/intake/ai-extract")
+def intake_ai_extract_endpoint(req: IntakeAiExtractRequest):
+    """
+    Autonomous SLM Clinical Note Intelligence.
+    Extracts conditions, ICD-10 suggestions, medications, labs, and flags diagnostic discrepancies.
+    """
+    from ingestion.note_intelligence import extract_clinical_intelligence_from_note
+    existing_chart = None
+    if req.patient_id:
+        from ai_engine.copilot import _lookup_patient
+        existing_chart = _lookup_patient(req.patient_id)
+
+    result = extract_clinical_intelligence_from_note(
+        raw_text=req.raw_text,
+        existing_chart=existing_chart
+    )
     return result
 
 

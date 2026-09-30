@@ -11,6 +11,8 @@ ENV/
 
 # Local databases & logs (generated at runtime)
 *.db-journal
+*.db-shm
+*.db-wal
 database/*.db
 database/audit_trail.jsonl
 database/email_outbox.jsonl

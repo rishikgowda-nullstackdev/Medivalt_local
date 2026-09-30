@@ -567,6 +567,63 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Section D: 💬 Ask Your Sovereign AI Health Companion -->
+                <section class="bg-white p-6 sm:p-7 rounded-3xl shadow-sanctuary border border-teal-200/80 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center pb-3 border-b border-slate-100 gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center text-sm shadow-sm">
+                                <i class="fa-solid fa-comments"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900 font-heading">Ask Your Health Companion</h3>
+                                <p class="text-xs text-slate-500">Kind, plain-language guidance about your diet, medications, and wellness.</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                            100% Private · On-Device AI
+                        </span>
+                    </div>
+
+                    <!-- Quick Questions Chips -->
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-500 block mb-1.5">Common Questions:</span>
+                        <div class="flex flex-wrap gap-1.5 text-xs">
+                            <button type="button" onclick="askCompanionQuick('Can I take Advil or Ibuprofen for pain?')" class="px-2.5 py-1 rounded-full bg-slate-50 hover:bg-teal-50 border border-slate-200 text-slate-700 text-xs transition">
+                                💊 Can I take Ibuprofen for pain?
+                            </button>
+                            <button type="button" onclick="askCompanionQuick('What foods help protect my kidneys?')" class="px-2.5 py-1 rounded-full bg-slate-50 hover:bg-teal-50 border border-slate-200 text-slate-700 text-xs transition">
+                                🥗 What foods protect my kidneys?
+                            </button>
+                            <button type="button" onclick="askCompanionQuick('How much water should I drink daily?')" class="px-2.5 py-1 rounded-full bg-slate-50 hover:bg-teal-50 border border-slate-200 text-slate-700 text-xs transition">
+                                💧 How much water daily?
+                            </button>
+                            <button type="button" onclick="askCompanionQuick('Can you explain my eGFR lab number?')" class="px-2.5 py-1 rounded-full bg-slate-50 hover:bg-teal-50 border border-slate-200 text-slate-700 text-xs transition">
+                                🔬 What does my eGFR mean?
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Message Area -->
+                    <div id="companion-chat-stream" class="space-y-3 max-h-72 overflow-y-auto p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 text-xs sm:text-sm">
+                        <div class="flex items-start space-x-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-teal-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                            </div>
+                            <div class="p-3 rounded-2xl rounded-tl-sm bg-white border border-slate-200 text-slate-800 shadow-sm leading-relaxed max-w-lg">
+                                Hello! I am your personal health companion. I am here to answer everyday questions about foods, hydration, and understanding your care plan in simple, comfortable words.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Bar -->
+                    <div class="flex items-center space-x-2 pt-1">
+                        <input type="text" id="companion-input" placeholder="Ask a health or dietary question (e.g. Can I eat bananas with my kidney labs?)..." onkeydown="if(event.key==='Enter') sendCompanionMessage()" class="flex-1 px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                        <button type="button" id="btn-companion-send" onclick="sendCompanionMessage()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-2xl transition shadow-sm flex items-center">
+                            <i class="fa-solid fa-paper-plane mr-1.5"></i> Ask
+                        </button>
+                    </div>
+                </section>
             </div>
         </div>
     </main>
@@ -589,6 +646,7 @@
         // State
         let token = localStorage.getItem('patient_token');
         let currentHydrationAmount = parseFloat(localStorage.getItem('patient_hydration') || '1.8');
+        let currentPatientProfile = null;
 
         // Helper: Toggle Visibility
         const show = id => {
@@ -800,6 +858,7 @@
 
         // Render Patient Profile
         function renderProfile(profile) {
+            currentPatientProfile = profile;
             // Welcome & Header
             const name = profile.full_name || 'Patient';
             document.getElementById('welcome-msg').textContent = `Welcome back, ${name}! 👋`;
@@ -1033,7 +1092,7 @@
             }
         }
 
-        // Grocery Food Compatibility Checker
+        // Grocery Food Compatibility Checker (Medication & Condition Aware)
         function checkFoodCompatibility() {
             const input = document.getElementById('food-search-input');
             const res = document.getElementById('food-search-result');
@@ -1043,19 +1102,72 @@
 
             res.classList.remove('hidden');
 
-            if (query.includes('banana') || query.includes('apricot') || query.includes('avocado') || query.includes('fig')) {
-                res.className = 'mt-3 p-3 rounded-xl text-xs bg-amber-50 border border-amber-300 text-amber-900';
-                res.innerHTML = '<strong>⚠️ Caution (High Potassium):</strong> Contains elevated potassium. In CKD Stage 3, consume in small, measured portions to keep serum potassium in the safe &lt; 5.0 mEq/L range.';
-            } else if (query.includes('soup') || query.includes('bacon') || query.includes('pickle') || query.includes('chips') || query.includes('salt') || query.includes('sausage')) {
-                res.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-900';
-                res.innerHTML = '<strong>🛑 Restrict (High Sodium):</strong> High sodium causes acute fluid retention, stressing kidney filtration and driving up systemic vascular resistance.';
-            } else if (query.includes('apple') || query.includes('berry') || query.includes('blueberr') || query.includes('cauliflower') || query.includes('grape') || query.includes('egg') || query.includes('olive oil')) {
-                res.className = 'mt-3 p-3 rounded-xl text-xs bg-emerald-50 border border-emerald-300 text-emerald-900';
-                res.innerHTML = '<strong>🛡️ Safe &amp; Recommended:</strong> Kidney-friendly, low-potassium choice packed with protective antioxidants and gentle on glomerular capillaries.';
-            } else {
-                res.className = 'mt-3 p-3 rounded-xl text-xs bg-teal-50 border border-teal-300 text-teal-900';
-                res.innerHTML = `<strong>ℹ️ Checked "${input.value}":</strong> Moderate nutritional profile. Maintain standard portion sizes and verify with your care team if unsure.`;
+            // Extract patient active clinical context
+            const meds = (currentPatientProfile?.medications || []).map(m => (m.medication_name || m.name || '').toLowerCase());
+            const conds = (currentPatientProfile?.conditions || []).map(c => (c.condition_name || c.name || (typeof c === 'string' ? c : '')).toLowerCase());
+            
+            const hasWarfarin = meds.some(m => m.includes('warfarin') || m.includes('coumadin'));
+            const hasRenalPrescription = meds.some(m => m.includes('lisinopril') || m.includes('spironolactone') || m.includes('losartan') || m.includes('ramipril') || m.includes('furosemide'));
+            const hasMetformin = meds.some(m => m.includes('metformin'));
+            
+            const hasCKD = conds.some(c => c.includes('kidney') || c.includes('renal') || c.includes('ckd'));
+            const hasHTN = conds.some(c => c.includes('hypertension') || c.includes('blood pressure'));
+            const hasAsthma = conds.some(c => c.includes('asthma') || c.includes('reactive airway'));
+            const hasDiabetes = conds.some(c => c.includes('diabetes'));
+
+            // 1. Critical Drug-Food Interactions
+            if (hasWarfarin && (query.includes('cranberry') || query.includes('grapefruit'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-50 border border-rose-400 text-rose-900 shadow-sm';
+                res.innerHTML = '<strong>🛑 Critical Interaction (Warfarin Therapy):</strong> Cranberries and grapefruit inhibit CYP enzyme metabolism of Warfarin, causing blood levels to spike and dramatically multiplying the hazard of spontaneous hemorrhage.';
+                return;
             }
+
+            if (hasWarfarin && (query.includes('spinach') || query.includes('kale') || query.includes('broccoli') || query.includes('collard') || query.includes('cabbage'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-amber-50 border border-amber-400 text-amber-900 shadow-sm';
+                res.innerHTML = '<strong>⚠️ Vitamin K Notice (Warfarin Therapy):</strong> Rich in Vitamin K, which directly counteracts Warfarin and lowers your INR. Maintain a consistent daily intake rather than sudden large feasts.';
+                return;
+            }
+
+            if ((hasCKD || hasRenalPrescription) && (query.includes('banana') || query.includes('apricot') || query.includes('avocado') || query.includes('fig') || query.includes('potassium') || query.includes('salt substitute'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-amber-50 border border-amber-400 text-amber-900 shadow-sm';
+                res.innerHTML = '<strong>⚠️ Caution (Potassium Load):</strong> Elevated potassium content. With reduced kidney filtration or ACEi/ARB therapy (e.g. Lisinopril), excess potassium accumulates in the blood, triggering cardiac arrhythmia risks.';
+                return;
+            }
+
+            if ((hasCKD || hasHTN) && (query.includes('soup') || query.includes('bacon') || query.includes('pickle') || query.includes('chips') || query.includes('salt') || query.includes('sausage') || query.includes('hot dog') || query.includes('soy sauce'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-900 shadow-sm';
+                res.innerHTML = '<strong>🛑 Restrict (High Sodium):</strong> High sodium causes acute fluid retention, expanding intravascular volume, straining damaged nephrons, and elevating blood pressure.';
+                return;
+            }
+
+            if (hasAsthma && (query.includes('wine') || query.includes('sulfite') || query.includes('dried fruit') || query.includes('shrimp'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-amber-50 border border-amber-300 text-amber-900 shadow-sm';
+                res.innerHTML = '<strong>⚠️ Bronchospasm Trigger (Asthma):</strong> High in sulfites and preservatives known to trigger acute bronchial smooth muscle constriction and refractory wheezing in asthma patients.';
+                return;
+            }
+
+            if (hasMetformin && (query.includes('alcohol') || query.includes('beer') || query.includes('vodka') || query.includes('whiskey') || query.includes('cocktail'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-900 shadow-sm';
+                res.innerHTML = '<strong>🛑 Acute Warning (Metformin Co-Ingestion):</strong> Alcohol significantly elevates lactic acid production and impairs hepatic clearance, increasing the hazard of fatal Metformin-associated lactic acidosis (MALA).';
+                return;
+            }
+
+            if (hasDiabetes && (query.includes('sugar') || query.includes('candy') || query.includes('soda') || query.includes('syrup') || query.includes('donut') || query.includes('cake'))) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-900 shadow-sm';
+                res.innerHTML = '<strong>🛑 Glycemic Spike Warning (Diabetes):</strong> Concentrated simple carbohydrates cause immediate post-prandial glucose surges and oxidative vascular stress.';
+                return;
+            }
+
+            // Safe / Healthy Choices
+            if (query.includes('apple') || query.includes('berry') || query.includes('blueberr') || query.includes('strawberr') || query.includes('cauliflower') || query.includes('grape') || query.includes('egg') || query.includes('olive oil') || query.includes('salmon') || query.includes('chicken') || query.includes('cucumber') || query.includes('garlic')) {
+                res.className = 'mt-3 p-3 rounded-xl text-xs bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-sm';
+                res.innerHTML = '<strong>🛡️ Safe &amp; Recommended:</strong> Nutrient-dense, anti-inflammatory whole food with minimal renal/cardiovascular friction for your current profile.';
+                return;
+            }
+
+            // Default
+            res.className = 'mt-3 p-3 rounded-xl text-xs bg-teal-50 border border-teal-300 text-teal-900';
+            res.innerHTML = `<strong>ℹ️ Checked "${input.value}":</strong> Moderate nutritional profile. Maintain standard portion sizes and verify with your care team if unsure.`;
         }
 
         // Interactive Habits Persistence
@@ -1086,6 +1198,98 @@
                     ? 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono'
                     : 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-mono';
             }
+        }
+
+        // Sovereign AI Patient Health Companion Chat
+        async function sendCompanionMessage(explicitPrompt = null) {
+            const input = document.getElementById('companion-input');
+            const chatStream = document.getElementById('companion-chat-stream');
+            const sendBtn = document.getElementById('btn-companion-send');
+
+            const message = explicitPrompt || (input ? input.value.trim() : '');
+            if (!message) return;
+
+            if (input && !explicitPrompt) input.value = '';
+
+            // Render User bubble
+            if (chatStream) {
+                const userBubble = document.createElement('div');
+                userBubble.className = 'flex items-start justify-end space-x-2.5';
+                userBubble.innerHTML = `
+                    <div class="p-3 rounded-2xl rounded-tr-sm bg-teal-600 text-white shadow-sm leading-relaxed max-w-lg text-xs sm:text-sm">
+                        ${message}
+                    </div>
+                `;
+                chatStream.appendChild(userBubble);
+
+                // Thinking indicator
+                const thinkEl = document.createElement('div');
+                thinkEl.id = 'companion-thinking';
+                thinkEl.className = 'flex items-start space-x-2.5';
+                thinkEl.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-teal-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div class="p-3 rounded-2xl rounded-tl-sm bg-white border border-slate-200 text-slate-500 shadow-sm text-xs sm:text-sm animate-pulse">
+                        <i class="fa-solid fa-circle-notch fa-spin text-teal-600 mr-1.5"></i> Thinking gently...
+                    </div>
+                `;
+                chatStream.appendChild(thinkEl);
+                chatStream.scrollTop = chatStream.scrollHeight;
+            }
+
+            if (sendBtn) sendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/patient/companion/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const thinkEl = document.getElementById('companion-thinking');
+                if (thinkEl) thinkEl.remove();
+
+                if (!res.ok) throw new Error('Could not connect to Health Companion.');
+                const data = await res.json();
+
+                if (chatStream) {
+                    const replyBubble = document.createElement('div');
+                    replyBubble.className = 'flex items-start space-x-2.5';
+                    replyBubble.innerHTML = `
+                        <div class="w-7 h-7 rounded-lg bg-teal-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <div class="p-3.5 rounded-2xl rounded-tl-sm bg-white border border-teal-100 text-slate-800 shadow-sm leading-relaxed max-w-lg space-y-1.5 text-xs sm:text-sm">
+                            <div>${data.reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}</div>
+                            <div class="pt-1 text-[10px] text-teal-700 font-mono flex items-center">
+                                <i class="fa-solid fa-shield-halved mr-1"></i> ${data.model || 'Local Companion'} · 100% Private
+                            </div>
+                        </div>
+                    `;
+                    chatStream.appendChild(replyBubble);
+                    chatStream.scrollTop = chatStream.scrollHeight;
+                }
+
+            } catch (err) {
+                const thinkEl = document.getElementById('companion-thinking');
+                if (thinkEl) thinkEl.remove();
+                if (chatStream) {
+                    const errBubble = document.createElement('div');
+                    errBubble.className = 'p-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs';
+                    errBubble.textContent = 'Health Companion offline or timed out. Please try again.';
+                    chatStream.appendChild(errBubble);
+                }
+            } finally {
+                if (sendBtn) sendBtn.disabled = false;
+            }
+        }
+
+        function askCompanionQuick(promptText) {
+            sendCompanionMessage(promptText);
         }
 
         // Initialize on Load
