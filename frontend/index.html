@@ -2176,10 +2176,19 @@
         <span id="top-patient-name" class="font-bold text-[var(--text-primary)]">John Doe (Renal Profile)</span>
         <span class="text-[var(--text-faint)]">·</span>
         <span id="top-patient-meta" class="text-[10px] text-teal-400 font-mono">PT-101 · Stage 3 CKD</span>
+        <button type="button" onclick="toggleDoctorAdviceDrawer(true)" class="ml-1.5 flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-teal-500/20 hover:bg-teal-500/35 border border-teal-500/50 text-teal-300 text-[11px] font-bold transition cursor-pointer shadow-sm" title="Send Clinical Advice & Instructions to Patient">
+          <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+          <span>Advice</span>
+        </button>
       </div>
 
       <!-- Right: Telemetry & Practitioner Actions -->
       <div class="flex items-center space-x-2 flex-wrap">
+        <!-- Bedside QR & Direct Link Launcher Button -->
+        <button id="btn-bedside-qr-header" type="button" onclick="openBedsideQrModal()" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-sky-500/15 to-indigo-500/15 hover:from-sky-500/25 hover:to-indigo-500/25 border border-sky-500/40 text-sky-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Bedside Tablet/Phone QR Code & Direct Link">
+          <i class="fa-solid fa-qrcode text-xs"></i>
+          <span class="hidden xl:inline">Bedside Link &amp; QR</span>
+        </button>
         <!-- Air-Gap Status Badge -->
         <div id="airgap-status-pill" class="flex items-center space-x-1.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -4129,7 +4138,234 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════
+     BEDSIDE TABLET / SMARTPHONE QR & DIRECT LINK MODAL
+═══════════════════════════════════════════ -->
+<div id="modal-bedside-qr" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+  <div class="w-full max-w-lg clinical-card p-6 border-sky-500/50 shadow-2xl relative flex flex-col space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400 text-xl shadow-[0_0_15px_rgba(14,165,233,0.3)]">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white font-heading">Bedside Patient Access &amp; QR</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Instant patient sanctuary link for bedside tablets &amp; mobile phones.</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeBedsideQrModal()" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Active Patient Banner -->
+    <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs">
+      <div>
+        <span class="text-[10px] text-teal-400 font-mono uppercase font-bold">Active Patient:</span>
+        <div class="text-white font-bold" id="bedside-qr-patient-name">John Doe (PT-101)</div>
+      </div>
+      <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">
+        Zero-Cloud Encrypted
+      </span>
+    </div>
+
+    <!-- QR Code Display Box (Pure SVG zero-dependency) -->
+    <div class="p-4 rounded-2xl bg-white flex flex-col items-center justify-center shadow-inner mx-auto w-48 h-48 border-4 border-slate-800" id="bedside-qr-container">
+      <svg id="bedside-qr-svg" class="w-40 h-40" viewBox="0 0 100 100" fill="none">
+        <rect width="100" height="100" fill="white"/>
+        <!-- Corner Position Squares -->
+        <rect x="5" y="5" width="26" height="26" fill="#0f172a" rx="2"/>
+        <rect x="8" y="8" width="20" height="20" fill="white"/>
+        <rect x="11" y="11" width="14" height="14" fill="#0d9488"/>
+
+        <rect x="69" y="5" width="26" height="26" fill="#0f172a" rx="2"/>
+        <rect x="72" y="8" width="20" height="20" fill="white"/>
+        <rect x="75" y="11" width="14" height="14" fill="#0d9488"/>
+
+        <rect x="5" y="69" width="26" height="26" fill="#0f172a" rx="2"/>
+        <rect x="8" y="72" width="20" height="20" fill="white"/>
+        <rect x="11" y="75" width="14" height="14" fill="#0d9488"/>
+
+        <!-- Dense Data Matrix -->
+        <rect x="36" y="8" width="6" height="6" fill="#0f172a"/>
+        <rect x="46" y="8" width="6" height="6" fill="#0f172a"/>
+        <rect x="56" y="8" width="6" height="6" fill="#0f172a"/>
+        <rect x="36" y="18" width="6" height="6" fill="#0d9488"/>
+        <rect x="46" y="24" width="6" height="6" fill="#0f172a"/>
+        <rect x="56" y="18" width="6" height="6" fill="#0f172a"/>
+        <rect x="8" y="36" width="6" height="6" fill="#0f172a"/>
+        <rect x="18" y="46" width="6" height="6" fill="#0d9488"/>
+        <rect x="28" y="36" width="6" height="6" fill="#0f172a"/>
+        <rect x="8" y="56" width="6" height="6" fill="#0f172a"/>
+        <rect x="36" y="36" width="28" height="28" fill="#0f172a" rx="3"/>
+        <rect x="40" y="40" width="20" height="20" fill="white"/>
+        <path d="M44 48 L48 53 L56 43" stroke="#0d9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="69" y="36" width="6" height="6" fill="#0f172a"/>
+        <rect x="79" y="46" width="6" height="6" fill="#0f172a"/>
+        <rect x="89" y="36" width="6" height="6" fill="#0d9488"/>
+        <rect x="69" y="56" width="6" height="6" fill="#0f172a"/>
+        <rect x="36" y="69" width="6" height="6" fill="#0f172a"/>
+        <rect x="46" y="79" width="6" height="6" fill="#0f172a"/>
+        <rect x="56" y="69" width="6" height="6" fill="#0d9488"/>
+        <rect x="36" y="89" width="6" height="6" fill="#0f172a"/>
+        <rect x="46" y="89" width="6" height="6" fill="#0d9488"/>
+        <rect x="76" y="76" width="12" height="12" fill="#0f172a"/>
+      </svg>
+    </div>
+
+    <!-- Direct URLs Copy Bar -->
+    <div class="space-y-2">
+      <label class="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">Direct Sanctuary URL:</label>
+      <div class="flex items-center space-x-2">
+        <input type="text" id="bedside-direct-url" readonly value="http://127.0.0.1:8000/portal" class="clinical-input text-xs py-2 font-mono flex-1 bg-slate-950 select-all" />
+        <button type="button" onclick="copyBedsideUrl('bedside-direct-url')" class="btn-clinical-secondary text-xs py-2 px-3">
+          <i class="fa-solid fa-copy mr-1"></i> Copy
+        </button>
+      </div>
+      <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+        <span>Also reachable via: <code class="text-teal-400">/portal</code>, <code class="text-teal-400">/patient</code>, or <code class="text-teal-400">/patient-portal</code></span>
+        <a href="/portal" target="_blank" class="text-sky-400 hover:text-sky-300 font-semibold underline flex items-center">
+          Open Now <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FLOATING DOCTOR CARE ADVICE DRAWER
+═══════════════════════════════════════════ -->
+<div id="drawer-doctor-advice-backdrop" style="display:none" onclick="toggleDoctorAdviceDrawer(false)" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm transition-opacity"></div>
+
+<div id="drawer-doctor-advice" style="display:none; transform: translateX(100%);" class="fixed top-0 right-0 bottom-0 w-full max-w-lg z-50 bg-slate-900 border-l border-teal-500/40 shadow-2xl flex flex-col transition-transform duration-300 ease-out">
+  
+  <!-- Drawer Header -->
+  <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 text-lg">
+        <i class="fa-solid fa-user-doctor"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-white font-heading">Physician Care Instructions</h3>
+        <p class="text-xs text-slate-400">Direct transmission to patient's offline health sanctuary.</p>
+      </div>
+    </div>
+    <button type="button" onclick="toggleDoctorAdviceDrawer(false)" class="btn-clinical-secondary py-1 px-2.5 text-xs">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Drawer Body (Scrollable) -->
+  <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+    
+    <!-- Active Patient Target Card -->
+    <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-teal-400 font-mono uppercase font-bold">Recipient Patient:</span>
+        <span class="text-[10px] font-mono text-slate-400">Attending: Dr. Gregory House, MD</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-bold text-white font-heading" id="drawer-patient-name">John Doe (PT-101)</div>
+        <span class="text-[10px] font-mono text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded">eGFR 38 · CKD 3b</span>
+      </div>
+    </div>
+
+    <!-- Category Selector -->
+    <div class="space-y-1.5">
+      <label class="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">Instruction Category:</label>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5" id="advice-category-selector">
+        <button type="button" onclick="selectAdviceCategory('MEDICATION')" class="advice-cat-btn active p-2 rounded-lg border border-teal-500/50 bg-teal-950/40 text-teal-300 text-left font-medium">
+          <i class="fa-solid fa-pills mr-1 text-teal-400"></i> Medication
+        </button>
+        <button type="button" onclick="selectAdviceCategory('DIETARY')" class="advice-cat-btn p-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 text-left font-medium hover:border-slate-700">
+          <i class="fa-solid fa-apple-whole mr-1 text-emerald-400"></i> Dietary
+        </button>
+        <button type="button" onclick="selectAdviceCategory('WARNING_SIGNS')" class="advice-cat-btn p-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 text-left font-medium hover:border-slate-700">
+          <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-400"></i> Red Flags
+        </button>
+        <button type="button" onclick="selectAdviceCategory('FOLLOW_UP')" class="advice-cat-btn p-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 text-left font-medium hover:border-slate-700">
+          <i class="fa-solid fa-calendar-check mr-1 text-amber-400"></i> Follow-up
+        </button>
+        <button type="button" onclick="selectAdviceCategory('GENERAL')" class="advice-cat-btn p-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 text-left font-medium hover:border-slate-700 col-span-2 sm:col-span-2">
+          <i class="fa-solid fa-notes-medical mr-1 text-cyan-400"></i> General Wellness
+        </button>
+      </div>
+    </div>
+
+    <!-- Severity Level -->
+    <div class="space-y-1.5">
+      <label class="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">Clinical Priority:</label>
+      <div class="flex items-center space-x-3 text-xs">
+        <label class="flex items-center space-x-1.5 cursor-pointer text-slate-300">
+          <input type="radio" name="advice-severity" value="ROUTINE" checked class="text-teal-500 focus:ring-teal-500">
+          <span>Routine</span>
+        </label>
+        <label class="flex items-center space-x-1.5 cursor-pointer text-amber-300">
+          <input type="radio" name="advice-severity" value="URGENT" class="text-amber-500 focus:ring-amber-500">
+          <span>Urgent Attention</span>
+        </label>
+        <label class="flex items-center space-x-1.5 cursor-pointer text-rose-400 font-bold">
+          <input type="radio" name="advice-severity" value="CRITICAL" class="text-rose-500 focus:ring-rose-500">
+          <span>Critical Warning</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Clinical Advice Textarea -->
+    <div class="space-y-1.5">
+      <div class="flex items-center justify-between">
+        <label class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Physician's Clinical Notes:</label>
+        <button type="button" onclick="insertAdvicePreset('nsaid')" class="text-[10px] text-teal-400 hover:text-teal-300 underline">
+          + NSAID Warning Preset
+        </button>
+      </div>
+      <textarea id="doctor-advice-input" rows="4" class="clinical-input text-xs w-full p-2.5 font-sans leading-relaxed" placeholder="Type clinical instructions (e.g. Discontinue all NSAIDs due to acute renal risk. Drink 1.8-2.0 L water daily. Take Furosemide in the morning with breakfast)..."></textarea>
+      
+      <!-- Quick Chips -->
+      <div class="flex flex-wrap gap-1 text-[10px] pt-0.5">
+        <button type="button" onclick="insertAdvicePreset('nsaid')" class="test-chip test-chip-danger">🚫 Avoid NSAIDs</button>
+        <button type="button" onclick="insertAdvicePreset('fluid')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">💧 2L Fluid Limit</button>
+        <button type="button" onclick="insertAdvicePreset('bp')" class="test-chip test-chip-warning">🩺 Morning BP Check</button>
+        <button type="button" onclick="insertAdvicePreset('swelling')" class="test-chip bg-cyan-500/10 text-cyan-300 border-cyan-500/30">⚠️ Watch Ankle Edema</button>
+      </div>
+    </div>
+
+    <!-- Offline SLM Plain-Language Translation Action -->
+    <div class="p-3 rounded-xl bg-gradient-to-r from-teal-950/40 via-slate-900 to-indigo-950/40 border border-teal-500/30 space-y-2">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-1.5 text-teal-300 font-bold text-xs">
+          <i class="fa-solid fa-wand-magic-sparkles text-teal-400"></i>
+          <span>Offline SLM Plain-Language Drafter</span>
+        </div>
+        <button type="button" id="btn-draft-advice-slm" onclick="draftPlainLanguageAdvice()" class="btn-clinical-primary text-[11px] py-1 px-3 flex items-center">
+          <i class="fa-solid fa-language mr-1"></i> Auto-Draft (6th Grade)
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-snug">
+        Transforms medical terms into reassuring, jargon-free instructions so the patient understands exactly what to do.
+      </p>
+
+      <!-- Editable Plain Language Preview Box -->
+      <div class="space-y-1 pt-1">
+        <label class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Patient Sanctuary View (Editable Preview):</label>
+        <textarea id="doctor-advice-plain-preview" rows="3" class="clinical-input text-xs w-full p-2.5 text-teal-200 bg-slate-950 font-sans border-teal-500/40 leading-relaxed" placeholder="Click 'Auto-Draft' above or write patient-friendly explanation here..."></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Drawer Footer Actions -->
+  <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between">
+    <button type="button" onclick="toggleDoctorAdviceDrawer(false)" class="btn-clinical-secondary text-xs py-2 px-4">
+      Cancel
+    </button>
+    <button type="button" id="btn-publish-advice" onclick="publishDoctorAdvice()" class="btn-clinical-primary text-xs py-2 px-5 font-bold shadow-lg flex items-center">
+      <i class="fa-solid fa-paper-plane mr-1.5"></i> Publish to Patient Sanctuary
+    </button>
+  </div>
+</div>
+
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=3.5-sovereign-ai-copilot"></script>
+<script src="/static/app.js?v=4.0-patient-portal-suite"></script>
 </body>
 </html>

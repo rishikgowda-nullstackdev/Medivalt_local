@@ -63,6 +63,30 @@ class PatientCompanionChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=1000)
 
 
+class PostDoctorAdviceRequest(BaseModel):
+    patient_id: str = Field(..., description="Target patient ID (e.g. PT-101)")
+    category: str = Field("GENERAL", description="GENERAL, MEDICATION, DIETARY, WARNING_SIGNS, or FOLLOW_UP")
+    advice_text: str = Field(..., min_length=3, description="Doctor clinical advice or prescription notes")
+    plain_summary: Optional[str] = Field(None, description="Patient-friendly plain language translation")
+    severity: str = Field("ROUTINE", description="ROUTINE, URGENT, or CRITICAL")
+    practitioner_name: Optional[str] = Field(None, description="Attending physician name")
+    hospital_name: Optional[str] = Field(None, description="Attending hospital name")
+
+
+class DraftAdviceSLMRequest(BaseModel):
+    clinical_notes: str = Field(..., min_length=3)
+    patient_id: Optional[str] = Field("PT-101")
+    category: Optional[str] = Field("GENERAL")
+
+
+class LogAdherenceRequest(BaseModel):
+    log_date: Optional[str] = Field(None, description="YYYY-MM-DD")
+    time_slot: str = Field(..., description="MORNING, AFTERNOON, EVENING, or NIGHT")
+    medication_name: str = Field(..., min_length=1)
+    dosage: Optional[str] = None
+    taken: bool = True
+
+
 # ---------------------------------------------------------------------------
 # Auth Helpers
 # ---------------------------------------------------------------------------
@@ -636,4 +660,532 @@ def patient_companion_chat(req: PatientCompanionChatRequest, request: Request):
         "suggested_followups": suggested,
         "model": model_used
     }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 7: Attending Physician Advice Composer (Doctor -> Patient)
+# ---------------------------------------------------------------------------
+@patient_router.post("/advice")
+def post_doctor_advice(body: PostDoctorAdviceRequest, request: Request):
+    """
+    Publishes attending physician advice and care instructions to the patient's record.
+    Accessible from the Doctor Workstation floating communication drawer.
+    """
+    valid_categories = {"GENERAL", "MEDICATION", "DIETARY", "WARNING_SIGNS", "FOLLOW_UP"}
+    cat_upper = body.category.strip().upper()
+    if cat_upper not in valid_categories:
+        cat_upper = "GENERAL"
+
+    valid_severities = {"ROUTINE", "URGENT", "CRITICAL"}
+    sev_upper = body.severity.strip().upper()
+    if sev_upper not in valid_severities:
+        sev_upper = "ROUTINE"
+
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    # Verify target patient exists
+    cursor.execute("SELECT patient_id, patient_name FROM patients WHERE patient_id = ?", (body.patient_id,))
+    pt_row = cursor.fetchone()
+    if not pt_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Patient '{body.patient_id}' not found in hospital registry.")
+
+    # Doctor attribution resolution (JWT or header or default)
+    practitioner_name = body.practitioner_name or "Dr. Gregory House, MD"
+    hospital_name = body.hospital_name or "Princeton Plainsboro Teaching Hospital"
+    practitioner_id = "PRAC-103"
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        payload = decode_access_token(auth_header.split(" ", 1)[1].strip())
+        if payload and payload.get("role") in ("PHYSICIAN", "CHIEF_OF_MEDICINE", "CLINICIAN"):
+            practitioner_name = payload.get("full_name", practitioner_name)
+            hospital_name = payload.get("hospital_name", hospital_name)
+            practitioner_id = payload.get("practitioner_id", practitioner_id)
+
+    # If plain summary wasn't provided, create a brief auto-summary
+    plain_summary = body.plain_summary
+    if not plain_summary or len(plain_summary.strip()) < 5:
+        plain_summary = body.advice_text
+
+    cursor.execute("""
+        INSERT INTO patient_doctor_notes 
+        (patient_id, practitioner_id, practitioner_name, hospital_name, category, advice_text, plain_summary, severity, is_read)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+    """, (body.patient_id, practitioner_id, practitioner_name, hospital_name, cat_upper, body.advice_text, plain_summary, sev_upper))
+
+    note_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    logger.info("Doctor advice posted by %s for patient %s (id=%s)", practitioner_name, body.patient_id, note_id)
+
+    return {
+        "success": True,
+        "advice_id": note_id,
+        "patient_id": body.patient_id,
+        "category": cat_upper,
+        "severity": sev_upper,
+        "practitioner_name": practitioner_name,
+        "message": f"Clinical instructions successfully transmitted to {pt_row['patient_name']}'s Sanctuary."
+    }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 8: Get Doctor Advice for Patient (Patient Sanctuary Inbox)
+# ---------------------------------------------------------------------------
+@patient_router.get("/advice")
+def get_doctor_advice(request: Request, patient_id: Optional[str] = None):
+    """
+    Returns all care advice notes published by physicians for the patient.
+    """
+    target_patient_id = patient_id
+
+    # If patient JWT is present, enforce their own patient_id
+    patient = _get_patient_from_token(request)
+    if patient:
+        target_patient_id = patient["patient_id"]
+
+    if not target_patient_id:
+        target_patient_id = "PT-101"
+
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, patient_id, practitioner_id, practitioner_name, hospital_name,
+               category, advice_text, plain_summary, severity, created_at, is_read
+        FROM patient_doctor_notes
+        WHERE patient_id = ?
+        ORDER BY created_at DESC, id DESC
+    """, (target_patient_id,))
+
+    rows = cursor.fetchall()
+    notes = [dict(r) for r in rows]
+    conn.close()
+
+    unread_count = sum(1 for n in notes if not n.get("is_read"))
+
+    return {
+        "patient_id": target_patient_id,
+        "notes": notes,
+        "total": len(notes),
+        "unread_count": unread_count,
+        "zero_cloud": True
+    }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 9: Acknowledge / Mark Doctor Advice as Read
+# ---------------------------------------------------------------------------
+@patient_router.post("/advice/{advice_id}/read")
+def mark_advice_as_read(advice_id: int, request: Request):
+    """
+    Marks a doctor advice note as read by the patient.
+    """
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE patient_doctor_notes SET is_read = 1 WHERE id = ?", (advice_id,))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    if affected == 0:
+        raise HTTPException(status_code=404, detail="Doctor advice note not found.")
+
+    return {"success": True, "advice_id": advice_id, "is_read": True}
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 10: Offline SLM Plain-Language Advice Drafter
+# ---------------------------------------------------------------------------
+@patient_router.post("/advice/draft-slm")
+def draft_plain_language_advice(body: DraftAdviceSLMRequest):
+    """
+    Translates complex clinical notes into comforting, 6th-grade reading level
+    instructions for the patient using the local SLM or deterministic rules.
+    """
+    clinical_text = body.clinical_notes.strip()
+    category = (body.category or "GENERAL").upper()
+
+    conn = _get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT patient_name, age, gender FROM patients WHERE patient_id = ?", (body.patient_id,))
+    p_row = cursor.fetchone()
+    conn.close()
+
+    patient_name = p_row["patient_name"] if p_row else "Patient"
+    first_name = patient_name.split()[0]
+
+    plain_draft = None
+    model_used = "MediVault Clinical Plain-Language Engine"
+
+    # 1. Try local Ollama SLM
+    if ai_bridge.is_online():
+        prompt = (
+            f"You are a compassionate clinical communication specialist at Princeton Plainsboro Teaching Hospital.\n"
+            f"Translate these doctor clinical notes into clear, warm, patient-friendly instructions for {first_name}.\n\n"
+            f"Doctor's Clinical Notes:\n\"{clinical_text}\"\n"
+            f"Category: {category}\n\n"
+            f"Rules for translation:\n"
+            f"1. Use simple 6th-grade reading level. Eliminate complex medical jargon (e.g. change 'contraindicated' to 'unsafe', 'hemodynamic collapse' to 'kidney strain').\n"
+            f"2. Keep it to 2-4 direct, reassuring sentences.\n"
+            f"3. Include actionable everyday guidance.\n"
+            f"4. Do not include markdown headers or meta commentary, just the direct message to the patient."
+        )
+        try:
+            import httpx
+            with httpx.Client(timeout=3.5) as client:
+                res = client.post(
+                    "http://127.0.0.1:11434/api/generate",
+                    json={
+                        "model": "llama3.2:3b",
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"temperature": 0.2, "num_predict": 150}
+                    }
+                )
+                if res.status_code == 200:
+                    out = res.json().get("response", "").strip()
+                    if len(out) > 20:
+                        plain_draft = out
+                        model_used = "Ollama Local (llama3.2:3b)"
+        except Exception:
+            pass
+
+    # 2. Intelligent Deterministic Fallback
+    if not plain_draft:
+        lower_txt = clinical_text.lower()
+        replacements = [
+            ("contraindicated", "unsafe to take"),
+            ("contraindication", "safety risk"),
+            ("renal impairment", "kidney sensitivity"),
+            ("chronic kidney disease", "kidney condition"),
+            ("hemodynamic", "blood flow"),
+            ("precipitates", "can trigger"),
+            ("edema", "swelling or fluid buildup"),
+            ("titrate", "gradually adjust"),
+            ("prn", "as needed"),
+            ("bid", "twice a day"),
+            ("tid", "three times a day"),
+            ("qd", "once a day"),
+            ("po", "by mouth"),
+        ]
+        simplified = clinical_text
+        for word, sub in replacements:
+            simplified = re.sub(rf"\b{word}\b", sub, simplified, flags=re.IGNORECASE)
+
+        if "ibuprofen" in lower_txt or "nsaid" in lower_txt:
+            plain_draft = (
+                f"Please avoid Ibuprofen, Advil, or Aleve right now, {first_name}, as they put too much strain on your kidneys. "
+                f"For aches, you can safely take Tylenol (Acetaminophen) as directed. "
+                f"Remember to drink water steadily and notify us if you notice any unusual swelling."
+            )
+        elif "fluid" in lower_txt or "water" in lower_txt:
+            plain_draft = (
+                f"Your care team recommends keeping your fluid intake around 7 to 8 glasses of water a day. "
+                f"Try to limit salty processed snacks, and weigh yourself each morning before breakfast to monitor for fluid retention."
+            )
+        else:
+            plain_draft = (
+                f"Here are your updated care instructions, {first_name}: {simplified}. "
+                f"Following this routine closely will protect your health and keep your numbers stable."
+            )
+
+    return {
+        "success": True,
+        "patient_id": body.patient_id,
+        "patient_name": patient_name,
+        "plain_summary": plain_draft,
+        "model": model_used
+    }
+
+
+# ---------------------------------------------------------------------------
+# Pre-compiled Plain-English Outpatient Drug Leaflets (1-Click Guides)
+# ---------------------------------------------------------------------------
+DRUG_PATIENT_LEAFLETS: Dict[str, Dict[str, Any]] = {
+    "lisinopril": {
+        "display_name": "Lisinopril (Prinivil, Zestril)",
+        "drug_class": "ACE Inhibitor (Blood Pressure & Kidney Protector)",
+        "why_prescribed": "Relaxes your blood vessels to lower high blood pressure and shields your kidney filtration filters from progressive damage.",
+        "how_to_take": "Take once daily in the morning with a full glass of water, with or without food.",
+        "missed_dose": "Take it as soon as you remember that day. If it is almost time for your next morning dose, skip the missed one. Never take two tablets at once.",
+        "cautions": "Avoid salt substitutes that contain potassium. Do NOT take Ibuprofen or Advil, which blocks Lisinopril from protecting your kidneys.",
+        "warning_signs": "Call your doctor immediately if you develop swelling of your lips/tongue or a persistent dry hacking cough.",
+        "schedule_slot": "MORNING"
+    },
+    "metformin": {
+        "display_name": "Metformin (Glucophage)",
+        "drug_class": "Biguanide (Blood Sugar Balancer)",
+        "why_prescribed": "Helps your body respond better to natural insulin and reduces the amount of excess sugar your liver produces.",
+        "how_to_take": "Take with meals (breakfast and dinner) to reduce stomach upset.",
+        "missed_dose": "Take with food as soon as you remember. If it is near your next meal, skip the missed dose and resume your normal mealtime schedule.",
+        "cautions": "Avoid excessive alcohol. If you are scheduled for any X-ray or CT scan requiring IV dye, remind your doctor you take Metformin.",
+        "warning_signs": "Report unusual muscle pain, severe fatigue, or cold feelings to your care team promptly.",
+        "schedule_slot": "MORNING & EVENING"
+    },
+    "amlodipine": {
+        "display_name": "Amlodipine (Norvasc)",
+        "drug_class": "Calcium Channel Blocker (Vascular Relaxant)",
+        "why_prescribed": "Gently widens and relaxes your arteries so your heart doesn't have to pump against high resistance.",
+        "how_to_take": "Take once daily at the same time each day, with or without food.",
+        "missed_dose": "Take as soon as you remember, unless it has been more than 12 hours since your scheduled time.",
+        "cautions": "Avoid large amounts of grapefruit juice, which can raise medicine levels in your bloodstream.",
+        "warning_signs": "Check your ankles for puffiness or swelling at the end of the day and let your doctor know.",
+        "schedule_slot": "MORNING"
+    },
+    "furosemide": {
+        "display_name": "Furosemide (Lasix)",
+        "drug_class": "Loop Diuretic (Water Balance Pill)",
+        "why_prescribed": "Helps your kidneys flush out excess fluid and sodium to prevent swelling in your legs and lungs.",
+        "how_to_take": "Take in the morning with breakfast so that you do not have to wake up at night to use the bathroom.",
+        "missed_dose": "Take when remembered if earlier in the day; avoid taking late in the evening.",
+        "cautions": "Do not take OTC pain pills like Ibuprofen or Aleve, which cancel out Furosemide's ability to remove fluid.",
+        "warning_signs": "Watch for severe muscle cramps or dizziness when standing up quickly.",
+        "schedule_slot": "MORNING"
+    },
+    "warfarin": {
+        "display_name": "Warfarin (Coumadin)",
+        "drug_class": "Anticoagulant (Blood Thinner)",
+        "why_prescribed": "Prevents dangerous blood clots from forming in your blood vessels or heart chambers.",
+        "how_to_take": "Take once daily in the evening at the exact same hour every day.",
+        "missed_dose": "Take as soon as possible on the same day. Do not take a double dose the next day.",
+        "cautions": "Keep your intake of green leafy vegetables consistent from day to day. Avoid Aspirin, Ibuprofen, and cranberry juice.",
+        "warning_signs": "Seek immediate care for bleeding that won't stop, dark tarry stools, or unusual bruising.",
+        "schedule_slot": "EVENING"
+    },
+    "pantoprazole": {
+        "display_name": "Pantoprazole (Protonix)",
+        "drug_class": "Proton Pump Inhibitor (Stomach Shield)",
+        "why_prescribed": "Reduces stomach acid to heal the stomach lining and prevent ulcers or acid reflux.",
+        "how_to_take": "Take 30 to 60 minutes before your first meal of the day.",
+        "missed_dose": "Take before your next meal if remembered, or skip and take before breakfast the next day.",
+        "cautions": "Swallow tablets whole; do not crush or chew.",
+        "warning_signs": "Report persistent diarrhea or severe stomach cramping to your doctor.",
+        "schedule_slot": "MORNING"
+    },
+    "albuterol": {
+        "display_name": "Albuterol Inhaler (Ventolin, ProAir)",
+        "drug_class": "Fast-Acting Bronchodilator (Rescue Inhaler)",
+        "why_prescribed": "Quickly opens up constricted airways during sudden wheezing, coughing, or shortness of breath.",
+        "how_to_take": "Inhale 1 to 2 puffs as needed for sudden chest tightness. Wait 1 minute between puffs.",
+        "missed_dose": "Use only as needed for breathing comfort or as directed before exercise.",
+        "cautions": "Always check your counter and keep an unexpired rescue inhaler with you wherever you go.",
+        "warning_signs": "If you need your inhaler more than twice a week for relief, call your doctor to adjust maintenance therapy.",
+        "schedule_slot": "AS_NEEDED"
+    }
+}
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 11: 1-Click Plain-English Medication Safety Guides
+# ---------------------------------------------------------------------------
+@patient_router.get("/medication-guides")
+def get_patient_medication_guides(request: Request):
+    """
+    Returns patient-friendly medication safety leaflets for all active medications
+    in the patient's record.
+    """
+    patient = _require_patient(request)
+    patient_id = patient["patient_id"]
+
+    conn = _get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT medication_name, dosage, frequency, status
+        FROM patient_medications
+        WHERE patient_id = ?
+    """, (patient_id,))
+    med_rows = cursor.fetchall()
+    conn.close()
+
+    guides = []
+    for r in med_rows:
+        raw_name = r["medication_name"]
+        dosage = r["dosage"] or ""
+        freq = r["frequency"] or ""
+
+        # Match against our curated plain-English leaflets
+        matched_key = None
+        for k in DRUG_PATIENT_LEAFLETS:
+            if k in raw_name.lower():
+                matched_key = k
+                break
+
+        if matched_key:
+            info = DRUG_PATIENT_LEAFLETS[matched_key]
+            guides.append({
+                "medication_name": raw_name,
+                "dosage": dosage,
+                "frequency": freq,
+                "display_name": info["display_name"],
+                "drug_class": info["drug_class"],
+                "why_prescribed": info["why_prescribed"],
+                "how_to_take": info["how_to_take"],
+                "missed_dose": info["missed_dose"],
+                "cautions": info["cautions"],
+                "warning_signs": info["warning_signs"],
+                "schedule_slot": info["schedule_slot"]
+            })
+        else:
+            # Empathetic dynamic fallback for unlisted prescription
+            guides.append({
+                "medication_name": raw_name,
+                "dosage": dosage,
+                "frequency": freq,
+                "display_name": raw_name,
+                "drug_class": "Prescription Medication",
+                "why_prescribed": f"Prescribed by your care team to support your health management plan.",
+                "how_to_take": f"Take {dosage} {freq} exactly as indicated on your prescription label.",
+                "missed_dose": "Take as soon as you remember, unless it is close to your next scheduled dose. Never double up.",
+                "cautions": "Always confirm with your pharmacist before starting any new over-the-counter vitamins or pain pills.",
+                "warning_signs": "Report unexpected dizziness, rash, or breathing difficulties immediately.",
+                "schedule_slot": "MORNING" if "daily" in freq.lower() else "EVENING"
+            })
+
+    return {
+        "patient_id": patient_id,
+        "guides": guides,
+        "total": len(guides),
+        "zero_cloud": True
+    }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 12: Daily Medication Schedule & Adherence Tracker
+# ---------------------------------------------------------------------------
+@patient_router.get("/adherence")
+def get_patient_adherence(request: Request, log_date: Optional[str] = None):
+    """
+    Returns today's medication slots (Morning, Afternoon, Evening, Night) with
+    completion status and patient compliance streak.
+    """
+    patient = _require_patient(request)
+    patient_id = patient["patient_id"]
+
+    import datetime
+    today_str = log_date or datetime.date.today().isoformat()
+
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    # Active medications
+    cursor.execute("""
+        SELECT medication_name, dosage, frequency
+        FROM patient_medications
+        WHERE patient_id = ?
+    """, (patient_id,))
+    meds = cursor.fetchall()
+
+    # Existing logs for this date
+    cursor.execute("""
+        SELECT time_slot, medication_name, taken
+        FROM patient_adherence_log
+        WHERE patient_id = ? AND log_date = ?
+    """, (patient_id, today_str))
+    logged = {(r["time_slot"], r["medication_name"].lower()): bool(r["taken"]) for r in cursor.fetchall()}
+
+    # Calculate streak (consecutive days with at least 1 logged med)
+    cursor.execute("""
+        SELECT DISTINCT log_date 
+        FROM patient_adherence_log 
+        WHERE patient_id = ? AND taken = 1 
+        ORDER BY log_date DESC LIMIT 30
+    """, (patient_id,))
+    logged_dates = [r["log_date"] for r in cursor.fetchall()]
+    conn.close()
+
+    streak_days = len(logged_dates)
+
+    slots: Dict[str, List[Dict[str, Any]]] = {
+        "MORNING": [],
+        "AFTERNOON": [],
+        "EVENING": [],
+        "NIGHT": []
+    }
+
+    total_tasks = 0
+    completed_tasks = 0
+
+    for m in meds:
+        m_name = m["medication_name"]
+        dosage = m["dosage"] or ""
+        freq_lower = (m["frequency"] or "").lower()
+
+        # Slot classification
+        assigned_slots = ["MORNING"]
+        if "twice" in freq_lower or "bid" in freq_lower:
+            assigned_slots = ["MORNING", "EVENING"]
+        elif "evening" in freq_lower or "night" in freq_lower or "bedtime" in freq_lower:
+            assigned_slots = ["EVENING"]
+        elif "afternoon" in freq_lower:
+            assigned_slots = ["AFTERNOON"]
+
+        for slot in assigned_slots:
+            is_taken = logged.get((slot, m_name.lower()), False)
+            total_tasks += 1
+            if is_taken:
+                completed_tasks += 1
+
+            slots[slot].append({
+                "medication_name": m_name,
+                "dosage": dosage,
+                "slot": slot,
+                "taken": is_taken
+            })
+
+    compliance_pct = round((completed_tasks / total_tasks * 100)) if total_tasks > 0 else 100
+
+    return {
+        "patient_id": patient_id,
+        "log_date": today_str,
+        "slots": slots,
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_tasks,
+        "compliance_pct": compliance_pct,
+        "streak_days": max(1, streak_days),
+        "zero_cloud": True
+    }
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 13: Log Medication Taken Toggle
+# ---------------------------------------------------------------------------
+@patient_router.post("/adherence/log")
+def log_medication_adherence(body: LogAdherenceRequest, request: Request):
+    """
+    Logs or toggles medication intake status for a specific time slot.
+    """
+    patient = _require_patient(request)
+    patient_id = patient["patient_id"]
+
+    import datetime
+    log_date = body.log_date or datetime.date.today().isoformat()
+    slot_upper = body.time_slot.strip().upper()
+
+    conn = _get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO patient_adherence_log (patient_id, log_date, time_slot, medication_name, dosage, taken)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(patient_id, log_date, time_slot, medication_name) 
+        DO UPDATE SET taken = excluded.taken, logged_at = CURRENT_TIMESTAMP
+    """, (patient_id, log_date, slot_upper, body.medication_name, body.dosage, 1 if body.taken else 0))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "success": True,
+        "patient_id": patient_id,
+        "log_date": log_date,
+        "time_slot": slot_upper,
+        "medication_name": body.medication_name,
+        "taken": body.taken
+    }
+
 

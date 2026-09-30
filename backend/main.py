@@ -1606,9 +1606,18 @@ if os.path.exists(FRONTEND_DIR):
         return JSONResponse({"message": "Frontend index.html not yet generated."})
 
     @app.get("/patient-portal")
+    @app.get("/portal")
+    @app.get("/patient")
     def serve_patient_portal():
-        """Serves the patient-facing portal page (separate from doctor dashboard)."""
+        """Serves the patient-facing portal page directly without needing doctor dashboard."""
         portal_file = os.path.join(FRONTEND_DIR, "patient_portal.html")
         if os.path.exists(portal_file):
-            return FileResponse(portal_file)
+            return FileResponse(
+                portal_file,
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
         return JSONResponse({"message": "Patient Portal not yet generated."})

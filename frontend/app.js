@@ -4831,6 +4831,227 @@ window.sendTabCopilotMessage = sendTabCopilotMessage;
 window.searchTabKnowledgeBase = searchTabKnowledgeBase;
 window.quickRAGSearch = quickRAGSearch;
 
+// ═══════════════════════════════════════════
+//  BEDSIDE TABLET / SMARTPHONE QR & DIRECT LINK
+// ═══════════════════════════════════════════
+function openBedsideQrModal() {
+  const modal = document.getElementById('modal-bedside-qr');
+  const patientLabel = document.getElementById('bedside-qr-patient-name');
+  const directInput = document.getElementById('bedside-direct-url');
+  
+  if (patientLabel) {
+    const ptId = currentPatientId || 'PT-101';
+    patientLabel.textContent = `${activePatientRecord?.name || 'John Doe'} (${ptId})`;
+  }
+
+  if (directInput) {
+    const host = window.location.host || '127.0.0.1:8000';
+    const protocol = window.location.protocol || 'http:';
+    directInput.value = `${protocol}//${host}/portal`;
+  }
+
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeBedsideQrModal() {
+  const modal = document.getElementById('modal-bedside-qr');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyBedsideUrl(inputId) {
+  const inputEl = document.getElementById(inputId);
+  if (!inputEl) return;
+  inputEl.select();
+  inputEl.setSelectionRange(0, 99999);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inputEl.value).then(() => {
+      showToast('URL Copied', 'Direct patient sanctuary link copied to clipboard.', 'success', 2500);
+    }).catch(() => {
+      document.execCommand('copy');
+      showToast('URL Copied', 'Direct patient sanctuary link copied to clipboard.', 'success', 2500);
+    });
+  } else {
+    document.execCommand('copy');
+    showToast('URL Copied', 'Direct patient sanctuary link copied to clipboard.', 'success', 2500);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  FLOATING DOCTOR CARE ADVICE DRAWER CONTROLLER
+// ═══════════════════════════════════════════
+let selectedAdviceCategory = 'MEDICATION';
+
+function toggleDoctorAdviceDrawer(open) {
+  const drawer = document.getElementById('drawer-doctor-advice');
+  const backdrop = document.getElementById('drawer-doctor-advice-backdrop');
+  const ptNameEl = document.getElementById('drawer-patient-name');
+
+  if (!drawer || !backdrop) return;
+
+  if (open) {
+    if (ptNameEl) {
+      const ptId = currentPatientId || 'PT-101';
+      ptNameEl.textContent = `${activePatientRecord?.name || 'John Doe'} (${ptId})`;
+    }
+    backdrop.style.display = 'block';
+    drawer.style.display = 'flex';
+    setTimeout(() => {
+      drawer.style.transform = 'translateX(0)';
+    }, 10);
+  } else {
+    drawer.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      drawer.style.display = 'none';
+      backdrop.style.display = 'none';
+    }, 280);
+  }
+}
+
+function selectAdviceCategory(cat) {
+  selectedAdviceCategory = cat;
+  const container = document.getElementById('advice-category-selector');
+  if (!container) return;
+  container.querySelectorAll('.advice-cat-btn').forEach(btn => {
+    btn.classList.remove('active', 'border-teal-500/50', 'bg-teal-950/40', 'text-teal-300');
+    btn.classList.add('border-slate-800', 'bg-slate-950', 'text-slate-400');
+  });
+
+  const activeBtn = event.currentTarget || container.querySelector(`button[onclick*="'${cat}'"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'border-teal-500/50', 'bg-teal-950/40', 'text-teal-300');
+    activeBtn.classList.remove('border-slate-800', 'bg-slate-950', 'text-slate-400');
+  }
+}
+
+function insertAdvicePreset(preset) {
+  const inputEl = document.getElementById('doctor-advice-input');
+  if (!inputEl) return;
+
+  const presets = {
+    nsaid: "Strictly avoid all NSAIDs (Ibuprofen, Advil, Aleve, Naproxen, Ketorolac). With eGFR at 38 mL/min, these medications can cause acute kidney injury. Take Acetaminophen (Tylenol) max 2g/day for mild aches.",
+    fluid: "Maintain daily fluid intake between 1.8 and 2.0 liters of water. Avoid sugary sodas and limit sodium to under 2,000 mg/day to protect kidney filtration.",
+    bp: "Check and log blood pressure every morning before taking Lisinopril. Notify clinic if systolic exceeds 150 or drops below 95.",
+    swelling: "Weigh yourself each morning before breakfast. If you notice swelling in your ankles or gain more than 2 lbs overnight, contact our clinic immediately."
+  };
+
+  inputEl.value = presets[preset] || presets.nsaid;
+  inputEl.focus();
+}
+
+async function draftPlainLanguageAdvice() {
+  const inputEl = document.getElementById('doctor-advice-input');
+  const previewEl = document.getElementById('doctor-advice-plain-preview');
+  const btn = document.getElementById('btn-draft-advice-slm');
+
+  const text = inputEl ? inputEl.value.trim() : '';
+  if (!text) {
+    showToast('Input Required', 'Please enter physician notes first to auto-draft plain language.', 'warning', 2500);
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Translating...`;
+  }
+
+  try {
+    const res = await fetch('/api/patient/advice/draft-slm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clinical_notes: text,
+        patient_id: currentPatientId || 'PT-101',
+        category: selectedAdviceCategory
+      })
+    });
+
+    if (!res.ok) throw new Error('SLM translation failed');
+    const data = await res.json();
+    if (previewEl && data.plain_summary) {
+      previewEl.value = data.plain_summary;
+      showToast('Plain Language Draft Ready', `Empathetic 6th-grade translation generated via ${data.model}.`, 'success', 3000);
+    }
+  } catch (err) {
+    showToast('Drafting Note', 'Using deterministic plain-language template.', 'info', 2500);
+    if (previewEl) {
+      previewEl.value = `Here are your care instructions: ${text}. Please follow this daily routine to keep your health stable.`;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-language mr-1"></i> Auto-Draft (6th Grade)`;
+    }
+  }
+}
+
+async function publishDoctorAdvice() {
+  const inputEl = document.getElementById('doctor-advice-input');
+  const previewEl = document.getElementById('doctor-advice-plain-preview');
+  const btn = document.getElementById('btn-publish-advice');
+  const sevRadio = document.querySelector('input[name="advice-severity"]:checked');
+
+  const adviceText = inputEl ? inputEl.value.trim() : '';
+  if (!adviceText) {
+    showToast('Empty Advice', 'Please provide clinical advice before publishing.', 'warning', 2500);
+    return;
+  }
+
+  const plainSummary = previewEl && previewEl.value.trim() ? previewEl.value.trim() : adviceText;
+  const severity = sevRadio ? sevRadio.value : 'ROUTINE';
+  const ptId = currentPatientId || 'PT-101';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> Transmitting...`;
+  }
+
+  try {
+    const res = await fetch('/api/patient/advice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient_id: ptId,
+        category: selectedAdviceCategory,
+        advice_text: adviceText,
+        plain_summary: plainSummary,
+        severity: severity,
+        practitioner_name: currentDoctor?.name || 'Dr. Gregory House, MD',
+        hospital_name: currentDoctor?.hospital || 'Princeton Plainsboro Teaching Hospital'
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed to transmit advice');
+    const data = await res.json();
+
+    showToast('Care Advice Transmitted', data.message || 'Published to patient sanctuary!', 'success', 4000);
+
+    // Reset drawer inputs
+    if (inputEl) inputEl.value = '';
+    if (previewEl) previewEl.value = '';
+    toggleDoctorAdviceDrawer(false);
+
+  } catch (err) {
+    showToast('Transmission Error', err.message, 'error', 3500);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1.5"></i> Publish to Patient Sanctuary`;
+    }
+  }
+}
+
+window.openBedsideQrModal = openBedsideQrModal;
+window.closeBedsideQrModal = closeBedsideQrModal;
+window.copyBedsideUrl = copyBedsideUrl;
+window.toggleDoctorAdviceDrawer = toggleDoctorAdviceDrawer;
+window.selectAdviceCategory = selectAdviceCategory;
+window.insertAdvicePreset = insertAdvicePreset;
+window.draftPlainLanguageAdvice = draftPlainLanguageAdvice;
+window.publishDoctorAdvice = publishDoctorAdvice;
+
+
 
 
 

@@ -468,5 +468,50 @@ INSERT OR IGNORE INTO dietary_guidelines (condition_keyword, category, item, rat
 ('atrial fibrillation', 'WELLNESS_TIP', 'Limit caffeine to 1-2 cups of coffee per day', 'Caffeine stimulates the heart and can trigger palpitations and AF episodes'),
 ('atrial fibrillation', 'WELLNESS_TIP', 'Check your pulse daily for irregularity', 'Catching rhythm changes early allows your doctor to adjust treatment before complications');
 
+-- =========================================================================
+-- 19. Attending Physician Patient Care Notes & Advice
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS patient_doctor_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    practitioner_id TEXT NOT NULL DEFAULT 'PRAC-103',
+    practitioner_name TEXT NOT NULL DEFAULT 'Dr. Gregory House, MD',
+    hospital_name TEXT NOT NULL DEFAULT 'Princeton Plainsboro Teaching Hospital',
+    category TEXT NOT NULL CHECK(category IN ('GENERAL', 'MEDICATION', 'DIETARY', 'WARNING_SIGNS', 'FOLLOW_UP')),
+    advice_text TEXT NOT NULL,
+    plain_summary TEXT,
+    severity TEXT NOT NULL DEFAULT 'ROUTINE' CHECK(severity IN ('ROUTINE', 'URGENT', 'CRITICAL')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read INTEGER DEFAULT 0,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+);
+
+-- =========================================================================
+-- 20. Patient Daily Medication Adherence Log
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS patient_adherence_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    log_date TEXT NOT NULL, -- YYYY-MM-DD
+    time_slot TEXT NOT NULL CHECK(time_slot IN ('MORNING', 'AFTERNOON', 'EVENING', 'NIGHT')),
+    medication_name TEXT NOT NULL,
+    dosage TEXT,
+    taken INTEGER NOT NULL DEFAULT 1,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(patient_id, log_date, time_slot, medication_name)
+);
+
+-- Seed Initial Doctor Care Advice for PT-101 (John Doe)
+INSERT OR IGNORE INTO patient_doctor_notes (id, patient_id, practitioner_id, practitioner_name, hospital_name, category, advice_text, plain_summary, severity, created_at, is_read) VALUES
+(1, 'PT-101', 'PRAC-103', 'Dr. Gregory House, MD', 'Princeton Plainsboro Teaching Hospital', 'MEDICATION',
+ 'Strictly avoid OTC NSAIDs (Ibuprofen, Advil, Aleve, Naproxen). With eGFR at 38 mL/min, these drugs precipitate acute hemodynamic renal collapse. If pain relief is required, use Acetaminophen at no more than 2,000 mg per 24 hours.',
+ 'Please do NOT take Ibuprofen, Advil, or Aleve. They can severely hurt your kidneys right now. Use Tylenol (Acetaminophen) for aches instead, and stay below 4 regular tablets a day.',
+ 'CRITICAL', '2026-09-30 08:30:00', 0),
+(2, 'PT-101', 'PRAC-103', 'Dr. Gregory House, MD', 'Princeton Plainsboro Teaching Hospital', 'DIETARY',
+ 'Maintain strict fluid balance of 1.8 to 2.0 liters daily. Restrict dietary sodium to less than 2,000 mg/day. Avoid salt substitutes containing potassium chloride as serum potassium is currently 4.6 mEq/L.',
+ 'Keep your water intake between 7 to 8 glasses daily. Watch out for salty soups and snacks, and avoid "No-Salt" or salt substitutes that have potassium.',
+ 'ROUTINE', '2026-09-30 08:35:00', 0);
+
+
 
 
