@@ -17,23 +17,26 @@ PHI_PATTERNS = [
     (r"\b\d{9,12}\b", "[REDACTED_NATIONAL_ID]"),
 
     # Phone & Fax Numbers
-    (r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "[REDACTED_PHONE]"),
+    (r"(?:(?:\+?1[-.\s]?)?\(\d{3}\)[-.\s]?\d{3}[-.\s]?\d{4}|\b(?:\+?1[-.\s]?)?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})\b", "[REDACTED_PHONE]"),
 
     # Email Addresses
     (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "[REDACTED_EMAIL]"),
 
     # Medical Record Numbers (MRN) & Account Numbers
-    (r"(?i)\b(?:MRN|MR#|Record\s*#?|Patient\s*ID|Acct\s*#?)\s*[:#]?\s*[A-Z0-9-]{4,15}\b", "[REDACTED_MRN]"),
+    (r"(?i)(\b(?:MRN|MR#|Record\s*#?|Patient\s*ID|Acct\s*#?)\s*[:#]?\s*)[A-Z0-9-]{4,15}\b", r"\1[REDACTED_MRN]"),
 
     # Dates of Birth
-    (r"(?i)\b(?:DOB|Date of Birth|Born)\s*[:#]?\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", "[REDACTED_DOB]"),
+    (r"(?i)(\b(?:DOB|Date of Birth|Born)\s*[:#]?\s*)\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", r"\1[REDACTED_DOB]"),
 
     # Street Addresses & ZIP codes
     (r"\b\d{5}(?:-\d{4})?\b", "[REDACTED_ZIP]"),
     (r"(?i)\b\d{1,5}\s+[A-Za-z0-9\s.,]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way)\b", "[REDACTED_ADDRESS]"),
 
-    # Explicit Doctor/Patient names with titles
-    (r"(?i)\b(?:Dr\.|Doctor|Physician|Patient|Pt\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "[REDACTED_NAME]"),
+    # Explicit Doctor/Patient names with labels or titles
+    (r"(?i)(\bpatient(?:\s+name)?\s*[:=]?\s*)[A-Za-z\s.,'-]+?(?=\s*[|,\n;\r]|$)", r"\1[REDACTED_NAME]"),
+    (r"(?i)(\b(?:attending|referring|consulting)?\s*(?:physician|doctor|dr\b\.?)\s*[:=]?\s*)[A-Za-z\s.,'-]+?(?=\s*[|,\n;\r]|$)", r"\1[REDACTED_NAME]"),
+    (r"(?i)\b(?:Dr\.|Doctor|Physician)\s+(?!Name\b)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", "[REDACTED_NAME]"),
+    (r"(?i)\b(?:Patient|Pt\.)\s+(?!Name\b)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", "[REDACTED_NAME]"),
 
     # IP Addresses
     (r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[REDACTED_IP]")
@@ -99,7 +102,8 @@ class ClinicalRedactor:
         for pattern, replacement in PHI_PATTERNS:
             matches = re.findall(pattern, redacted)
             if matches:
-                detected_phi.append(replacement.strip("[]"))
+                phi_tag = "REDACTED_NAME" if "NAME" in replacement else replacement.replace(r"\1", "").strip("[]")
+                detected_phi.append(phi_tag)
                 redacted = re.sub(pattern, replacement, redacted)
 
         # Derive an anonymous pseudorandom token from original text length + hash
@@ -192,7 +196,8 @@ class ClinicalRedactor:
             "diagnosed_conditions": sorted(list(set(extracted_conditions))),
             "current_medications": sorted(list(set(extracted_medications))),
             "allergies": sorted(list(set(extracted_allergies))),
-            "clinical_labs": labs
+            "clinical_labs": labs,
+            "biomarkers": labs
         }
 
     @classmethod

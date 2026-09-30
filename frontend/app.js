@@ -255,6 +255,10 @@ window.onPresetBundleSelect = onPresetBundleSelect;
 //  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
+  if (window.innerWidth <= 768 && typeof toggleSidebarCollapse === 'function') {
+    toggleSidebarCollapse(false);
+  }
+
   // Hide all view panels dynamically
   document.querySelectorAll('.page-view-panel').forEach(panel => {
     panel.classList.remove('active');
@@ -262,7 +266,7 @@ function switchMainTab(tabKey) {
   });
 
   // Deactivate all navigation buttons
-  document.querySelectorAll('.step-nav-btn').forEach(btn => {
+  document.querySelectorAll('.step-nav-btn, .sidebar-nav-item').forEach(btn => {
     btn.classList.remove('active');
     btn.setAttribute('aria-selected', 'false');
   });
@@ -279,6 +283,25 @@ function switchMainTab(tabKey) {
   if (targetBtn) {
     targetBtn.classList.add('active');
     targetBtn.setAttribute('aria-selected', 'true');
+  }
+
+  // Update header breadcrumb/title dynamically
+  const breadcrumbs = {
+    review: { icon: 'fa-stethoscope', title: '1. CDSS Review', desc: 'Deterministic Safety Layer + SLM Review' },
+    copilot: { icon: 'fa-robot', title: '2. Sovereign AI Copilot', desc: 'On-Device Clinical Reasoning & Drug Monograph RAG' },
+    intake: { icon: 'fa-hospital-user', title: '3. Patient Intake & PHI', desc: 'HIPAA Safe Harbor § 164.514(b) Automated PHI Masking' },
+    fhir: { icon: 'fa-network-wired', title: '4. Hospital EHR & FHIR', desc: 'Offline FHIR Bundles & Air-Gap QR Transfer' },
+    audit: { icon: 'fa-database', title: '5. Sovereign Audit', desc: 'Tamper-Evident SHA-256 Digest Chain & Merkle Verification' },
+    analytics: { icon: 'fa-chart-line', title: '6. Clinical Analytics', desc: 'Offline Pharmacovigilance & Organ Hazard Distribution' }
+  };
+  const bc = breadcrumbs[tabKey];
+  if (bc) {
+    const iconEl = document.getElementById('header-section-icon');
+    const titleEl = document.getElementById('header-section-title');
+    const descEl = document.getElementById('header-section-desc');
+    if (iconEl) iconEl.className = `fa-solid ${bc.icon} text-teal-400 text-sm`;
+    if (titleEl) titleEl.textContent = bc.title;
+    if (descEl) descEl.textContent = bc.desc;
   }
 
   if (tabKey === 'analytics' && typeof loadClinicalAnalytics === 'function') {
@@ -1049,6 +1072,25 @@ async function initPatientSelector() {
 }
 
 async function selectPatient(patientId) {
+  if (patientId === 'transferred_intake') {
+    currentIntakeMode = 'raw';
+    const s1 = document.getElementById("patient-select");
+    const s2 = document.getElementById("patient-select-header");
+    if (s1) s1.value = patientId;
+    if (s2) s2.value = patientId;
+    if (lastIngestedProfile) {
+      renderPatientCard(
+        lastIngestedProfile.patient,
+        lastIngestedProfile.conditions,
+        lastIngestedProfile.medications,
+        lastIngestedProfile.allergies,
+        lastIngestedProfile.labs
+      );
+      showToast('Transferred Profile Active', `Loaded de-identified note profile (${lastIngestedProfile.token}) into CDSS Review.`, 'info', 2000);
+    }
+    return;
+  }
+
   currentPatientId = patientId;
   currentIntakeMode = 'demo';
   switchIntakeMode('demo');
@@ -1243,6 +1285,8 @@ function applySampleDischargeNote() {
   }
 }
 
+let lastIngestedProfile = null;
+
 async function triggerRedaction() {
   const rawText = (document.getElementById("raw-note-input") || {}).value;
   if (!rawText || !rawText.trim()) {
@@ -1293,12 +1337,28 @@ async function triggerRedaction() {
       biomarkers: (data.entities || {}).biomarkers || (data.entities || {}).clinical_labs || {},
     };
 
+    lastIngestedProfile = {
+      patient: {
+        patient_name: extractedName,
+        patient_id: extractedId,
+        age: "Extracted",
+        gender: "Extracted"
+      },
+      conditions: (data.entities && data.entities.diagnosed_conditions || []).map(c => ({ condition_name: c })),
+      medications: (data.entities && data.entities.current_medications || []).map(m => ({ medication_name: m, dosage: "" })),
+      allergies: (data.entities && data.entities.allergies || []).map(a => ({ allergen: a, reaction: "Extracted" })),
+      labs: (data.entities && (data.entities.biomarkers || data.entities.clinical_labs)) || {},
+      raw_text: rawText,
+      redacted_text: data.redacted_text,
+      token: data.patient_token
+    };
+
     renderPatientCard(
-      { patient_name: extractedName, patient_id: extractedId, age: "Extracted", gender: "Extracted" },
-      (data.entities.diagnosed_conditions || []).map(c => ({ condition_name: c })),
-      (data.entities.current_medications || []).map(m => ({ medication_name: m, dosage: "" })),
-      (data.entities.allergies || []).map(a => ({ allergen: a, reaction: "Extracted" })),
-      data.entities.biomarkers || data.entities.clinical_labs
+      lastIngestedProfile.patient,
+      lastIngestedProfile.conditions,
+      lastIngestedProfile.medications,
+      lastIngestedProfile.allergies,
+      lastIngestedProfile.labs
     );
 
     // Show save patient button if we have a name
@@ -1312,10 +1372,91 @@ async function triggerRedaction() {
   }
 }
 
-function transferToReview() {
+async function transferToReview() {
+  const rawInput = document.getElementById("raw-note-input");
+  const rawText = rawInput ? rawInput.value.trim() : "";
+
+  if (!rawText && !lastIngestedProfile) {
+    showToast('Input Required', 'Please enter, paste, or upload a clinical note first.', 'warning');
+    return;
+  }
+
+  // If text was changed or redaction has not been triggered yet, trigger it now!
+  if (!lastIngestedProfile || lastIngestedProfile.raw_text !== rawText) {
+    showToast('Extracting Profile', 'Running Safe Harbor redaction & clinical entity extraction...', 'info', 2000);
+    await triggerRedaction();
+  }
+
+  if (!lastIngestedProfile) {
+    showToast('Transfer Failed', 'Could not process clinical document entities.', 'error');
+    return;
+  }
+
   currentIntakeMode = 'raw';
+
+  // Synchronize dropdown selectors in header and demo section
+  const headerSelect = document.getElementById("patient-select-header");
+  if (headerSelect) {
+    let opt = headerSelect.querySelector("option[value='transferred_intake']");
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = "transferred_intake";
+      opt.textContent = `⚡ Transferred Note: ${lastIngestedProfile.token}`;
+      headerSelect.appendChild(opt);
+    }
+    headerSelect.value = "transferred_intake";
+  }
+
+  const demoSelect = document.getElementById("patient-select");
+  if (demoSelect) {
+    let opt = demoSelect.querySelector("option[value='transferred_intake']");
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = "transferred_intake";
+      opt.textContent = `⚡ Transferred Note: ${lastIngestedProfile.token}`;
+      demoSelect.appendChild(opt);
+    }
+    demoSelect.value = "transferred_intake";
+  }
+
+  // Hydrate the CDSS Review patient card
+  renderPatientCard(
+    lastIngestedProfile.patient,
+    lastIngestedProfile.conditions,
+    lastIngestedProfile.medications,
+    lastIngestedProfile.allergies,
+    lastIngestedProfile.labs
+  );
+
+  // Pre-fill proposed drug inquiry if note mentions a medication
+  const noteContent = (rawText + " " + (lastIngestedProfile.redacted_text || "")).toLowerCase();
+  const prescArea = document.getElementById("proposed-prescription-text");
+  const singleInput = document.getElementById("proposed-med-input");
+
+  if (prescArea && (!prescArea.value || !prescArea.value.trim())) {
+    if (noteContent.includes("ibuprofen")) {
+      prescArea.value = "Ibuprofen 400mg PO TID";
+      if (singleInput) singleInput.value = "Ibuprofen";
+    } else if (noteContent.includes("ketorolac") || noteContent.includes("toradol")) {
+      prescArea.value = "Ketorolac 10mg PO Q6H";
+      if (singleInput) singleInput.value = "Ketorolac";
+    } else if (noteContent.includes("propranolol")) {
+      prescArea.value = "Propranolol 40mg PO BID";
+      if (singleInput) singleInput.value = "Propranolol";
+    } else if (noteContent.includes("aspirin")) {
+      prescArea.value = "Aspirin 325mg PO daily";
+      if (singleInput) singleInput.value = "Aspirin";
+    }
+    const countBadge = document.getElementById("presc-parsed-count");
+    if (countBadge && prescArea.value) {
+      countBadge.textContent = "1 order parsed from note";
+    }
+  }
+
+  // Switch to review workspace
   switchMainTab('review');
-  showToast('Profile Transferred', 'Transferred de-identified patient record to CDSS Review Engine.', 'info', 2500);
+
+  showToast('Profile Transferred', `Transferred de-identified patient (${lastIngestedProfile.token}) to CDSS Review Engine.`, 'success', 3500);
 }
 
 async function savePatientFromIntake() {
@@ -2740,37 +2881,40 @@ async function checkAiStatus() {
 
     if (textEl) {
       if (isOnline) {
-        textEl.textContent = `Ollama SLM: Ready (${modelName})`;
+        textEl.textContent = "Ollama Active";
       } else {
-        textEl.textContent = "Local Engine: Deterministic";
+        textEl.textContent = "Deterministic";
       }
     }
 
     if (badgeEl) {
       if (isOnline) {
-        badgeEl.className = "flex items-center space-x-1.5 bg-teal-950/80 border border-teal-500/50 text-teal-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        badgeEl.className = "flex items-center space-x-1.5 bg-teal-950/80 border border-teal-500/50 text-teal-300 text-xs px-2 sm:px-2.5 py-1 rounded-full shadow-inner font-mono cursor-default";
+        badgeEl.setAttribute("title", `Ollama SLM Active (${modelName}) · Offline Inference`);
         const dot = badgeEl.querySelector("span:first-child");
         if (dot) dot.className = "w-2 h-2 rounded-full bg-teal-400 animate-pulse";
       } else {
-        badgeEl.className = "flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full shadow-inner font-mono";
+        badgeEl.className = "flex items-center space-x-1.5 bg-slate-900 border border-slate-700 text-slate-300 text-xs px-2 sm:px-2.5 py-1 rounded-full shadow-inner font-mono cursor-default";
+        badgeEl.setAttribute("title", "Local Engine: Deterministic Safety Matrix");
         const dot = badgeEl.querySelector("span:first-child");
-        if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
       }
     }
 
     if (pill) {
       if (isOnline) {
-        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA SLM (${escapeHtml(modelName)})</span>`;
+        pill.innerHTML = `<i class="fa-solid fa-microchip text-teal-400 mr-1"></i><span>OLLAMA ACTIVE</span>`;
         pill.className = "bg-teal-950/80 border border-teal-500/40 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded flex items-center";
+        pill.setAttribute("title", `Model: ${modelName}`);
       } else {
-        pill.innerHTML = `<i class="fa-solid fa-code-commit text-slate-400 mr-1"></i><span>DETERMINISTIC SQL ENGINE</span>`;
+        pill.innerHTML = `<i class="fa-solid fa-code-commit text-slate-400 mr-1"></i><span>DETERMINISTIC</span>`;
         pill.className = "bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded flex items-center";
       }
     }
   } catch (e) {
     console.warn("AI status check failed:", e);
     const textEl = document.getElementById("ai-status-text");
-    if (textEl) textEl.textContent = "Local Engine: Deterministic";
+    if (textEl) textEl.textContent = "Deterministic";
   }
 }
 
@@ -2854,9 +2998,44 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+function toggleSidebarCollapse(forceState) {
+  const sidebar = document.getElementById('left-nav-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    const willOpen = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('mobile-open');
+    if (willOpen) {
+      sidebar.classList.add('mobile-open');
+      if (backdrop) backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    } else {
+      sidebar.classList.remove('mobile-open');
+      if (backdrop) backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  } else {
+    const willCollapse = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('collapsed');
+    if (willCollapse) {
+      sidebar.classList.add('collapsed');
+      try { localStorage.setItem('medivault_sidebar_collapsed', 'true'); } catch (e) {}
+    } else {
+      sidebar.classList.remove('collapsed');
+      try { localStorage.setItem('medivault_sidebar_collapsed', 'false'); } catch (e) {}
+    }
+    const btnHeader = document.getElementById('btn-header-collapse-sidebar');
+    if (btnHeader) {
+      btnHeader.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+      btnHeader.setAttribute('title', willCollapse ? 'Expand Navigation Sidebar (Ctrl+B)' : 'Collapse Navigation Sidebar (Ctrl+B)');
+    }
+  }
+}
+
 // ═══════════════════════════════════════════
 //  GLOBAL WINDOW API BINDINGS
 // ═══════════════════════════════════════════
+window.toggleSidebarCollapse = toggleSidebarCollapse;
 window.switchMainTab = switchMainTab;
 window.toggleSettingsSidebar = toggleSettingsSidebar;
 window.toggleTheme = toggleTheme;
