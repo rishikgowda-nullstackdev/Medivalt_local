@@ -162,7 +162,7 @@ function updateThemeUI(isLight) {
     if (isLight) {
       title.textContent = 'Light Mode Active';
       btn.textContent = 'Switch to Dark';
-      icon.className = 'fa-solid fa-moon text-teal-400 mr-1';
+      icon.className = 'fa-solid fa-moon text-slate-600 mr-1';
     } else {
       title.textContent = 'Dark Mode Active';
       btn.textContent = 'Switch to Light';
@@ -170,7 +170,7 @@ function updateThemeUI(isLight) {
     }
   }
   if (headerIcon) {
-    headerIcon.className = isLight ? 'fa-solid fa-moon text-xs text-teal-400' : 'fa-solid fa-sun text-xs text-amber-400';
+    headerIcon.className = isLight ? 'fa-solid fa-moon text-xs text-slate-600' : 'fa-solid fa-sun text-xs text-amber-400';
   }
 }
 
@@ -2741,11 +2741,15 @@ document.addEventListener('keydown', (e) => {
 //  INITIALIZATION LIFECYCLE
 // ═══════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
-  // Restore saved theme
+  // Restore saved theme (Default to Option A: Modern Light Clinical Theme for demos)
   const saved = localStorage.getItem('theme');
-  if (saved === 'light') {
+  const isLight = saved !== 'dark';
+  if (isLight) {
     document.documentElement.classList.add('light');
     updateThemeUI(true);
+  } else {
+    document.documentElement.classList.remove('light');
+    updateThemeUI(false);
   }
 
   initPatientSelector();
