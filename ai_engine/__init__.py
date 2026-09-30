@@ -13,6 +13,8 @@ from ai_engine.alternatives import SafeAlternativeRecommender
 from ai_engine.geriatric_renal import GeriatricRenalEngine, calculate_cockcroft_gault
 from ai_engine.hazard_index import calculate_hazard_index
 from ai_engine.pk_model import simulate_pk_curve, resolve_pk_drug, calculate_patient_ke
+from ai_engine.vector_rag import search_clinical_knowledge, get_monograph, list_monographs, ClinicalVectorRAG
+from ai_engine.copilot import ask_copilot, ClinicalCopilot
 
 __all__ = [
     "analyze",
@@ -26,5 +28,11 @@ __all__ = [
     "calculate_hazard_index",
     "simulate_pk_curve",
     "resolve_pk_drug",
-    "calculate_patient_ke"
+    "calculate_patient_ke",
+    "search_clinical_knowledge",
+    "get_monograph",
+    "list_monographs",
+    "ClinicalVectorRAG",
+    "ask_copilot",
+    "ClinicalCopilot"
 ]

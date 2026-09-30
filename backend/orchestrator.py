@@ -9,7 +9,10 @@ Wires dynamic glue calls into Person B (/ingestion) and Person C (/ai_engine).
 import time
 import sqlite3
 import os
+import logging
 from typing import Dict, List, Any, Optional, Tuple
+
+logger = logging.getLogger("medivault.orchestrator")
 
 from backend.redactor import ClinicalRedactor
 from backend.audit_logger import audit_logger
@@ -294,8 +297,8 @@ class ClinicalOrchestrator:
                             "unit": r["unit"],
                             "display": f"{r['value']} {r['unit']}"
                         }
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to query patient_labs for patient %s: %s", patient_id, e)
             finally:
                 conn.close()
 
@@ -370,8 +373,8 @@ class ClinicalOrchestrator:
                 demographics=demo_data,
                 overall_status=overall_status
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Single-med hazard index calculation failed: %s", e)
 
         # Calculate Pharmacokinetic (PK) clearance curve simulation
         pk_simulation = None
@@ -393,8 +396,8 @@ class ClinicalOrchestrator:
                     egfr=egfr_val,
                     weight_kg=weight_val
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Single-med PK curve simulation failed: %s", e)
 
         return {
             "event_id": log_entry["event_id"],
@@ -582,8 +585,8 @@ class ClinicalOrchestrator:
                 demographics=demo_data,
                 overall_status=c_bundle["overall_status"]
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Bundle hazard index calculation failed: %s", e)
 
         # Compute PK clearance curve for the primary/flagged medication or first matching med
         pk_simulation = None
@@ -610,8 +613,8 @@ class ClinicalOrchestrator:
                     egfr=egfr_val,
                     weight_kg=weight_val
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Bundle PK simulation failed: %s", e)
 
         return {
             "event_id": log_entry["event_id"],

@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0e1726" />
+      <stop offset="100%" stop-color="#050811" />
+    </radialGradient>
+
+    <!-- Shield Metallic Gradient -->
+    <linearGradient id="shieldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="25%" stop-color="#475569" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="75%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+
+    <linearGradient id="shieldInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0b1324" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Neon Glow Gradient (Cyan to Emerald) -->
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <linearGradient id="vaultGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+
+    <!-- Filters for volumetric bloom -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="blur1" />
+      <feGaussianBlur stdDeviation="15" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="500" height="500" fill="url(#bgGrad)" rx="32" />
+
+  <!-- Background Cyber Grid Mesh Inside Shield Area -->
+  <g opacity="0.18">
+    <circle cx="250" cy="200" r="160" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="3 3" />
+    <circle cx="250" cy="200" r="120" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="4 4" />
+    <line x1="250" y1="40" x2="250" y2="360" stroke="#22d3ee" stroke-width="0.8" />
+    <line x1="90" y1="200" x2="410" y2="200" stroke="#22d3ee" stroke-width="0.8" />
+  </g>
+
+  <!-- Ambient Glow Behind Shield -->
+  <circle cx="250" cy="200" r="90" fill="#06b6d4" opacity="0.25" filter="url(#neonGlow)" />
+
+  <!-- OUTER SHIELD -->
+  <!-- Outer Rim Path -->
+  <path d="M 250 50 
+           C 340 70, 390 100, 400 170 
+           C 405 270, 320 330, 250 365 
+           C 180 330, 95 270, 100 170 
+           C 110 100, 160 70, 250 50 Z" 
+        fill="url(#shieldRim)" 
+        stroke="#0ea5e9" 
+        stroke-width="1.5" 
+        filter="drop-shadow(0 12px 25px rgba(0,0,0,0.8))" />
+
+  <!-- Inner Shield Surface -->
+  <path d="M 250 62 
+           C 330 80, 375 108, 385 170 
+           C 390 258, 312 315, 250 348 
+           C 188 315, 110 258, 115 170 
+           C 125 108, 170 80, 250 62 Z" 
+        fill="url(#shieldInner)" 
+        stroke="#1e293b" 
+        stroke-width="2" />
+
+  <!-- Shield Neon Border Accent -->
+  <path d="M 250 72 
+           C 320 88, 360 115, 370 170 
+           C 375 248, 305 298, 250 330 
+           C 195 298, 125 248, 130 170 
+           C 140 115, 180 88, 250 72 Z" 
+        fill="none" 
+        stroke="url(#neonGrad)" 
+        stroke-width="2" 
+        opacity="0.85" 
+        filter="url(#softGlow)" />
+
+  <!-- INDUSTRIAL VAULT GEAR WHEEL -->
+  <g transform="translate(250, 200)">
+    <!-- Gear Rim Outer -->
+    <circle cx="0" cy="0" r="82" fill="url(#vaultGrad)" stroke="#64748b" stroke-width="2" />
+    <circle cx="0" cy="0" r="72" fill="#090f1d" stroke="#1e293b" stroke-width="1.5" />
+
+    <!-- 8 Vault Gear Cogs / Radial Locking Lugs -->
+    <g fill="#475569" stroke="#94a3b8" stroke-width="1">
+      <rect x="-8" y="-92" width="16" height="14" rx="2" />
+      <rect x="-8" y="78" width="16" height="14" rx="2" />
+      <rect x="-92" y="-8" width="14" height="16" rx="2" />
+      <rect x="78" y="-8" width="14" height="16" rx="2" />
+      <rect x="52" y="52" width="16" height="14" rx="2" transform="rotate(45, 60, 59)" />
+      <rect x="-68" y="-68" width="16" height="14" rx="2" transform="rotate(45, -60, -61)" />
+      <rect x="52" y="-68" width="16" height="14" rx="2" transform="rotate(-45, 60, -61)" />
+      <rect x="-68" y="52" width="16" height="14" rx="2" transform="rotate(-45, -60, 59)" />
+    </g>
+
+    <!-- Radial Vault Spokes -->
+    <g stroke="#334155" stroke-width="3">
+      <line x1="0" y1="-72" x2="0" y2="72" />
+      <line x1="-72" y1="0" x2="72" y2="0" />
+      <line x1="-51" y1="-51" x2="51" y2="51" />
+      <line x1="-51" y1="51" x2="51" y2="-51" />
+    </g>
+
+    <!-- Glowing Circular Vault Track -->
+    <circle cx="0" cy="0" r="54" fill="none" stroke="url(#neonGrad)" stroke-width="2.5" opacity="0.9" filter="url(#softGlow)" />
+
+    <!-- CLINICAL MEDICAL CROSS (Glow Layer) -->
+    <path d="M -18 -48 L 18 -48 L 18 -18 L 48 -18 L 48 18 L 18 18 L 18 48 L -18 48 L -18 18 L -48 18 L -48 -18 L -18 -18 Z"
+          fill="none" 
+          stroke="url(#neonGrad)" 
+          stroke-width="5" 
+          filter="url(#neonGlow)" />
+
+    <!-- CLINICAL MEDICAL CROSS (Solid Layer) -->
+    <path d="M -16 -45 L 16 -45 L 16 -16 L 45 -16 L 45 16 L 16 16 L 16 45 L -16 45 L -16 16 L -45 16 L -45 -16 L -16 -16 Z"
+          fill="url(#neonGrad)" 
+          stroke="#ffffff" 
+          stroke-width="1.5" />
+
+    <!-- CENTER VAULT HUB / KEYHOLE CYLINDER -->
+    <circle cx="0" cy="0" r="20" fill="#0f172a" stroke="#64748b" stroke-width="2" />
+    <circle cx="0" cy="0" r="16" fill="#020617" stroke="url(#neonGrad)" stroke-width="1.5" />
+
+    <!-- Keyhole -->
+    <circle cx="0" cy="-3" r="4.5" fill="#22d3ee" />
+    <polygon points="-3,-1 3,-1 4,8 -4,8" fill="#22d3ee" />
+  </g>
+
+  <!-- LOGO WORDMARK -->
+  <text x="250" y="425" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+        font-size="40" 
+        font-weight="900" 
+        letter-spacing="2" 
+        text-anchor="middle" 
+        fill="#f8fafc">
+    Medi<tspan fill="#38bdf8">Vault</tspan>
+  </text>
+
+  <text x="250" y="460" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+        font-size="19" 
+        font-weight="700" 
+        letter-spacing="6" 
+        text-anchor="middle" 
+        fill="#34d399">
+    LOCAL
+  </text>
+</svg>

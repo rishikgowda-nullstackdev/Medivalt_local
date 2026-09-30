@@ -20,6 +20,7 @@ from .pipeline import (
     parse_optical_qr_payload,
     ingest_record,
 )
+from .note_intelligence import extract_clinical_intelligence_from_note, NoteIntelligenceEngine
 
 __all__ = [
     "process_file",
@@ -34,4 +35,6 @@ __all__ = [
     "parse_hl7_v2",
     "parse_optical_qr_payload",
     "ingest_record",
+    "extract_clinical_intelligence_from_note",
+    "NoteIntelligenceEngine",
 ]

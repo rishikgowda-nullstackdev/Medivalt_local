@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediVault Local — Cinematic Visuals & B-Roll Video Studio</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --card-bg: #0f172a;
+      --accent-rose: #ef4444;
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+    }
+    body {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .video-viewport {
+      position: relative;
+      width: 100%;
+      max-width: 980px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85);
+    }
+    .scene-frame {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.8s ease-in-out;
+      overflow: hidden;
+    }
+    .scene-frame.active {
+      opacity: 1;
+    }
+    .scene-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1);
+    }
+    .scene-frame.active.anim-zoom img {
+      animation: kenBurnsZoom 9s forwards ease-out;
+    }
+    .scene-frame.active.anim-pan img {
+      animation: kenBurnsPan 9s forwards ease-out;
+    }
+    @keyframes kenBurnsZoom {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.14); }
+    }
+    @keyframes kenBurnsPan {
+      0% { transform: scale(1.08) translateX(-20px); }
+      100% { transform: scale(1.15) translateX(20px); }
+    }
+    .holo-glow {
+      animation: holoPulse 1.8s infinite alternate ease-in-out;
+    }
+    @keyframes holoPulse {
+      0% { filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.6)); }
+      100% { filter: drop-shadow(0 0 35px rgba(239, 68, 68, 1)); }
+    }
+    .holo-glow-cyan {
+      animation: holoPulseCyan 2s infinite alternate ease-in-out;
+    }
+    @keyframes holoPulseCyan {
+      0% { filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.5)); }
+      100% { filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.9)); }
+    }
+    .holo-glow-amber {
+      animation: holoPulseAmber 2s infinite alternate ease-in-out;
+    }
+    @keyframes holoPulseAmber {
+      0% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5)); }
+      100% { filter: drop-shadow(0 0 30px rgba(234, 179, 8, 0.9)); }
+    }
+    .active-tab {
+      background-color: #3b82f6;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="w-full max-w-[980px] mb-4 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-400">Cinematic B-Roll & Visual Studio</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white mt-0.5 tracking-tight">MediVault Local Demo Video Assets</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-mono text-emerald-400 bg-emerald-950/80 px-3 py-1.5 rounded-lg border border-emerald-800 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 4 MP4s RENDERED READY
+      </span>
+      <span class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+        ASYNC'26 Track 1: Sovereign AI
+      </span>
+    </div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="w-full max-w-[980px] mb-4 flex flex-wrap items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+    <button onclick="switchView('interactive')" id="tab-interactive" class="active-tab px-3 py-1.5 rounded-lg text-xs font-medium transition">
+      🎬 Master Web Montage
+    </button>
+    <button onclick="switchView('act1-mp4')" id="tab-act1-mp4" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition">
+      🎞️ Act 1 MP4 (ICU + Cloud Lock)
+    </button>
+    <button onclick="switchView('whammy-mp4')" id="tab-whammy-mp4" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition">
+      🧪 Act 2 MP4 (Triple Whammy)
+    </button>
+    <button onclick="switchView('pipeline-mp4')" id="tab-pipeline-mp4" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition">
+      ⚡ Act 3 MP4 (6-Stage Pipeline)
+    </button>
+    <button onclick="switchView('tactical-mp4')" id="tab-tactical-mp4" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition">
+      🛡️ Act 6 MP4 (Tactical & Rural Edge)
+    </button>
+    <button onclick="switchView('gallery')" id="tab-gallery" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition">
+      🖼️ 8K Stills Gallery
+    </button>
+  </div>
+
+  <!-- VIEW 1: INTERACTIVE WEB MONTAGE -->
+  <div id="view-interactive" class="w-full max-w-[980px] flex flex-col items-center">
+    
+    <div class="video-viewport group" id="videoBox">
+      <!-- Scene 1: Busy ICU Monitors (0:00 - 0:16) -->
+      <div class="scene-frame active anim-zoom" id="scene1">
+        <img src="images/icu_patient_monitors.jpg" alt="ICU Monitors Telemetry">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
+      </div>
+
+      <!-- Scene 2: Exhausted Doctor at 2 AM (0:16 - 0:32) -->
+      <div class="scene-frame anim-pan" id="scene2">
+        <img src="images/tired_doctor_icu_2am.jpg" alt="Tired Doctor 2 AM">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
+      </div>
+
+      <!-- Scene 3: Cloud Prohibited Red Hologram Lock (0:32 - 0:48) -->
+      <div class="scene-frame anim-zoom" id="scene3">
+        <img src="images/cloud_servers_locked.jpg" alt="Cloud Prohibited Security Shield">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+          <div class="holo-glow p-5 rounded-2xl bg-rose-950/75 border-2 border-rose-500 backdrop-blur-md max-w-xl">
+            <div class="text-2xl font-black tracking-wider text-rose-300">
+              HIPAA § 164.514 & DPDP ACT 2023
+            </div>
+            <div class="text-xl font-black text-white mt-1 uppercase tracking-widest text-red-500">
+              [ CLOUD TRANSMISSION PROHIBITED ]
+            </div>
+            <div class="text-xs font-mono text-rose-200 mt-2">
+              ZERO-CLOUD COMPLIANCE MANDATE • AIR-GAPPED ON-DEVICE ONLY
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 4: Triple Whammy Kidneys (0:48 - 1:04) -->
+      <div class="scene-frame anim-pan" id="scene4">
+        <img src="images/kidney_triple_whammy.jpg" alt="Kidney Triple Whammy Contraindication">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+          <div class="holo-glow p-5 rounded-2xl bg-red-950/80 border-2 border-red-500 backdrop-blur-md max-w-xl">
+            <div class="text-xs font-mono tracking-widest uppercase text-amber-400 font-bold mb-1">
+              ! FATAL DRUG-DRUG-DISEASE CONTRAINDICATION !
+            </div>
+            <div class="text-2xl font-black tracking-wider text-white">
+              THE TRIPLE WHAMMY
+            </div>
+            <div class="text-sm font-semibold text-rose-300 mt-1">
+              Lisinopril (ACEi) + Furosemide (Diuretic) + Advil (NSAID)
+            </div>
+            <div class="text-xs font-mono text-red-300 mt-2 bg-red-900/60 py-1 px-3 rounded-full border border-red-700/60 inline-block">
+              RENAL FILTRATION CRASH: 42 → &lt;15 mL/min (ACUTE RENAL FAILURE)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 5: 6-Stage Sovereign Pipeline (1:04 - 1:20) -->
+      <div class="scene-frame anim-zoom" id="scene5">
+        <img src="images/pipeline_6stages.jpg" alt="6-Stage Sovereign Pipeline Architecture">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/20"></div>
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+          <div class="holo-glow-cyan p-5 rounded-2xl bg-slate-950/80 border-2 border-cyan-500 backdrop-blur-md max-w-2xl">
+            <div class="text-xs font-mono tracking-widest uppercase text-emerald-400 font-bold mb-1">
+              SOVEREIGN ARCHITECTURE // 0 CLOUD TRANSMISSIONS
+            </div>
+            <div class="text-2xl font-black tracking-wider text-white">
+              THE 6-STAGE DEFENSIVE PIPELINE
+            </div>
+            <div class="text-xs font-mono text-cyan-200 mt-2">
+              PyMuPDF/RapidOCR ➔ 18 Safe Harbor Redaction ➔ Brand Mapping ➔ Deterministic SQLite ➔ Rowland & Tozer PK ➔ Merkle Ledger
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 6: Tactical & Rural Edge Deployment (1:20 - 1:36) -->
+      <div class="scene-frame anim-pan" id="scene6">
+        <img src="images/tactical_field_triage.jpg" alt="Tactical Field Triage & Rural Clinic">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/20"></div>
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+          <div class="holo-glow-amber p-5 rounded-2xl bg-slate-950/80 border-2 border-amber-500 backdrop-blur-md max-w-2xl">
+            <div class="text-xs font-mono tracking-widest uppercase text-amber-400 font-bold mb-1">
+              TACTICAL RESILIENCE & GLOBAL HEALTH EQUITY
+            </div>
+            <div class="text-2xl font-black tracking-wider text-white">
+              SOVEREIGN EDGE DEPLOYMENT
+            </div>
+            <div class="text-xs font-mono text-amber-200 mt-2">
+              Runs 100% offline on $400 refurbished hardware • Remote rural clinics with zero broadband & military field triage tents
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtitle / Closed Caption Bar -->
+      <div class="absolute bottom-10 left-6 right-6 p-3.5 rounded-xl bg-black/85 backdrop-blur-md border border-slate-800 text-center">
+        <p id="captionText" class="text-sm font-medium text-slate-200 leading-snug">
+          "Every day in hospitals worldwide, overworked physicians juggle dozens of patient prescriptions. Clinical cognitive overload is real—and Adverse Drug Events have quietly become a top-five cause of death globally."
+        </p>
+      </div>
+
+      <!-- Video Scrubber & Playhead -->
+      <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-900/80">
+        <div id="playhead" class="h-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 w-0 transition-all duration-100"></div>
+      </div>
+
+      <!-- Timecode / Watermark -->
+      <div class="absolute top-4 left-4 flex items-center gap-2 bg-black/70 px-2.5 py-1 rounded-md border border-white/10 text-[11px] font-mono text-slate-300">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+        <span id="timecodeDisplay">00:00 / 01:36</span>
+      </div>
+
+      <div class="absolute top-4 right-4 bg-black/70 px-2.5 py-1 rounded-md border border-white/10 text-[11px] font-mono text-cyan-300">
+        AIR-GAP AUDIT CHAIN VERIFIED
+      </div>
+    </div>
+
+    <!-- CONTROLS BAR -->
+    <div class="w-full max-w-[980px] mt-4 flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+      <div class="flex items-center space-x-2.5">
+        <button onclick="togglePlay()" id="playBtn" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 transition shadow-md">
+          <span id="playIcon">▶</span> <span id="playLabel">Play Montage</span>
+        </button>
+        <button onclick="restartMontage()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          ↺ Replay
+        </button>
+        <button onclick="toggleAudio()" id="audioBtn" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          🔊 SFX Audio: ON
+        </button>
+      </div>
+
+      <!-- Quick Scene Jumpers -->
+      <div class="flex items-center space-x-1.5 overflow-x-auto">
+        <button onclick="jumpToScene(1)" class="px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono">1. ICU</button>
+        <button onclick="jumpToScene(2)" class="px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono">2. Doctor</button>
+        <button onclick="jumpToScene(3)" class="px-2.5 py-1 text-xs rounded bg-rose-950 border border-rose-800 text-rose-300 font-mono">3. Cloud Lock</button>
+        <button onclick="jumpToScene(4)" class="px-2.5 py-1 text-xs rounded bg-red-950 border border-red-800 text-red-300 font-mono">4. Whammy</button>
+        <button onclick="jumpToScene(5)" class="px-2.5 py-1 text-xs rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">5. 6 Stages</button>
+        <button onclick="jumpToScene(6)" class="px-2.5 py-1 text-xs rounded bg-amber-950 border border-amber-800 text-amber-300 font-mono">6. Edge Deployment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: ACT 1 MP4 VIDEO PLAYER -->
+  <div id="view-act1-mp4" class="hidden w-full max-w-[980px] flex flex-col items-center">
+    <div class="video-viewport bg-black">
+      <video id="videoAct1" controls class="w-full h-full object-contain">
+        <source src="broll_montage_act1.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="w-full max-w-[980px] mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-bold text-white">Act 1 B-Roll Montage Video (MP4)</div>
+        <div class="text-xs text-slate-400 mt-0.5">18 Seconds • 1280x720 HD @ 30 FPS • H.264 / MP4V • 15.7 MB</div>
+      </div>
+      <a href="broll_montage_act1.mp4" download class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition shadow-md">
+        ⬇️ Download Act 1 MP4
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 3: TRIPLE WHAMMY MP4 VIDEO PLAYER -->
+  <div id="view-whammy-mp4" class="hidden w-full max-w-[980px] flex flex-col items-center">
+    <div class="video-viewport bg-black">
+      <video id="videoWhammy" controls class="w-full h-full object-contain">
+        <source src="broll_triple_whammy.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="w-full max-w-[980px] mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-bold text-white">Act 2 Triple Whammy Contraindication Video (MP4)</div>
+        <div class="text-xs text-slate-400 mt-0.5">12 Seconds • 1280x720 HD @ 30 FPS • Dynamic Dial Crash Animation • 18.2 MB</div>
+      </div>
+      <a href="broll_triple_whammy.mp4" download class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg transition shadow-md">
+        ⬇️ Download Whammy MP4
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 4: 6-STAGE PIPELINE MP4 VIDEO PLAYER -->
+  <div id="view-pipeline-mp4" class="hidden w-full max-w-[980px] flex flex-col items-center">
+    <div class="video-viewport bg-black">
+      <video id="videoPipeline" controls class="w-full h-full object-contain">
+        <source src="broll_pipeline_6stages.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="w-full max-w-[980px] mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-bold text-white">Act 3 6-Stage Sovereign Pipeline Architecture Video (MP4)</div>
+        <div class="text-xs text-slate-400 mt-0.5">18 Seconds • 1280x720 HD @ 30 FPS • Camera Pan Across All 6 Holographic Nodes • 10.6 MB</div>
+      </div>
+      <a href="broll_pipeline_6stages.mp4" download class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg transition shadow-md">
+        ⬇️ Download Pipeline MP4
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 5: TACTICAL & RURAL EDGE MP4 VIDEO PLAYER -->
+  <div id="view-tactical-mp4" class="hidden w-full max-w-[980px] flex flex-col items-center">
+    <div class="video-viewport bg-black">
+      <video id="videoTactical" controls class="w-full h-full object-contain">
+        <source src="broll_tactical_edge.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="w-full max-w-[980px] mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-bold text-white">Act 6 Sovereign Tactical & Rural Edge Deployment Video (MP4)</div>
+        <div class="text-xs text-slate-400 mt-0.5">16 Seconds • 1280x720 HD @ 30 FPS • Rural Clinics + Military Field Triage • 11.4 MB</div>
+      </div>
+      <a href="broll_tactical_edge.mp4" download class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-lg transition shadow-md">
+        ⬇️ Download Tactical Edge MP4
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 6: 8K STILLS GALLERY -->
+  <div id="view-gallery" class="hidden w-full max-w-[980px]">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/tactical_field_triage.jpg" class="w-full h-48 object-cover rounded-lg" alt="Tactical Field Triage">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-amber-400 uppercase font-mono">Act 6 • Tactical Medicine</div>
+          <div class="text-sm font-bold text-white">Military Field Triage Tent (Night Ops)</div>
+          <div class="text-xs text-slate-400 mt-1">Combat medic operating MediVault Local on a rugged Toughbook under radio silence.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/rural_clinic_offline.jpg" class="w-full h-48 object-cover rounded-lg" alt="Rural Clinic">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-emerald-400 uppercase font-mono">Act 6 • Global Health Equity</div>
+          <div class="text-sm font-bold text-white">Remote Mountain Health Clinic</div>
+          <div class="text-xs text-slate-400 mt-1">Physician reviewing prescriptions offline in a zero-broadband mountainous village.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/pipeline_6stages.jpg" class="w-full h-48 object-cover rounded-lg" alt="6-Stage Pipeline">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-cyan-400 uppercase font-mono">Act 3 • System Architecture</div>
+          <div class="text-sm font-bold text-white">6-Stage Sovereign Local Pipeline</div>
+          <div class="text-xs text-slate-400 mt-1">PyMuPDF/OCR ➔ Redaction ➔ Brand Mapping ➔ SQLite ➔ Rowland & Tozer PK ➔ Merkle Ledger.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/kidney_triple_whammy.jpg" class="w-full h-48 object-cover rounded-lg" alt="Kidney Anatomy">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-rose-400 uppercase font-mono">Act 2 • Clinical Contraindication</div>
+          <div class="text-sm font-bold text-white">Human Kidneys & Triple Whammy Crash</div>
+          <div class="text-xs text-slate-400 mt-1">Lisinopril + Furosemide + Advil with renal pressure meter falling from 42 to &lt;15 mL/min.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/cloud_servers_locked.jpg" class="w-full h-48 object-cover rounded-lg" alt="Cloud Lock">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-rose-400 uppercase font-mono">Act 1 • Legal Impasse</div>
+          <div class="text-sm font-bold text-white">Cloud Prohibited Red Hologram Lock</div>
+          <div class="text-xs text-slate-400 mt-1">HIPAA § 164.514 & DPDP Act 2023 violation safeguard banner.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+        <img src="images/tired_doctor_icu_2am.jpg" class="w-full h-48 object-cover rounded-lg" alt="Tired Doctor">
+        <div class="mt-2.5">
+          <div class="text-xs font-bold text-amber-400 uppercase font-mono">Act 1 • Cognitive Overload</div>
+          <div class="text-sm font-bold text-white">Physician at EHR Terminal (2 AM)</div>
+          <div class="text-xs text-slate-400 mt-1">Fatigued ICU doctor reviewing polypharmacy medication interactions.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT CONTEXT NOTE -->
+  <div class="w-full max-w-[980px] mt-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 leading-relaxed">
+    <strong class="text-slate-200">Video Editing & Production Ready:</strong><br>
+    All MP4 video files are located in <code class="text-cyan-300">docs/*.mp4</code> and stills in <code class="text-cyan-300">docs/images/</code>. You can drag the pre-rendered MP4 clips directly into <strong>Premiere Pro</strong>, <strong>DaVinci Resolve</strong>, or <strong>CapCut</strong> on Video Track 1 to match the voiceover script in <a href="video_demo_script_and_production_plan.md" class="text-blue-400 underline font-mono">docs/video_demo_script_and_production_plan.md</a>.
+  </div>
+
+  <!-- JAVASCRIPT CONTROLLER -->
+  <script>
+    let isPlaying = false;
+    let audioEnabled = true;
+    let currentTime = 0;
+    const duration = 96; // 96 seconds total for Web Montage
+    let interval = null;
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+      if (!audioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playBassDrop() {
+      if (!audioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1.2);
+      } catch (e) {}
+    }
+
+    const scenes = [
+      {
+        id: "scene1",
+        start: 0,
+        end: 16,
+        caption: '"Every day in hospitals worldwide, overworked physicians juggle dozens of patient prescriptions. Clinical cognitive overload is real—and Adverse Drug Events have quietly become a top-five cause of death globally."'
+      },
+      {
+        id: "scene2",
+        start: 16,
+        end: 32,
+        caption: '"Doctors desperately need AI co-pilots. But hospitals face a fatal legal impasse: transmitting confidential patient health records to cloud LLMs like ChatGPT or AWS is illegal under HIPAA and the DPDP Act."'
+      },
+      {
+        id: "scene3",
+        start: 32,
+        end: 48,
+        caption: '"A single data breach brings catastrophic penalties up to ₹250 Crore. And when cloud models guess dosages, they hallucinate. We built MediVault Local: 100% sovereign AI running entirely on localhost."'
+      },
+      {
+        id: "scene4",
+        start: 48,
+        end: 64,
+        caption: '"Here is the real clinical nightmare: The Triple Whammy. Lisinopril for blood pressure, Furosemide for fluid, and an over-the-counter Advil for a migraine. The renal filtration pressure crashes from 42 to under 15 mL/min—acute kidney failure within 48 hours."'
+      },
+      {
+        id: "scene5",
+        start: 64,
+        end: 80,
+        caption: '"To solve this without the cloud, we engineered a deterministic 6-stage pipeline: PyMuPDF and RapidOCR ingest messy scans, 18 HIPAA identifiers are stripped, brands normalize to generics, SQLite executes zero-hallucination checks, Rowland & Tozer adjusts for renal clearance, and every audit block is chained in a SHA-256 Merkle ledger."'
+      },
+      {
+        id: "scene6",
+        start: 80,
+        end: 96,
+        caption: '"Because MediVault Local runs completely offline with zero broadband requirements, it brings life-saving clinical intelligence to remote rural health clinics in developing regions and military triage tents operating under strict electromagnetic silence."'
+      }
+    ];
+
+    function updateMontage() {
+      currentTime += 0.2;
+      if (currentTime >= duration) {
+        pauseMontage();
+        currentTime = duration;
+      }
+
+      const pct = (currentTime / duration) * 100;
+      document.getElementById('playhead').style.width = pct + '%';
+
+      const secs = Math.floor(currentTime);
+      const mins = Math.floor(secs / 60);
+      const remSecs = secs % 60;
+      document.getElementById('timecodeDisplay').innerText = `0${mins}:${remSecs < 10 ? '0' : ''}${remSecs} / 01:36`;
+
+      let activeSceneIndex = 0;
+      if (currentTime >= 80) activeSceneIndex = 5;
+      else if (currentTime >= 64) activeSceneIndex = 4;
+      else if (currentTime >= 48) activeSceneIndex = 3;
+      else if (currentTime >= 32) activeSceneIndex = 2;
+      else if (currentTime >= 16) activeSceneIndex = 1;
+
+      if (activeSceneIndex === 0 && Math.floor(currentTime * 5) % 5 === 0) {
+        playBeep(880, 'sine', 0.08);
+      }
+
+      document.querySelectorAll('.scene-frame').forEach((el, idx) => {
+        el.classList.toggle('active', idx === activeSceneIndex);
+      });
+      document.getElementById('captionText').innerText = scenes[activeSceneIndex].caption;
+    }
+
+    function togglePlay() {
+      initAudio();
+      if (isPlaying) {
+        pauseMontage();
+      } else {
+        playMontage();
+      }
+    }
+
+    function playMontage() {
+      isPlaying = true;
+      document.getElementById('playIcon').innerText = '❚❚';
+      document.getElementById('playLabel').innerText = 'Pause';
+      if (currentTime === 0) playBassDrop();
+      interval = setInterval(updateMontage, 200);
+    }
+
+    function pauseMontage() {
+      isPlaying = false;
+      document.getElementById('playIcon').innerText = '▶';
+      document.getElementById('playLabel').innerText = 'Play Montage';
+      clearInterval(interval);
+    }
+
+    function restartMontage() {
+      pauseMontage();
+      currentTime = 0;
+      updateMontage();
+      playMontage();
+    }
+
+    function jumpToScene(num) {
+      initAudio();
+      if (num === 1) currentTime = 0;
+      if (num === 2) currentTime = 16;
+      if (num === 3) currentTime = 32;
+      if (num === 4) currentTime = 48;
+      if (num === 5) currentTime = 64;
+      if (num === 6) currentTime = 80;
+      updateMontage();
+      if (num === 3 || num === 4) playBassDrop();
+      else playBeep(520, 'sine', 0.12);
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audioBtn').innerText = audioEnabled ? '🔊 SFX Audio: ON' : '🔇 SFX Audio: MUTED';
+    }
+
+    function switchView(viewName) {
+      ['interactive', 'act1-mp4', 'whammy-mp4', 'pipeline-mp4', 'tactical-mp4', 'gallery'].forEach(v => {
+        const viewEl = document.getElementById('view-' + v);
+        const tabEl = document.getElementById('tab-' + v);
+        if (v === viewName) {
+          viewEl.classList.remove('hidden');
+          tabEl.classList.add('active-tab');
+          tabEl.classList.remove('text-slate-400');
+        } else {
+          viewEl.classList.add('hidden');
+          tabEl.classList.remove('active-tab');
+          tabEl.classList.add('text-slate-400');
+        }
+      });
+
+      // Pause interactive if moving away
+      if (viewName !== 'interactive' && isPlaying) {
+        pauseMontage();
+      }
+    }
+
+    updateMontage();
+  </script>
+</body>
+</html>
