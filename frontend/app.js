@@ -3912,6 +3912,21 @@ window.init3DBrandLogo = init3DBrandLogo;
 let copilotHistory = [];
 let tabCopilotHistory = [];
 
+function stripRepeatedGreeting(text) {
+  if (!text) return '';
+  const fullIntro = /^["'“‘]?\s*(?:(?:Hello|Good\s+(?:morning|afternoon|evening)|Hi|Greetings)(?:,?\s+(?:Doctor|there)?)?[.!,]?\s*)?(?:I(?:'m|\s+am)\s+(?:the|your)\s+Sovereign\s+Clinical\s+(?:AI\s+)?Copilot[^.!?]*[.!?]\s*)(?:(?:I\s+(?:can|am\s+here\s+to)\s+help|Please\s+feel\s+free|What['’]s\s+your\s+specific)[^.!?]*[.!?]\s*)*(?:(?:For|Regarding)\s+(?:your\s+)?(?:specific\s+)?(?:question|inquiry),?\s*)?/i;
+  let cleaned = text.replace(fullIntro, '').trim();
+  const genericGreeting = /^["'“‘]?\s*(?:Hello|Good\s+(?:morning|afternoon|evening)|Hi|Greetings)(?:,?\s+(?:Doctor|there))?[.!,]\s*(?:(?:For|Regarding)\s+(?:your\s+)?(?:specific\s+)?(?:question|inquiry),?\s*)?/i;
+  cleaned = cleaned.replace(genericGreeting, '').trim();
+  if (cleaned.endsWith('"') && !cleaned.startsWith('"')) {
+    cleaned = cleaned.replace(/"$/, '').trim();
+  }
+  if (cleaned.length > 0) {
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return text;
+}
+
 function formatMarkdownText(text) {
   if (!text) return '';
   return text
@@ -3993,6 +4008,13 @@ async function sendCopilotMessage(explicitPrompt = null) {
     copilotHistory.push({ role: 'assistant', content: data.reply });
     if (copilotHistory.length > 20) copilotHistory = copilotHistory.slice(-20);
 
+    let displayReply = data.reply || '';
+    const isFirstTurn = (copilotHistory.length <= 2);
+    const isExplicitGreeting = /^\s*(hello|hi|hey|greetings|who\s+are\s+you|what\s+can\s+you\s+do)\b/i.test(message);
+    if (!isFirstTurn || !isExplicitGreeting) {
+      displayReply = stripRepeatedGreeting(displayReply);
+    }
+
     if (chatStream) {
       const replyBubble = document.createElement('div');
       replyBubble.className = 'p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
@@ -4009,7 +4031,7 @@ async function sendCopilotMessage(explicitPrompt = null) {
           <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
           <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
         </div>
-        <div class="text-slate-200 leading-normal">${formatMarkdownText(data.reply)}</div>
+        <div class="text-slate-200 leading-normal">${formatMarkdownText(displayReply)}</div>
         ${citationsHtml}
       `;
       chatStream.appendChild(replyBubble);
@@ -4295,6 +4317,13 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
     tabCopilotHistory.push({ role: 'assistant', content: data.reply });
     if (tabCopilotHistory.length > 20) tabCopilotHistory = tabCopilotHistory.slice(-20);
 
+    let displayReply = data.reply || '';
+    const isFirstTurn = (tabCopilotHistory.length <= 2);
+    const isExplicitGreeting = /^\s*(hello|hi|hey|greetings|who\s+are\s+you|what\s+can\s+you\s+do)\b/i.test(message);
+    if (!isFirstTurn || !isExplicitGreeting) {
+      displayReply = stripRepeatedGreeting(displayReply);
+    }
+
     if (chatStream) {
       const replyBubble = document.createElement('div');
       replyBubble.className = 'p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
@@ -4311,7 +4340,7 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
           <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
           <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
         </div>
-        <div class="text-slate-200 leading-normal">${formatMarkdownText(data.reply)}</div>
+        <div class="text-slate-200 leading-normal">${formatMarkdownText(displayReply)}</div>
         ${citationsHtml}
       `;
       chatStream.appendChild(replyBubble);

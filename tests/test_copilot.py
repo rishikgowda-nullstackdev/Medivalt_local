@@ -82,6 +82,23 @@ class TestClinicalCopilot(unittest.TestCase):
         reply_lower = res["reply"].lower()
         self.assertTrue("egfr" in reply_lower or "serum creatinine" in reply_lower or "potassium" in reply_lower)
 
+    def test_copilot_no_repeated_hello_on_subsequent_turns(self):
+        """Verify copilot does not prepend 'Hello, I am the Sovereign Clinical Copilot' on subsequent turns."""
+        history = [
+            {"role": "user", "content": "What is the patient allergy profile?"},
+            {"role": "assistant", "content": "Patient has a documented allergy to Sulfonamides."}
+        ]
+        res = ask_copilot(
+            message="does the patient has any allery",
+            patient_id="PT-101",
+            history=history
+        )
+        reply = res["reply"]
+        self.assertFalse(reply.lower().startswith("hello"))
+        self.assertFalse(reply.lower().startswith("good morning"))
+        self.assertFalse("i'm the sovereign clinical ai copilot" in reply.lower())
+        self.assertFalse("i am the sovereign clinical copilot" in reply.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

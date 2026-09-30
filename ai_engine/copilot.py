@@ -54,6 +54,39 @@ def _detect_ollama_model() -> Optional[str]:
     return None
 
 
+def _strip_repeated_greeting(text: str) -> str:
+    """
+    Strips redundant introductory greetings ('Hello, I'm the Sovereign Clinical AI Copilot...')
+    from responses so follow-up inquiries jump directly to the clinical answer.
+    """
+    if not text:
+        return ""
+    full_intro_pattern = (
+        r'^[\"\'“‘]?\s*'
+        r'(?:(?:Hello|Good\s+(?:morning|afternoon|evening)|Hi|Greetings)(?:,?\s+(?:Doctor|there)?)?[.!,]?\s*)?'
+        r'(?:I(?:\'m|\s+am)\s+(?:the|your)\s+Sovereign\s+Clinical\s+(?:AI\s+)?Copilot[^.!?]*[.!?]\s*)'
+        r'(?:(?:I\s+(?:can|am\s+here\s+to)\s+help|Please\s+feel\s+free|What[\'’]s\s+your\s+specific)[^.!?]*[.!?]\s*)*'
+        r'(?:(?:For|Regarding)\s+(?:your\s+)?(?:specific\s+)?(?:question|inquiry),?\s*)?'
+    )
+    cleaned = re.sub(full_intro_pattern, '', text, flags=re.IGNORECASE).strip()
+    generic_greeting_pattern = (
+        r'^[\"\'“‘]?\s*'
+        r'(?:Hello|Good\s+(?:morning|afternoon|evening)|Hi|Greetings)(?:,?\s+(?:Doctor|there))?[.!,]\s*'
+        r'(?:(?:For|Regarding)\s+(?:your\s+)?(?:specific\s+)?(?:question|inquiry),?\s*)?'
+    )
+    cleaned = re.sub(generic_greeting_pattern, '', cleaned, flags=re.IGNORECASE).strip()
+
+    if cleaned.endswith('"') and not cleaned.startswith('"'):
+        cleaned = cleaned.rstrip('"').strip()
+
+    if not cleaned:
+        return text
+
+    if cleaned and cleaned[0].islower():
+        cleaned = cleaned[0].upper() + cleaned[1:]
+    return cleaned
+
+
 def _lookup_patient(patient_id: str) -> Optional[Dict[str, Any]]:
     """Fetch patient clinical chart from local SQLite database."""
     if not patient_id:
@@ -241,6 +274,9 @@ class ClinicalCopilot:
 
         # Multi-turn history formatting
         history_text = ""
+        has_prior_history = bool(history and len(history) > 0)
+        is_greeting_query = bool(re.search(r"^\s*(hello|hi|hey|greetings|who\s+are\s+you|what\s+can\s+you\s+do)\b", message, re.IGNORECASE))
+
         if history and isinstance(history, list):
             recent_turns = history[-4:]
             formatted_turns = []
@@ -248,7 +284,7 @@ class ClinicalCopilot:
                 role = "Doctor" if turn.get("role") in ["user", "physician"] else "Copilot"
                 formatted_turns.append(f"{role}: {turn.get('content', '')}")
             if formatted_turns:
-                history_text = "Prior Conversation:\n" + "\n".join(formatted_turns) + "\n\n"
+                history_text = f"Prior Conversation ({len(formatted_turns)} turns):\n" + "\n".join(formatted_turns) + "\n\n"
 
         # 6. Attempt Local SLM Inference with Resilient Timeout & Auto-Detected Model
         reply = None
@@ -257,8 +293,22 @@ class ClinicalCopilot:
         active_model = _detect_ollama_model()
 
         if active_model:
+            if has_prior_history:
+                system_role_desc = "Role: Bedside Clinical Decision Support Assistant (Ongoing Multi-Turn Conversation).\n"
+                greeting_rule = (
+                    "- CRITICAL: This is an ONGOING conversation. You have ALREADY introduced yourself. "
+                    "DO NOT say 'Hello', 'Good morning', 'I am the Sovereign Clinical AI Copilot', or give any greeting. "
+                    "Jump IMMEDIATELY and directly into answering the physician's specific medical inquiry."
+                )
+            else:
+                system_role_desc = "You are the Sovereign Clinical AI Copilot assisting a physician at bedside.\n"
+                greeting_rule = (
+                    "- If the physician sends a general greeting or introduction ('Hello', 'Who are you?', 'Can you help?'), introduce yourself and summarize how you can assist with this active patient.\n"
+                    "- If the physician asks a specific clinical question, answer directly without lengthy preamble."
+                )
+
             slm_prompt = (
-                f"You are the Sovereign Clinical AI Copilot assisting a physician at bedside.\n"
+                f"{system_role_desc}"
                 f"Patient Chart: {patient_summary}\n"
                 f"Current Labs: {labs_summary}\n"
                 f"Proposed Medication: {target_med or 'None'}\n"
@@ -268,7 +318,7 @@ class ClinicalCopilot:
                 f"Physician Question: {message}\n\n"
                 f"Instructions:\n"
                 f"- Answer the physician's specific question directly, conversationally, and authoritatively.\n"
-                f"- If asked general questions or greetings ('Hello', 'Who are you?', 'Can you help?'), introduce yourself and summarize how you can assist with this active patient.\n"
+                f"{greeting_rule}\n"
                 f"- If asked about the patient's vitals, labs, conditions, or medications, reference the real chart data above.\n"
                 f"- If CDSS status is CRITICAL or WARNING for a proposed drug, you MUST clearly explain the contraindication mechanism and warn against prescribing.\n"
                 f"- Never declare a contraindicated drug safe.\n"
@@ -311,8 +361,13 @@ class ClinicalCopilot:
                 labs=labs,
                 monograph=monograph,
                 recommended_alts=recommended_alts,
-                hazard_summary=hazard_summary
+                hazard_summary=hazard_summary,
+                has_prior_history=has_prior_history
             )
+
+        # Post-process: Strip repeated greeting on follow-up turns or non-greeting questions
+        if reply and (has_prior_history or not is_greeting_query):
+            reply = _strip_repeated_greeting(reply)
 
         # 8. Absolute Sovereign Safety Override (Guardrail Verification)
         if det_status in ["CRITICAL", "WARNING"] and target_med and target_med.lower() in message.lower():
@@ -354,7 +409,8 @@ class ClinicalCopilot:
         labs: Dict[str, Any],
         monograph: Optional[Dict[str, Any]],
         recommended_alts: List[Dict[str, Any]],
-        hazard_summary: Optional[Dict[str, Any]]
+        hazard_summary: Optional[Dict[str, Any]],
+        has_prior_history: bool = False
     ) -> str:
         """
         Expert clinical synthesis rule engine. Generates intelligent,
@@ -363,7 +419,9 @@ class ClinicalCopilot:
         msg_lower = message.lower().strip()
 
         # 1. Greetings & System Identity (exact word boundary match)
-        if re.search(r"\b(hello|hi|hey|greetings|good\s+morning|good\s+afternoon|good\s+evening|who\s+are\s+you|what\s+can\s+you\s+do)\b", msg_lower):
+        if re.search(r"^\s*(hello|hi|hey|greetings|good\s+morning|good\s+afternoon|good\s+evening|who\s+are\s+you|what\s+can\s+you\s+do)\b", msg_lower):
+            if has_prior_history:
+                return f"I'm here, Doctor. What clinical question or medication inquiry can I help you with regarding {patient_name}?"
             summary_parts = []
             if conditions:
                 summary_parts.append(f"Conditions: {', '.join(conditions[:2])}")
