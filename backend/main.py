@@ -67,6 +67,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_cache_control_headers(request: Request, call_next):
+    """Enforces no-cache headers on static and root pages during development."""
+    response = await call_next(request)
+    if request.url.path.startswith("/static") or request.url.path in ("/", "/patient-portal"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Mount HL7 CDS Hooks v1.0 Service Router
 app.include_router(cds_router)
 
