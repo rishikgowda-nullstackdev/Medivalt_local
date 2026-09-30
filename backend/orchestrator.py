@@ -496,7 +496,7 @@ class ClinicalOrchestrator:
             conditions = processed["entities"]["diagnosed_conditions"]
             medications = processed["entities"]["current_medications"]
             allergies = processed["entities"]["allergies"]
-            labs = processed["entities"].get("biomarkers", {})
+            labs = processed["entities"].get("biomarkers") or processed["entities"].get("clinical_labs") or {}
             if not demo_data and "demographics" in processed:
                 demo_data = processed["demographics"]
 

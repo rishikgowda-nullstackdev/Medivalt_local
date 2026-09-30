@@ -403,6 +403,51 @@
       color: #0d9488;
     }
 
+    /* ─── COLLAPSIBLE SIDEBAR RULES ─── */
+    .sidebar-container {
+      transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-x: hidden;
+    }
+    .sidebar-container.collapsed {
+      width: 68px;
+      min-width: 68px;
+    }
+    .sidebar-container.collapsed .sidebar-label,
+    .sidebar-container.collapsed .sidebar-badge,
+    .sidebar-container.collapsed .sidebar-kbd,
+    .sidebar-container.collapsed .sidebar-section-heading,
+    .sidebar-container.collapsed .sidebar-brand-text,
+    .sidebar-container.collapsed .sidebar-collapse-btn,
+    .sidebar-container.collapsed .sidebar-footer-full,
+    .sidebar-container.collapsed .sidebar-external-icon {
+      display: none !important;
+    }
+    .sidebar-container.collapsed .sidebar-brand-header {
+      padding: 12px 8px;
+      justify-content: center;
+    }
+    .sidebar-container.collapsed .sidebar-nav-item {
+      justify-content: center;
+      padding: 9px 0;
+      gap: 0;
+    }
+    .sidebar-container.collapsed .sidebar-nav-item .nav-icon {
+      margin: 0 auto;
+    }
+    .sidebar-container.collapsed .judge-demo-btn {
+      padding: 8px 0;
+      justify-content: center;
+    }
+    .sidebar-container.collapsed .sidebar-footer-compact {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+    }
+    .sidebar-footer-compact {
+      display: none;
+    }
+
 
     /* ─── RESULTS SUB-TABS ─── */
     .subtab-btn {
@@ -1235,18 +1280,18 @@
 <div id="main-app" class="flex min-h-screen relative z-10 w-full bg-[var(--bg-canvas)]">
 
   <!-- ═══════════════════════════════════════════
-       LEFT VERTICAL NAVIGATION SIDEBAR (256px DOCKED)
+       LEFT VERTICAL NAVIGATION SIDEBAR (256px DOCKED / 68px COLLAPSED)
   ═══════════════════════════════════════════ -->
   <aside id="left-nav-sidebar" class="sidebar-container">
     <!-- Brand Header -->
-    <div class="p-4 pb-3 border-b border-[var(--border-main)]">
-      <div class="flex items-center space-x-3">
-        <div class="brand-logo-3d-wrap">
+    <div class="sidebar-brand-header p-3.5 pb-3 border-b border-[var(--border-main)] flex items-center justify-between">
+      <div class="flex items-center space-x-3 overflow-hidden">
+        <div class="brand-logo-3d-wrap flex-shrink-0" onclick="toggleSidebarCollapse()" title="Toggle Sidebar (Ctrl+B)">
           <div class="brand-logo-3d w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 via-teal-600/30 to-teal-950 border border-teal-400/50 flex items-center justify-center text-teal-300 text-lg shadow-[0_0_15px_rgba(20,184,166,0.25)]">
             <i class="fa-solid fa-shield-heart"></i>
           </div>
         </div>
-        <div>
+        <div class="sidebar-brand-text">
           <div class="flex items-center space-x-1.5">
             <span class="text-sm font-bold text-[var(--text-heading)] font-heading tracking-tight">MediVault</span>
             <span class="text-xs text-teal-400 font-extrabold tracking-wide">LOCAL</span>
@@ -1258,6 +1303,10 @@
           </div>
         </div>
       </div>
+      <!-- Sidebar Header Toggle Button -->
+      <button id="btn-collapse-sidebar" type="button" onclick="toggleSidebarCollapse()" class="sidebar-collapse-btn p-1.5 rounded-lg border border-transparent hover:border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tab-active)] transition cursor-pointer" title="Collapse Sidebar (Ctrl+B)">
+        <i class="fa-solid fa-angles-left text-xs"></i>
+      </button>
     </div>
 
     <!-- Navigation Menu Items -->
@@ -1267,74 +1316,74 @@
       <!-- 1. CDSS Review -->
       <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="sidebar-nav-item step-nav-btn active group" title="Clinical CDSS & Interaction Review (Ctrl+1)">
         <span class="nav-icon"><i class="fa-solid fa-stethoscope text-teal-400"></i></span>
-        <span class="flex-1 text-left">1. CDSS Review</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+1</kbd>
+        <span class="sidebar-label flex-1 text-left">1. CDSS Review</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+1</kbd>
       </button>
 
       <!-- 2. Sovereign AI Copilot -->
       <button id="nav-btn-copilot" type="button" onclick="switchMainTab('copilot')" class="sidebar-nav-item step-nav-btn group" title="Sovereign AI Clinical Copilot & Local Vector RAG (Ctrl+2)">
         <span class="nav-icon"><i class="fa-solid fa-robot text-teal-400"></i></span>
-        <span class="flex-1 text-left">2. AI Copilot</span>
-        <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold">SLM</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+2</kbd>
+        <span class="sidebar-label flex-1 text-left">2. AI Copilot</span>
+        <span class="sidebar-badge text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold">SLM</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+2</kbd>
       </button>
 
       <!-- 3. Patient Intake & PHI -->
       <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="sidebar-nav-item step-nav-btn group" title="Patient Intake & Safe Harbor Redaction (Ctrl+3)">
         <span class="nav-icon"><i class="fa-solid fa-hospital-user text-cyan-400"></i></span>
-        <span class="flex-1 text-left">3. Intake &amp; PHI</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+3</kbd>
+        <span class="sidebar-label flex-1 text-left">3. Intake &amp; PHI</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+3</kbd>
       </button>
 
       <!-- 4. Hospital EHR & FHIR -->
       <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="sidebar-nav-item step-nav-btn group" title="Hospital EHR & FHIR R4 Interoperability (Ctrl+4)">
         <span class="nav-icon"><i class="fa-solid fa-network-wired text-amber-400"></i></span>
-        <span class="flex-1 text-left">4. EHR &amp; FHIR</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+4</kbd>
+        <span class="sidebar-label flex-1 text-left">4. EHR &amp; FHIR</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+4</kbd>
       </button>
 
       <!-- 5. Sovereign Audit -->
       <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="sidebar-nav-item step-nav-btn group" title="Sovereign Immutable Cryptographic Audit Ledger (Ctrl+5)">
         <span class="nav-icon"><i class="fa-solid fa-database text-emerald-400"></i></span>
-        <span class="flex-1 text-left">5. Sovereign Audit</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+5</kbd>
+        <span class="sidebar-label flex-1 text-left">5. Sovereign Audit</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+5</kbd>
       </button>
 
       <!-- 6. Clinical Analytics -->
       <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="sidebar-nav-item step-nav-btn group" title="Clinical Analytics & Population Health Insights (Ctrl+6)">
         <span class="nav-icon"><i class="fa-solid fa-chart-line text-emerald-400"></i></span>
-        <span class="flex-1 text-left">6. Clinical Analytics</span>
-        <kbd class="text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+6</kbd>
+        <span class="sidebar-label flex-1 text-left">6. Clinical Analytics</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-[var(--text-faint)] bg-[var(--bg-input-well)] px-1.5 py-0.5 rounded border border-[var(--border-main)]">Ctrl+6</kbd>
       </button>
 
       <div class="sidebar-section-heading pt-3">DEMO &amp; TOOLS</div>
 
       <!-- 7. Judge Demo Trigger -->
-      <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="w-full flex items-center space-x-2.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 hover:from-amber-500/30 hover:to-red-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold transition shadow-sm cursor-pointer group" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D)">
-        <span class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+      <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="w-full judge-demo-btn flex items-center space-x-2.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 hover:from-amber-500/30 hover:to-red-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold transition shadow-sm cursor-pointer group" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D)">
+        <span class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
           <i class="fa-solid fa-bolt"></i>
         </span>
-        <span class="flex-1 text-left">⚡ Judge Demo</span>
-        <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40">Ctrl+D</kbd>
+        <span class="sidebar-label flex-1 text-left">⚡ Judge Demo</span>
+        <kbd class="sidebar-kbd text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40">Ctrl+D</kbd>
       </button>
 
       <!-- Patient Portal Launcher -->
       <a href="/patient-portal" target="_blank" class="sidebar-nav-item group" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
         <span class="nav-icon"><i class="fa-solid fa-heart-pulse text-teal-400"></i></span>
-        <span class="flex-1 text-left font-medium">Patient Portal</span>
-        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-[var(--text-faint)] group-hover:text-teal-400 transition-colors"></i>
+        <span class="sidebar-label flex-1 text-left font-medium">Patient Portal</span>
+        <i class="sidebar-external-icon fa-solid fa-arrow-up-right-from-square text-[9px] text-[var(--text-faint)] group-hover:text-teal-400 transition-colors"></i>
       </a>
 
       <!-- Settings Button -->
       <button type="button" onclick="toggleSettingsSidebar(true)" class="sidebar-nav-item group" title="Workstation Settings">
         <span class="nav-icon"><i class="fa-solid fa-gear text-slate-400 group-hover:text-teal-400"></i></span>
-        <span class="flex-1 text-left font-medium">Settings &amp; Config</span>
+        <span class="sidebar-label flex-1 text-left font-medium">Settings &amp; Config</span>
       </button>
     </div>
 
     <!-- Sidebar Telemetry Footer -->
-    <div class="p-3 border-t border-[var(--border-main)]">
-      <div class="p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-main)] space-y-1.5 text-xs">
+    <div class="sidebar-footer p-3 border-t border-[var(--border-main)]">
+      <div class="sidebar-footer-full p-2.5 rounded-xl bg-[var(--bg-card-subtle)] border border-[var(--border-main)] space-y-1.5 text-xs">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -1348,6 +1397,9 @@
         </div>
         <div class="text-[9px] text-[var(--text-faint)] font-mono">HIPAA § 164.514 · Air-Gapped</div>
       </div>
+      <div class="sidebar-footer-compact" title="100% Offline (127.0.0.1) · Zero Cloud Egress">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="100% Offline"></span>
+      </div>
     </div>
   </aside>
 
@@ -1355,8 +1407,11 @@
   <div class="flex-1 flex flex-col min-w-0 min-h-screen">
     <!-- DOCKED SOVEREIGN CLINICAL HEADER -->
     <header class="px-5 py-2.5 border-b border-[var(--border-main)] bg-[var(--bg-header)] backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
-      <!-- Left: Active Section Breadcrumb -->
+      <!-- Left: Active Section Breadcrumb & Sidebar Toggle -->
       <div class="flex items-center space-x-2.5">
+        <button id="btn-header-collapse-sidebar" type="button" onclick="toggleSidebarCollapse()" class="p-1.5 rounded-lg border border-[var(--border-main)] hover:bg-[var(--bg-tab-active)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer" title="Toggle Navigation Sidebar (Ctrl+B)">
+          <i class="fa-solid fa-bars text-xs"></i>
+        </button>
         <i id="header-section-icon" class="fa-solid fa-stethoscope text-teal-400 text-sm"></i>
         <div>
           <h2 id="header-section-title" class="text-xs sm:text-sm font-bold text-[var(--text-heading)] font-heading leading-tight">1. CDSS Review</h2>
@@ -1453,10 +1508,47 @@
           window.loadClinicalAnalytics();
         }
       };
+
+      window.toggleSidebarCollapse = function(forceState) {
+        var sidebar = document.getElementById('left-nav-sidebar');
+        if (!sidebar) return;
+        var willCollapse = (typeof forceState === 'boolean') ? forceState : !sidebar.classList.contains('collapsed');
+        if (willCollapse) {
+          sidebar.classList.add('collapsed');
+          try { localStorage.setItem('medivault_sidebar_collapsed', 'true'); } catch(e) {}
+        } else {
+          sidebar.classList.remove('collapsed');
+          try { localStorage.setItem('medivault_sidebar_collapsed', 'false'); } catch(e) {}
+        }
+        var btnHeader = document.getElementById('btn-header-collapse-sidebar');
+        if (btnHeader) {
+          btnHeader.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+          btnHeader.setAttribute('title', willCollapse ? 'Expand Navigation Sidebar (Ctrl+B)' : 'Collapse Navigation Sidebar (Ctrl+B)');
+        }
+      };
+
+      (function() {
+        try {
+          if (localStorage.getItem('medivault_sidebar_collapsed') === 'true') {
+            var sidebar = document.getElementById('left-nav-sidebar');
+            if (sidebar) sidebar.classList.add('collapsed');
+          }
+        } catch(e) {}
+      })();
+
+      window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+          var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          if (tag !== 'input' && tag !== 'textarea') {
+            e.preventDefault();
+            window.toggleSidebarCollapse();
+          }
+        }
+      });
     </script>
 
-    <!-- MAIN CLINICAL WORKSPACE VIEWPORT WRAPPER -->
-    <main class="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto max-w-7xl w-full mx-auto">
+    <!-- MAIN CLINICAL WORKSPACE VIEWPORT WRAPPER (FULL-WIDTH EXPANDED) -->
+    <main class="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto w-full min-w-0">
 
   <!-- ═══════════════════════════════════════════
        VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Fold-Optimized)
