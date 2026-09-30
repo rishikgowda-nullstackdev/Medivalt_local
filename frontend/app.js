@@ -1119,6 +1119,22 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
     topMetaEl.textContent = `${patId} · ${firstCond}`;
   }
 
+  // Update Sovereign AI Copilot chart context pill
+  const copilotChartPatientEl = document.getElementById("copilot-chart-patient");
+  if (copilotChartPatientEl) {
+    let egfrStr = "";
+    if (labs) {
+      const egfrVal = labs.egfr ? (labs.egfr.value || labs.egfr) : (labs.eGFR ? (labs.eGFR.value || labs.eGFR) : null);
+      if (egfrVal) egfrStr = `, eGFR ${egfrVal}`;
+    }
+    copilotChartPatientEl.textContent = `${patId} (${patName}, ${patient.age || '64'}yo${egfrStr})`;
+  }
+  const copilotChartMedsEl = document.getElementById("copilot-chart-meds");
+  if (copilotChartMedsEl && medications && medications.length > 0) {
+    const medNames = medications.map(m => m.medication_name || (typeof m === 'string' ? m : (m.med || JSON.stringify(m)))).slice(0, 3).join(', ');
+    copilotChartMedsEl.textContent = medNames;
+  }
+
   // Conditions
   const condContainer = document.getElementById("patient-card-conditions") || document.getElementById("conditions-list");
   if (condContainer) {
@@ -3893,6 +3909,9 @@ window.init3DBrandLogo = init3DBrandLogo;
 // ═══════════════════════════════════════════
 //  🤖 SOVEREIGN CLINICAL COPILOT (DOCTOR SECOND OPINION)
 // ═══════════════════════════════════════════
+let copilotHistory = [];
+let tabCopilotHistory = [];
+
 function formatMarkdownText(text) {
   if (!text) return '';
   return text
@@ -3941,7 +3960,9 @@ async function sendCopilotMessage(explicitPrompt = null) {
   const patientId = currentPatientId || 'PT-101';
   let proposedMed = 'Ibuprofen';
   const singleInput = document.getElementById('proposed-med-input');
-  if (singleInput && singleInput.value) proposedMed = singleInput.value.trim();
+  if (singleInput && singleInput.value && singleInput.value.trim()) {
+    proposedMed = singleInput.value.trim();
+  }
 
   try {
     const res = await fetch('/api/copilot/chat', {
@@ -3950,7 +3971,8 @@ async function sendCopilotMessage(explicitPrompt = null) {
       body: JSON.stringify({
         message: message,
         patient_id: patientId,
-        proposed_med: proposedMed
+        proposed_med: proposedMed,
+        history: copilotHistory.slice(-6)
       })
     });
 
@@ -3965,6 +3987,11 @@ async function sendCopilotMessage(explicitPrompt = null) {
     if (modelBadge && data.model) {
       modelBadge.textContent = data.model;
     }
+
+    // Record dialogue history
+    copilotHistory.push({ role: 'user', content: message });
+    copilotHistory.push({ role: 'assistant', content: data.reply });
+    if (copilotHistory.length > 20) copilotHistory = copilotHistory.slice(-20);
 
     if (chatStream) {
       const replyBubble = document.createElement('div');
@@ -4002,7 +4029,14 @@ function askCopilotQuick(promptText) {
   sendCopilotMessage(promptText);
 }
 
+function askCopilotTabQuick(promptText) {
+  sendTabCopilotMessage(promptText);
+}
+
 function clearCopilotChat() {
+  copilotHistory = [];
+  tabCopilotHistory = [];
+
   const chatStream = document.getElementById('copilot-chat-stream');
   if (chatStream) {
     chatStream.innerHTML = `
@@ -4015,6 +4049,22 @@ function clearCopilotChat() {
       </div>
     `;
   }
+
+  const tabChatStream = document.getElementById('tab-copilot-chat-stream');
+  if (tabChatStream) {
+    tabChatStream.innerHTML = `
+      <div class="p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-300 leading-relaxed space-y-1">
+        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+          <span><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Clinical Copilot</span>
+          <span class="text-slate-500 font-mono">Ready · 0-Cloud</span>
+        </div>
+        <p class="m-0">
+          Welcome, Doctor. I am your sovereign bedside decision assistant, grounded in active patient lab values (eGFR, Cr, K+), active outpatient medications, Rowland &amp; Tozer PK clearance curves, and deterministic CDSS rules.
+        </p>
+      </div>
+    `;
+  }
+
   showToast('Chat Cleared', 'Copilot conversation reset.', 'info', 2000);
 }
 
@@ -4170,6 +4220,7 @@ async function triggerAiNoteSynthesis() {
 // Window Exports for Sovereign AI Suite
 window.sendCopilotMessage = sendCopilotMessage;
 window.askCopilotQuick = askCopilotQuick;
+window.askCopilotTabQuick = askCopilotTabQuick;
 window.clearCopilotChat = clearCopilotChat;
 window.searchKnowledgeBase = searchKnowledgeBase;
 window.triggerAiNoteSynthesis = triggerAiNoteSynthesis;
@@ -4209,7 +4260,11 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
   if (sendBtn) sendBtn.disabled = true;
 
   const patientId = currentPatientId || 'PT-101';
-  let proposedMed = 'Ketorolac';
+  let proposedMed = 'Ibuprofen';
+  const singleInput = document.getElementById('proposed-med-input');
+  if (singleInput && singleInput.value && singleInput.value.trim()) {
+    proposedMed = singleInput.value.trim();
+  }
 
   try {
     const res = await fetch('/api/copilot/chat', {
@@ -4218,7 +4273,8 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
       body: JSON.stringify({
         message: message,
         patient_id: patientId,
-        proposed_med: proposedMed
+        proposed_med: proposedMed,
+        history: tabCopilotHistory.slice(-6)
       })
     });
 
@@ -4233,6 +4289,11 @@ async function sendTabCopilotMessage(explicitPrompt = null) {
     if (modelBadge && data.model) {
       modelBadge.textContent = data.model;
     }
+
+    // Record dialogue history
+    tabCopilotHistory.push({ role: 'user', content: message });
+    tabCopilotHistory.push({ role: 'assistant', content: data.reply });
+    if (tabCopilotHistory.length > 20) tabCopilotHistory = tabCopilotHistory.slice(-20);
 
     if (chatStream) {
       const replyBubble = document.createElement('div');

@@ -57,6 +57,31 @@ class TestClinicalCopilot(unittest.TestCase):
         self.assertFalse("is safe to take" in res["reply"].lower())
         self.assertIn("contraindicated", res["reply"].lower())
 
+    def test_copilot_multi_turn_history(self):
+        """Verify copilot handles multi-turn conversation history."""
+        history = [
+            {"role": "user", "content": "What is the patient eGFR?"},
+            {"role": "assistant", "content": "Patient PT-101 has an eGFR of 38 mL/min/1.73m² (CKD Stage 3b)."}
+        ]
+        res = ask_copilot(
+            message="Can we prescribe an NSAID given this level?",
+            patient_id="PT-101",
+            proposed_med="Ibuprofen",
+            history=history
+        )
+        self.assertIn(res["status"], ["CRITICAL", "WARNING"])
+        reply_lower = res["reply"].lower()
+        self.assertTrue("nsaid" in reply_lower or "ibuprofen" in reply_lower or "contraindicated" in reply_lower or "kidney" in reply_lower)
+
+    def test_copilot_lab_profile_inquiry(self):
+        """Verify copilot returns patient lab profile telemetry."""
+        res = ask_copilot(
+            message="What is the current patient lab profile and eGFR?",
+            patient_id="PT-101"
+        )
+        reply_lower = res["reply"].lower()
+        self.assertTrue("egfr" in reply_lower or "serum creatinine" in reply_lower or "potassium" in reply_lower)
+
 
 if __name__ == "__main__":
     unittest.main()

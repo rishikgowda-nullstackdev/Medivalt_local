@@ -226,6 +226,7 @@ class CopilotChatRequest(BaseModel):
     patient_id: Optional[str] = None
     proposed_med: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 
 class KnowledgeSearchRequest(BaseModel):
@@ -1451,7 +1452,8 @@ def copilot_chat_endpoint(req: CopilotChatRequest):
         message=req.message,
         patient_id=req.patient_id,
         proposed_med=req.proposed_med,
-        context=req.context
+        context=req.context,
+        history=req.history
     )
     return result
 

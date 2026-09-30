@@ -2598,7 +2598,7 @@
             </div>
             <div class="flex items-center space-x-1.5 text-[11px] text-slate-400">
               <span>Meds:</span>
-              <span class="text-slate-300 font-mono">Lisinopril, Furosemide</span>
+              <span id="copilot-chart-meds" class="text-slate-300 font-mono">Lisinopril, Metformin</span>
             </div>
           </div>
 
@@ -2606,17 +2606,20 @@
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Quick Clinical Inquiries:</span>
             <div class="flex flex-wrap gap-1.5 text-xs">
-              <button type="button" onclick="askCopilotQuick('Why is Ketorolac contraindicated in this patient?')" class="test-chip test-chip-danger">
-                <i class="fa-solid fa-circle-question"></i> Why is Ketorolac flagged?
+              <button type="button" onclick="askCopilotTabQuick('Why is this proposed drug contraindicated in this patient?')" class="test-chip test-chip-danger">
+                <i class="fa-solid fa-circle-question"></i> Why flagged?
               </button>
-              <button type="button" onclick="askCopilotQuick('What safe alternatives can I prescribe for acute pain?')" class="test-chip test-chip-purple">
-                <i class="fa-solid fa-arrows-rotate"></i> Safe painkiller alternatives?
+              <button type="button" onclick="askCopilotTabQuick('What safe alternatives can I prescribe for acute pain?')" class="test-chip test-chip-purple">
+                <i class="fa-solid fa-arrows-rotate"></i> Safe alternatives?
               </button>
-              <button type="button" onclick="askCopilotQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip test-chip-warning">
+              <button type="button" onclick="askCopilotTabQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip test-chip-warning">
                 <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy risk
               </button>
-              <button type="button" onclick="askCopilotQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">
+              <button type="button" onclick="askCopilotTabQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">
                 <i class="fa-solid fa-book-medical"></i> Renal dosing guidelines
+              </button>
+              <button type="button" onclick="askCopilotTabQuick('What is the current patient lab profile and eGFR?')" class="test-chip bg-sky-500/10 text-sky-300 border-sky-500/30">
+                <i class="fa-solid fa-flask"></i> Patient Labs &amp; eGFR
               </button>
             </div>
           </div>
