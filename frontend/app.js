@@ -13,6 +13,15 @@ let currentPatientId = 'PT-101';
 let currentUploadedRecord = null;
 let currentReviewEventId = null;
 let lastFocusedElement = null;
+let currentAuthToken = sessionStorage.getItem('medivault_practitioner_token') || null;
+
+function getAuthHeaders(extraHeaders = {}) {
+  const h = { ...extraHeaders };
+  if (currentAuthToken) {
+    h['Authorization'] = `Bearer ${currentAuthToken}`;
+  }
+  return h;
+}
 
 const DEMO_DOCTORS = [
   { key: 'house', name: 'Dr. Gregory House, MD', hospital: 'Princeton Plainsboro Hospital', license: 'NPI-1999887766', initials: 'GH' },
@@ -246,31 +255,33 @@ window.onPresetBundleSelect = onPresetBundleSelect;
 //  MULTI-PAGE NAVIGATION CONTROLLER
 // ═══════════════════════════════════════════
 function switchMainTab(tabKey) {
-  const tabs = ['review', 'intake', 'fhir', 'audit', 'analytics'];
-  tabs.forEach(t => {
-    const btn = document.getElementById(`nav-btn-${t}`);
-    const panel = document.getElementById(`page-view-${t}`);
-    if (btn) {
-      if (t === tabKey) {
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-      } else {
-        btn.classList.remove('active');
-        btn.setAttribute('aria-selected', 'false');
-      }
-    }
-    if (panel) {
-      if (t === tabKey) {
-        panel.classList.add('active');
-        panel.style.display = 'block';
-      } else {
-        panel.classList.remove('active');
-        panel.style.display = 'none';
-      }
-    }
+  // Hide all view panels dynamically
+  document.querySelectorAll('.page-view-panel').forEach(panel => {
+    panel.classList.remove('active');
+    panel.style.display = 'none';
   });
 
-  if (tabKey === 'analytics') {
+  // Deactivate all navigation buttons
+  document.querySelectorAll('.step-nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+
+  // Activate target view panel
+  const targetPanel = document.getElementById(`page-view-${tabKey}`);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+    targetPanel.style.display = 'block';
+  }
+
+  // Activate target navigation button
+  const targetBtn = document.getElementById(`nav-btn-${tabKey}`);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+    targetBtn.setAttribute('aria-selected', 'true');
+  }
+
+  if (tabKey === 'analytics' && typeof loadClinicalAnalytics === 'function') {
     loadClinicalAnalytics();
   }
 }
@@ -579,48 +590,394 @@ function switchIntakeMode(mode) {
   }
 }
 
-function switchAuthGateTab(tab) {
+// ═══════════════════════════════════════════
+//  INSTITUTIONAL AUTHENTICATION GATE ENGINE
+// ═══════════════════════════════════════════
+let cachedHospitals = [];
+let pendingOtpEmail = null;
+
+function setAuthAlert(msg, type = 'error') {
+  const alertEl = document.getElementById('auth-alert');
+  if (!alertEl) return;
+  if (!msg) {
+    alertEl.classList.add('hidden');
+    alertEl.textContent = '';
+    return;
+  }
+  alertEl.classList.remove('hidden');
+  alertEl.textContent = msg;
+  if (type === 'success') {
+    alertEl.className = 'mb-4 p-3 rounded-lg text-xs font-mono bg-emerald-950/80 border border-emerald-500/50 text-emerald-300';
+  } else if (type === 'info') {
+    alertEl.className = 'mb-4 p-3 rounded-lg text-xs font-mono bg-teal-950/80 border border-teal-500/50 text-teal-300';
+  } else {
+    alertEl.className = 'mb-4 p-3 rounded-lg text-xs font-mono bg-red-950/80 border border-red-500/50 text-red-300';
+  }
+}
+
+function switchAuthTab(tab) {
+  setAuthAlert(null);
+  const otpScreen = document.getElementById('auth-screen-otp');
+  if (otpScreen) otpScreen.classList.add('hidden');
+
   ['demo', 'login', 'register'].forEach(t => {
-    const btn = document.getElementById(`gtab-${t}`);
-    const content = document.getElementById(`gtab-content-${t}`);
+    const btn = document.getElementById(`tab-btn-${t}`) || document.getElementById(`gtab-${t}`);
+    const content = document.getElementById(`auth-tab-${t}`) || document.getElementById(`gtab-content-${t}`);
+
     if (btn) {
       btn.className = (t === tab)
         ? 'flex-1 py-2 text-xs font-semibold rounded text-teal-400 bg-teal-950/80 border border-teal-500/30'
         : 'flex-1 py-2 text-xs font-semibold rounded text-slate-400 hover:text-slate-200';
     }
-    if (content) content.classList.toggle('hidden', t !== tab);
+    if (content) {
+      if (t === tab) {
+        content.classList.remove('hidden');
+      } else {
+        content.classList.add('hidden');
+      }
+    }
   });
+
+  if (tab === 'demo') {
+    loadDemoDoctors();
+  } else if (tab === 'register') {
+    loadHospitals();
+  }
 }
+const switchAuthGateTab = switchAuthTab;
+
+function closeAuthModal() {
+  const gate = document.getElementById('auth-gate');
+  if (gate) {
+    gate.classList.add('dismissed');
+    gate.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  const gate = document.getElementById('auth-gate');
+  if (gate) {
+    gate.classList.remove('dismissed');
+    gate.style.display = 'flex';
+    switchAuthTab('demo');
+  }
+}
+
+async function loadDemoDoctors() {
+  const list = document.getElementById('demo-doctors-list');
+  if (!list) return;
+
+  try {
+    const res = await fetch('/api/auth/practitioners');
+    const data = await res.json();
+    const practitioners = (data && data.practitioners && data.practitioners.length > 0)
+      ? data.practitioners
+      : DEMO_DOCTORS.map(d => ({
+          practitioner_id: d.key,
+          full_name: d.name,
+          email: `${d.key}@hospital.org`,
+          hospital_name: d.hospital,
+          medical_license: d.license,
+          department: 'Emergency & Acute Care',
+          role: 'PHYSICIAN'
+        }));
+
+    list.innerHTML = '';
+    practitioners.forEach(p => {
+      const card = document.createElement('div');
+      const initials = (p.full_name || 'Dr').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const isCurrent = currentDoctor.name === p.full_name;
+
+      card.className = `p-3 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+        isCurrent ? 'bg-teal-950/70 border-teal-500/60 shadow-md' : 'bg-slate-900/80 border-slate-800 hover:border-teal-500/40'
+      }`;
+
+      card.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-lg ${isCurrent ? 'bg-teal-500/20 text-teal-300 border border-teal-400/40' : 'bg-slate-800 text-slate-300'} flex items-center justify-center font-bold text-xs font-mono">
+            ${escapeHtml(initials)}
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-2">
+              <span>${escapeHtml(p.full_name)}</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-teal-300 border border-slate-700">${escapeHtml(p.role || 'PHYSICIAN')}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">
+              ${escapeHtml(p.hospital_name || 'Hospital')} · <span class="font-mono text-slate-500">${escapeHtml(p.medical_license || '')}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          ${isCurrent 
+            ? '<span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded font-bold"><i class="fa-solid fa-check mr-1"></i>ACTIVE</span>'
+            : '<button type="button" class="btn-clinical-secondary py-1 px-2.5 text-xs">Select</button>'}
+        </div>
+      `;
+
+      card.onclick = () => {
+        activateDoctor({
+          key: p.practitioner_id,
+          name: p.full_name,
+          hospital: p.hospital_name || 'Hospital',
+          license: p.medical_license,
+          initials: initials
+        });
+      };
+      list.appendChild(card);
+    });
+
+  } catch (err) {
+    console.warn('Could not fetch practitioners list, using static demo staff:', err);
+  }
+}
+
+async function loadHospitals() {
+  const select = document.getElementById('reg-hospital-select');
+  if (!select) return;
+
+  try {
+    const res = await fetch('/api/auth/hospitals');
+    const data = await res.json();
+    cachedHospitals = data.hospitals || [];
+
+    select.innerHTML = '';
+    cachedHospitals.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h.hospital_id;
+      opt.textContent = `${h.hospital_name} (${h.department} · ${h.city_state})`;
+      select.appendChild(opt);
+    });
+
+    onHospitalSelectChange();
+  } catch (err) {
+    console.warn('Could not load hospitals list:', err);
+  }
+}
+
+function onHospitalSelectChange() {
+  const select = document.getElementById('reg-hospital-select');
+  const hint = document.getElementById('reg-domain-hint');
+  if (!select || !hint) return;
+
+  const h = cachedHospitals.find(item => item.hospital_id === select.value);
+  if (h && h.domain_whitelist) {
+    hint.textContent = `Required domain: @${h.domain_whitelist}`;
+  } else {
+    hint.textContent = 'Required domain: Valid hospital domain';
+  }
+}
+const onRegHospitalChange = onHospitalSelectChange;
 
 function gateSelectDemo(key) {
   const doc = DEMO_DOCTORS.find(d => d.key === key) || DEMO_DOCTORS[0];
   activateDoctor(doc);
 }
 
-function handleGateLogin() {
-  activateDoctor(DEMO_DOCTORS[0]);
-}
+async function handleLogin() {
+  setAuthAlert(null);
+  const emailInput = document.getElementById('login-email');
+  const pwdInput = document.getElementById('login-password');
+  if (!emailInput || !pwdInput) return;
 
-function handleGateRegister() {
-  const name = (document.getElementById('reg-name') || {}).value || 'Dr. Practitioner';
-  activateDoctor({
-    key: 'custom',
-    name: name,
-    hospital: 'Registered Hospital',
-    license: 'NPI-CUSTOM',
-    initials: name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  const email = emailInput.value.trim();
+  const password = pwdInput.value;
+
+  if (!email || !password) {
+    setAuthAlert('Please enter both your institutional email and password.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      if (res.status === 403 && data.detail && data.detail.includes('verified')) {
+        pendingOtpEmail = email;
+        promptOtpScreen(email);
+        setAuthAlert('Account pending 6-digit verification code. Please enter OTP.', 'info');
+        return;
+      }
+      throw new Error(formatApiError(data, 'Institutional sign-in failed'));
+    }
+
+    if (data.access_token) {
+      currentAuthToken = data.access_token;
+      sessionStorage.setItem('medivault_practitioner_token', currentAuthToken);
+    }
+
+    const prac = data.practitioner || {};
+    const initials = (prac.full_name || 'Dr').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    activateDoctor({
+      key: prac.practitioner_id || 'prac-login',
+      name: prac.full_name || email,
+      hospital: prac.hospital_name || 'Teaching Hospital',
+      license: prac.medical_license || 'NPI-VERIFIED',
+      initials: initials
+    });
+
+    showToast('Sign-In Successful', `Welcome back, ${prac.full_name || email}!`, 'success', 3500);
+
+  } catch (err) {
+    setAuthAlert(err.message);
+    showToast('Authentication Error', err.message, 'error', 5000);
+  }
+}
+const handleGateLogin = handleLogin;
+
+async function handleRegister() {
+  setAuthAlert(null);
+  const name = (document.getElementById('reg-name') || {}).value?.trim();
+  const hospSelect = document.getElementById('reg-hospital-select');
+  const email = (document.getElementById('reg-email') || {}).value?.trim();
+  const license = (document.getElementById('reg-license') || {}).value?.trim();
+  const password = (document.getElementById('reg-password') || {}).value;
+
+  if (!name || !email || !license || !password) {
+    setAuthAlert('All fields (Name, Hospital, Email, License, and Password) are strictly required.');
+    return;
+  }
+
+  const hospitalId = hospSelect ? hospSelect.value : (cachedHospitals[0]?.hospital_id || 'HOSP-01');
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        hospital_id: hospitalId,
+        full_name: name,
+        email: email,
+        password: password,
+        medical_license: license,
+        role: 'PHYSICIAN'
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(formatApiError(data, 'Practitioner registration failed'));
+    }
+
+    pendingOtpEmail = email;
+    promptOtpScreen(email, data.simulated_code);
+    showToast('Credentials Registered', `6-digit OTP dispatched to local inbox for ${email}.`, 'success', 4000);
+
+  } catch (err) {
+    setAuthAlert(err.message);
+    showToast('Registration Error', err.message, 'error', 6000);
+  }
+}
+const handleGateRegister = handleRegister;
+
+function promptOtpScreen(email, simulatedCode = '') {
+  ['auth-tab-demo', 'auth-tab-login', 'auth-tab-register'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
   });
+
+  const otpScreen = document.getElementById('auth-screen-otp');
+  if (otpScreen) otpScreen.classList.remove('hidden');
+
+  const targetEmailEl = document.getElementById('otp-target-email');
+  if (targetEmailEl) targetEmailEl.textContent = email;
+
+  const simCodeEl = document.getElementById('simulated-otp-code');
+  if (simCodeEl && simulatedCode) {
+    simCodeEl.textContent = simulatedCode;
+  }
+
+  const otpInput = document.getElementById('otp-input');
+  if (otpInput && simulatedCode) {
+    otpInput.value = simulatedCode;
+  }
 }
 
-function handleGateOtp() {
-  activateDoctor(DEMO_DOCTORS[0]);
-}
+async function handleVerifyOtp() {
+  setAuthAlert(null);
+  const otpInput = document.getElementById('otp-input');
+  const code = otpInput ? otpInput.value.trim() : '';
+  const email = pendingOtpEmail || (document.getElementById('otp-target-email') || {}).textContent?.trim() || '';
 
-function handleGateResend() {
-  showToast('Code Resent', 'New 6-digit OTP code dispatched to simulated local inbox.', 'info');
-}
+  if (!code || code.length < 6) {
+    setAuthAlert('Please enter the 6-digit verification code.');
+    return;
+  }
 
-function onRegHospitalChange() {}
+  try {
+    const res = await fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        verification_code: code
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(formatApiError(data, 'Verification failed'));
+    }
+
+    if (data.access_token) {
+      currentAuthToken = data.access_token;
+      sessionStorage.setItem('medivault_practitioner_token', currentAuthToken);
+    }
+
+    const prac = data.practitioner || {};
+    const initials = (prac.full_name || 'Dr').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    activateDoctor({
+      key: prac.practitioner_id || 'prac-verified',
+      name: prac.full_name || email,
+      hospital: prac.hospital_name || 'Teaching Hospital',
+      license: prac.medical_license || 'NPI-VERIFIED',
+      initials: initials
+    });
+
+    showToast('Practitioner Verified', `Identity confirmed for ${prac.full_name}. Session secured.`, 'success', 3500);
+
+  } catch (err) {
+    setAuthAlert(err.message);
+    showToast('Verification Error', err.message, 'error', 6000);
+  }
+}
+const handleGateOtp = handleVerifyOtp;
+
+async function handleResendOtp() {
+  const email = pendingOtpEmail || (document.getElementById('otp-target-email') || {}).textContent?.trim() || '';
+  if (!email) {
+    showToast('Email Required', 'No target email found to resend verification code.', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/resend-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(formatApiError(data, 'Failed to resend code'));
+    }
+
+    const simCodeEl = document.getElementById('simulated-otp-code');
+    const otpInput = document.getElementById('otp-input');
+    if (simCodeEl && data.simulated_code) simCodeEl.textContent = data.simulated_code;
+    if (otpInput && data.simulated_code) otpInput.value = data.simulated_code;
+
+    showToast('Code Resent', `New 6-digit OTP code dispatched to ${email}.`, 'info', 3000);
+
+  } catch (err) {
+    showToast('Resend Error', err.message, 'error');
+  }
+}
+const handleGateResend = handleResendOtp;
 
 // ═══════════════════════════════════════════
 //  AUDIT CHAIN MERKLE VERIFIER
@@ -1093,7 +1450,7 @@ async function runSafetyCheck() {
 
     const res = await fetch("/api/review", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload)
     });
 
@@ -1999,7 +2356,8 @@ async function exportFhirBundle() {
 
   try {
     const res = await fetch(`/api/export/fhir-bundle?event_id=${encodeURIComponent(currentReviewEventId)}`, {
-      method: "POST"
+      method: "POST",
+      headers: getAuthHeaders()
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -2350,14 +2708,16 @@ document.addEventListener('keydown', (e) => {
   } else if ((e.ctrlKey || e.altKey) && e.key === '1') {
     e.preventDefault(); switchMainTab('review');
   } else if ((e.ctrlKey || e.altKey) && e.key === '2') {
-    e.preventDefault(); switchMainTab('intake');
+    e.preventDefault(); switchMainTab('copilot');
   } else if ((e.ctrlKey || e.altKey) && e.key === '3') {
-    e.preventDefault(); switchMainTab('fhir');
+    e.preventDefault(); switchMainTab('intake');
   } else if ((e.ctrlKey || e.altKey) && e.key === '4') {
-    e.preventDefault(); switchMainTab('audit');
+    e.preventDefault(); switchMainTab('fhir');
   } else if ((e.ctrlKey || e.altKey) && e.key === '5') {
+    e.preventDefault(); switchMainTab('audit');
+  } else if ((e.ctrlKey || e.altKey) && e.key === '6') {
     e.preventDefault(); switchMainTab('analytics');
-  } else if ((e.ctrlKey || e.altKey) && (e.key === '6' || e.key === 'd' || e.key === 'D')) {
+  } else if ((e.ctrlKey || e.altKey) && (e.key === '7' || e.key === 'd' || e.key === 'D')) {
     e.preventDefault(); openJudgeDemoModal();
   } else if (e.key === 'Escape') {
     toggleSettingsSidebar(false);
@@ -2429,12 +2789,22 @@ window.openClearanceQrModal = openClearanceQrModal;
 window.closeClearanceQrModal = closeClearanceQrModal;
 window.switchIntakeMode = switchIntakeMode;
 window.switchAuthGateTab = switchAuthGateTab;
+window.switchAuthTab = switchAuthTab;
+window.closeAuthModal = closeAuthModal;
+window.openAuthModal = openAuthModal;
 window.gateSelectDemo = gateSelectDemo;
 window.handleGateLogin = handleGateLogin;
+window.handleLogin = handleLogin;
 window.handleGateRegister = handleGateRegister;
+window.handleRegister = handleRegister;
 window.handleGateOtp = handleGateOtp;
+window.handleVerifyOtp = handleVerifyOtp;
 window.handleGateResend = handleGateResend;
+window.handleResendOtp = handleResendOtp;
 window.onRegHospitalChange = onRegHospitalChange;
+window.onHospitalSelectChange = onHospitalSelectChange;
+window.loadDemoDoctors = loadDemoDoctors;
+window.loadHospitals = loadHospitals;
 window.verifyAuditChain = verifyAuditChain;
 window.selectPatient = selectPatient;
 window.loadPatientProfile = loadPatientProfile;
@@ -3515,5 +3885,442 @@ window.executeDemoScenario = executeDemoScenario;
 window.togglePresenterDrawer = togglePresenterDrawer;
 window.dismissPresenterWidget = dismissPresenterWidget;
 window.init3DBrandLogo = init3DBrandLogo;
+
+// ═══════════════════════════════════════════
+//  🤖 SOVEREIGN CLINICAL COPILOT (DOCTOR SECOND OPINION)
+// ═══════════════════════════════════════════
+function formatMarkdownText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
+}
+
+async function sendCopilotMessage(explicitPrompt = null) {
+  const inputEl = document.getElementById('copilot-user-input');
+  const chatStream = document.getElementById('copilot-chat-stream');
+  const sendBtn = document.getElementById('btn-copilot-send');
+  const modelBadge = document.getElementById('copilot-model-badge');
+
+  const message = explicitPrompt || (inputEl ? inputEl.value.trim() : '');
+  if (!message) return;
+
+  if (inputEl && !explicitPrompt) inputEl.value = '';
+
+  // Render Physician Question bubble
+  if (chatStream) {
+    const userBubble = document.createElement('div');
+    userBubble.className = 'p-2.5 rounded-lg bg-teal-950/40 border border-teal-500/30 text-teal-200 text-xs ml-4';
+    userBubble.innerHTML = `
+      <div class="flex items-center justify-between text-[10px] text-teal-400 mb-1 font-semibold">
+        <span><i class="fa-solid fa-user-md mr-1"></i> Physician</span>
+        <span class="text-slate-500 font-mono">Just now</span>
+      </div>
+      <div>${escapeHtml(message)}</div>
+    `;
+    chatStream.appendChild(userBubble);
+
+    // Thinking bubble
+    const thinkingBubble = document.createElement('div');
+    thinkingBubble.id = 'copilot-thinking-bubble';
+    thinkingBubble.className = 'p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-400 text-xs animate-pulse';
+    thinkingBubble.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-teal-400 mr-1.5"></i> Synthesizing clinical pharmacology &amp; patient telemetry...`;
+    chatStream.appendChild(thinkingBubble);
+    chatStream.scrollTop = chatStream.scrollHeight;
+  }
+
+  if (sendBtn) sendBtn.disabled = true;
+
+  // Determine current active patient and proposed drug
+  const patientId = currentPatientId || 'PT-101';
+  let proposedMed = 'Ibuprofen';
+  const singleInput = document.getElementById('proposed-med-input');
+  if (singleInput && singleInput.value) proposedMed = singleInput.value.trim();
+
+  try {
+    const res = await fetch('/api/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message,
+        patient_id: patientId,
+        proposed_med: proposedMed
+      })
+    });
+
+    const thinkingBubble = document.getElementById('copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+
+    if (!res.ok) {
+      throw new Error(`Copilot response error: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    if (modelBadge && data.model) {
+      modelBadge.textContent = data.model;
+    }
+
+    if (chatStream) {
+      const replyBubble = document.createElement('div');
+      replyBubble.className = 'p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
+
+      const citationsHtml = data.citations && data.citations.length > 0
+        ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+             <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
+             ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
+           </div>`
+        : '';
+
+      replyBubble.innerHTML = `
+        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+          <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
+          <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
+        </div>
+        <div class="text-slate-200 leading-normal">${formatMarkdownText(data.reply)}</div>
+        ${citationsHtml}
+      `;
+      chatStream.appendChild(replyBubble);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+  } catch (err) {
+    const thinkingBubble = document.getElementById('copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+    showToast('Copilot Error', err.message, 'error', 3500);
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
+function askCopilotQuick(promptText) {
+  sendCopilotMessage(promptText);
+}
+
+function clearCopilotChat() {
+  const chatStream = document.getElementById('copilot-chat-stream');
+  if (chatStream) {
+    chatStream.innerHTML = `
+      <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300 leading-relaxed">
+        <div class="flex items-center justify-between text-[10px] text-teal-400 mb-1 font-semibold">
+          <span><i class="fa-solid fa-shield-halved mr-1"></i> Clinical Copilot</span>
+          <span class="text-slate-500 font-mono">Ready · 0-Cloud</span>
+        </div>
+        Grounded in active patient labs, medications, and deterministic CDSS rules. Ask any clinical pharmacology or dosing question.
+      </div>
+    `;
+  }
+  showToast('Chat Cleared', 'Copilot conversation reset.', 'info', 2000);
+}
+
+// ═══════════════════════════════════════════
+//  📚 LOCAL CLINICAL VECTOR RAG SEARCH
+// ═══════════════════════════════════════════
+async function searchKnowledgeBase() {
+  const inputEl = document.getElementById('rag-search-input');
+  const container = document.getElementById('rag-results-container');
+  if (!inputEl) return;
+  const query = inputEl.value.trim();
+  if (!query) return;
+
+  if (container) {
+    container.style.display = 'block';
+    container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-sky-400 mr-1.5"></i> Running NumPy cosine vector retrieval across monographs...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/knowledge/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, top_k: 3 })
+    });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (!container) return;
+    if (results.length === 0) {
+      container.innerHTML = `<div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-slate-400 text-xs">No clinical monographs found matching "${escapeHtml(query)}".</div>`;
+      return;
+    }
+
+    container.innerHTML = results.map(r => `
+      <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-sky-300 text-xs">${escapeHtml(r.drug)}</span>
+            <span class="text-[10px] font-mono bg-sky-950/80 border border-sky-500/40 text-sky-300 px-1.5 py-0.2 rounded">${escapeHtml(r.category)}</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 font-bold">${Math.round(r.similarity * 100)}% match</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">${escapeHtml(r.snippet)}</p>
+        ${r.boxed_warning ? `<div class="text-[10px] text-rose-300 bg-rose-950/40 border border-rose-900/50 p-1.5 rounded"><strong class="text-rose-400">Boxed Warning:</strong> ${escapeHtml(r.boxed_warning)}</div>` : ''}
+        ${r.renal_guideline ? `<div class="text-[10px] text-amber-300 bg-amber-950/30 border border-amber-900/40 p-1.5 rounded"><strong class="text-amber-400">KDIGO Renal Guide:</strong> ${escapeHtml(r.renal_guideline)}</div>` : ''}
+      </div>
+    `).join('');
+
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<div class="p-2.5 text-rose-400 text-xs">Search error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+//  ⚡ AUTONOMOUS AI NOTE INTELLIGENCE
+// ═══════════════════════════════════════════
+async function triggerAiNoteSynthesis() {
+  const rawInput = document.getElementById('raw-note-input');
+  const card = document.getElementById('ai-note-intelligence-card');
+  const condContainer = document.getElementById('ai-extracted-conditions');
+  const medContainer = document.getElementById('ai-extracted-medications');
+  const discContainer = document.getElementById('ai-discrepancy-container');
+  const modelBadge = document.getElementById('ai-note-model-badge');
+
+  const text = rawInput ? rawInput.value.trim() : '';
+  if (!text) {
+    showToast('Empty Note', 'Please paste a clinical note or discharge summary first.', 'warning');
+    return;
+  }
+
+  if (card) card.style.display = 'block';
+  if (discContainer) discContainer.innerHTML = `<div class="text-slate-400 text-xs animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-teal-400 mr-1.5"></i> Extracting clinical entities &amp; auditing discrepancies with local SLM...</div>`;
+
+  try {
+    const res = await fetch('/api/intake/ai-extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        raw_text: text,
+        patient_id: currentPatientId || 'PT-101'
+      })
+    });
+    if (!res.ok) throw new Error('AI note synthesis failed');
+    const data = await res.json();
+
+    if (modelBadge && data.model) modelBadge.textContent = data.model;
+
+    // Render Discrepancies
+    if (discContainer) {
+      discContainer.innerHTML = '';
+      const discrepancies = data.discrepancies || [];
+      if (discrepancies.length > 0) {
+        discContainer.innerHTML = discrepancies.map(d => `
+          <div class="p-2 rounded bg-rose-950/70 border border-rose-600/60 text-rose-200 text-[11px] space-y-0.5">
+            <div class="font-bold flex items-center justify-between text-rose-300">
+              <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> [${escapeHtml(d.severity)}] ${escapeHtml(d.type)}</span>
+            </div>
+            <div>${escapeHtml(d.finding)}</div>
+            <div class="text-teal-300 font-semibold"><i class="fa-solid fa-arrow-right mr-1"></i> Action: ${escapeHtml(d.action)}</div>
+          </div>
+        `).join('');
+      } else {
+        discContainer.innerHTML = `
+          <div class="p-2 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center">
+            <i class="fa-solid fa-circle-check mr-1.5 text-emerald-400"></i> No overt clinical discrepancies or safety omissions detected in note.
+          </div>
+        `;
+      }
+    }
+
+    // Render Extracted Conditions
+    if (condContainer) {
+      const conds = data.conditions || [];
+      if (conds.length > 0) {
+        condContainer.innerHTML = conds.map(c => `
+          <div class="flex items-center justify-between py-0.5">
+            <span class="text-slate-200 font-medium">${escapeHtml(c.name)}</span>
+            <span class="text-[9px] font-mono text-teal-400 bg-teal-950 border border-teal-500/30 px-1.5 rounded">${escapeHtml(c.icd10 || 'ICD-10')}</span>
+          </div>
+        `).join('');
+      } else {
+        condContainer.innerHTML = '<span class="text-slate-500">None extracted</span>';
+      }
+    }
+
+    // Render Extracted Medications
+    if (medContainer) {
+      const meds = data.medications || [];
+      if (meds.length > 0) {
+        medContainer.innerHTML = meds.map(m => `
+          <div class="flex items-center justify-between py-0.5">
+            <span class="text-slate-200 font-medium">${escapeHtml(m.name)}</span>
+            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950 border border-cyan-500/30 px-1.5 rounded">${escapeHtml(m.dose || 'Dose')}</span>
+          </div>
+        `).join('');
+      } else {
+        medContainer.innerHTML = '<span class="text-slate-500">None extracted</span>';
+      }
+    }
+
+    showToast('AI Note Analysis Ready', `Extracted ${data.conditions.length} conditions, ${data.medications.length} meds, ${data.discrepancies.length} discrepancy alerts.`, 'success', 3500);
+
+  } catch (err) {
+    if (discContainer) {
+      discContainer.innerHTML = `<div class="p-2 text-rose-400 text-xs">Error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+// Window Exports for Sovereign AI Suite
+window.sendCopilotMessage = sendCopilotMessage;
+window.askCopilotQuick = askCopilotQuick;
+window.clearCopilotChat = clearCopilotChat;
+window.searchKnowledgeBase = searchKnowledgeBase;
+window.triggerAiNoteSynthesis = triggerAiNoteSynthesis;
+
+async function sendTabCopilotMessage(explicitPrompt = null) {
+  const inputEl = document.getElementById('tab-copilot-input');
+  const chatStream = document.getElementById('tab-copilot-chat-stream');
+  const sendBtn = document.getElementById('tab-btn-copilot-send');
+  const modelBadge = document.getElementById('tab-copilot-model-badge');
+
+  const message = explicitPrompt || (inputEl ? inputEl.value.trim() : '');
+  if (!message) return;
+
+  if (inputEl && !explicitPrompt) inputEl.value = '';
+
+  // Render Physician Question bubble
+  if (chatStream) {
+    const userBubble = document.createElement('div');
+    userBubble.className = 'p-3 rounded-lg bg-teal-950/50 border border-teal-500/30 text-teal-200 text-xs ml-4';
+    userBubble.innerHTML = `
+      <div class="flex items-center justify-between text-[10px] text-teal-400 mb-1 font-semibold">
+        <span><i class="fa-solid fa-user-md mr-1"></i> Physician</span>
+        <span class="text-slate-500 font-mono">Just now</span>
+      </div>
+      <div>${escapeHtml(message)}</div>
+    `;
+    chatStream.appendChild(userBubble);
+
+    const thinkingBubble = document.createElement('div');
+    thinkingBubble.id = 'tab-copilot-thinking-bubble';
+    thinkingBubble.className = 'p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-400 text-xs animate-pulse';
+    thinkingBubble.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-teal-400 mr-1.5"></i> Synthesizing clinical pharmacology &amp; patient telemetry...`;
+    chatStream.appendChild(thinkingBubble);
+    chatStream.scrollTop = chatStream.scrollHeight;
+  }
+
+  if (sendBtn) sendBtn.disabled = true;
+
+  const patientId = currentPatientId || 'PT-101';
+  let proposedMed = 'Ketorolac';
+
+  try {
+    const res = await fetch('/api/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message,
+        patient_id: patientId,
+        proposed_med: proposedMed
+      })
+    });
+
+    const thinkingBubble = document.getElementById('tab-copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+
+    if (!res.ok) {
+      throw new Error(`Copilot response error: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    if (modelBadge && data.model) {
+      modelBadge.textContent = data.model;
+    }
+
+    if (chatStream) {
+      const replyBubble = document.createElement('div');
+      replyBubble.className = 'p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 text-xs leading-relaxed space-y-1.5';
+
+      const citationsHtml = data.citations && data.citations.length > 0
+        ? `<div class="mt-2 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex flex-wrap gap-1 items-center">
+             <span class="text-teal-400 font-semibold"><i class="fa-solid fa-bookmark mr-1"></i>Evidence:</span>
+             ${data.citations.map(c => `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${escapeHtml(c)}</span>`).join('')}
+           </div>`
+        : '';
+
+      replyBubble.innerHTML = `
+        <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+          <span class="flex items-center"><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Copilot</span>
+          <span class="text-slate-500 font-mono">${data.latency_ms || 12}ms · 0-Cloud</span>
+        </div>
+        <div class="text-slate-200 leading-normal">${formatMarkdownText(data.reply)}</div>
+        ${citationsHtml}
+      `;
+      chatStream.appendChild(replyBubble);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+
+  } catch (err) {
+    const thinkingBubble = document.getElementById('tab-copilot-thinking-bubble');
+    if (thinkingBubble) thinkingBubble.remove();
+    showToast('Copilot Error', err.message, 'error', 3500);
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
+async function searchTabKnowledgeBase(customQuery = null) {
+  const inputEl = document.getElementById('tab-rag-search-input');
+  const container = document.getElementById('tab-rag-results-container');
+  const query = customQuery || (inputEl ? inputEl.value.trim() : '');
+  if (!query) return;
+
+  if (inputEl && customQuery) inputEl.value = customQuery;
+
+  if (container) {
+    container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-sky-400 mr-1.5"></i> Running NumPy cosine vector retrieval across 32 monographs...</div>`;
+  }
+
+  try {
+    const res = await fetch('/api/knowledge/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, top_k: 4 })
+    });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (!container) return;
+    if (results.length === 0) {
+      container.innerHTML = `<div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-slate-400 text-xs">No clinical monographs found matching "${escapeHtml(query)}".</div>`;
+      return;
+    }
+
+    container.innerHTML = results.map(r => `
+      <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-sky-300 text-xs">${escapeHtml(r.drug)}</span>
+            <span class="text-[10px] font-mono bg-sky-950/80 border border-sky-500/40 text-sky-300 px-1.5 py-0.2 rounded">${escapeHtml(r.category)}</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 font-bold">${Math.round(r.similarity * 100)}% match</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">${escapeHtml(r.snippet)}</p>
+        ${r.boxed_warning ? `<div class="text-[10px] text-rose-300 bg-rose-950/40 border border-rose-900/50 p-1.5 rounded"><strong class="text-rose-400">Boxed Warning:</strong> ${escapeHtml(r.boxed_warning)}</div>` : ''}
+        ${r.renal_guideline ? `<div class="text-[10px] text-amber-300 bg-amber-950/30 border border-amber-900/40 p-1.5 rounded"><strong class="text-amber-400">KDIGO Renal Guide:</strong> ${escapeHtml(r.renal_guideline)}</div>` : ''}
+        ${r.safe_alternatives && r.safe_alternatives.length > 0 ? `<div class="text-[10px] text-teal-300 bg-teal-950/30 border border-teal-900/40 p-1.5 rounded"><strong class="text-teal-400">Safe Formulary Alternatives:</strong> ${escapeHtml(r.safe_alternatives.join(', '))}</div>` : ''}
+      </div>
+    `).join('');
+
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<div class="p-2.5 text-rose-400 text-xs">Search error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+function quickRAGSearch(query) {
+  searchTabKnowledgeBase(query);
+}
+
+window.sendTabCopilotMessage = sendTabCopilotMessage;
+window.searchTabKnowledgeBase = searchTabKnowledgeBase;
+window.quickRAGSearch = quickRAGSearch;
+
+
 
 

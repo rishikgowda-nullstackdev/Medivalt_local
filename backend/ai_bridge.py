@@ -158,6 +158,18 @@ class OllamaBridge:
             }
         }
 
+        try:
+            with httpx.Client(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+                res = client.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
+                if res.status_code == 200:
+                    guide = res.json().get("response", "").strip()
+                    if guide:
+                        return guide
+        except Exception as e:
+            logger.info("Ollama patient wellness guide skipped: %s", str(e))
+
+        return None
+
     @classmethod
     def evaluate_unlisted_drug_contraindications(
         cls,

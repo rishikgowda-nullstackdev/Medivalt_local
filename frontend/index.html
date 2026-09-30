@@ -1274,51 +1274,100 @@
           <span id="egress-telemetry-text" class="text-emerald-400 text-[9px] hidden xl:inline">0 BYTES EGRESS</span>
         </div>
 
-        <!-- Local AI Model Telemetry Pill -->
-        <div id="ai-telemetry-badge" class="flex items-center space-x-1.5 bg-slate-900 border border-teal-500/30 text-teal-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono hidden md:flex">
-          <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-          <span id="ai-status-text" class="text-[11px]">Ollama SLM: Ready</span>
-        </div>
+      <!-- Patient Portal Launcher Button -->
+      <a href="/patient-portal" target="_blank" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Sovereign Patient Portal (Offline Kiosk / Patient View)">
+        <i class="fa-solid fa-heart-pulse text-teal-400"></i>
+        <span>Patient Portal</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-teal-400/80"></i>
+      </a>
 
-        <!-- Active Physician Pill Button -->
-        <button id="header-profile-btn" type="button" onclick="toggleSettingsSidebar(true)" class="flex items-center space-x-2 px-2.5 py-1 rounded-full bg-[var(--bg-card)] hover:bg-[var(--border-hover)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs transition cursor-pointer shadow-sm group">
-          <div class="relative">
-            <div id="header-avatar" class="w-5 h-5 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white text-[9px] font-bold shadow">
-              GH
-            </div>
-            <div class="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 border border-slate-900"></div>
-          </div>
-          <span id="current-doctor-pill" class="font-medium text-[var(--text-primary)] group-hover:text-teal-400 transition text-[11px] hidden sm:inline">Dr. Gregory House, MD</span>
-          <span id="current-hospital-badge" class="hidden">Princeton Plainsboro</span>
-          <i class="fa-solid fa-chevron-down text-[9px] text-teal-400"></i>
-        </button>
+      <!-- Sovereign AI Copilot Quick Launcher -->
+      <button id="btn-copilot-header-trigger" type="button" onclick="switchMainTab('copilot')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500/20 to-indigo-500/25 hover:from-teal-500/30 hover:to-indigo-500/35 border border-teal-500/50 text-teal-200 text-xs font-bold transition cursor-pointer shadow-sm" title="Open Sovereign AI Clinical Copilot & Vector RAG (Ctrl+2 / Alt+2)">
+        <i class="fa-solid fa-robot text-teal-300"></i>
+        <span>🤖 AI Copilot</span>
+        <span class="text-[9px] font-mono uppercase px-1 py-0.2 rounded bg-teal-900/80 text-teal-300 font-bold ml-0.5">SLM</span>
+      </button>
 
-        <!-- Patient Portal Launcher Button -->
-        <a href="/patient-portal" target="_blank" class="p-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-400 text-xs transition cursor-pointer shadow-sm" title="Open Sovereign Patient Portal (/patient-portal)">
-          <i class="fa-solid fa-heart-pulse"></i>
-        </a>
+      <!-- Judge Demo Mode Trigger Button -->
+      <button id="btn-judge-demo-trigger" type="button" onclick="openJudgeDemoModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-red-500/25 hover:from-amber-500/35 hover:to-red-500/35 border border-amber-500/60 text-amber-300 text-xs font-bold transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.25)]" title="Open Interactive Judge Demo & Crisis Simulator (Ctrl+D / Alt+6)">
+        <i class="fa-solid fa-bolt text-amber-400"></i>
+        <span>⚡ Judge Demo</span>
+        <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1.5 py-0.5 rounded border border-amber-500/40 hidden md:inline">Ctrl+D</kbd>
+      </button>
 
-        <!-- Judge Demo Mode Trigger Button -->
-        <button id="btn-judge-demo-trigger" type="button" onclick="openJudgeDemoModal()" class="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-red-500/20 hover:from-amber-500/30 hover:to-red-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold transition cursor-pointer shadow-sm" title="Open Judge Demo (Ctrl+D)">
-          <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i>
-          <span>Judge Demo</span>
-          <kbd class="text-[9px] font-mono text-amber-200/90 bg-black/40 px-1 py-0.2 rounded border border-amber-500/40 hidden lg:inline">Ctrl+D</kbd>
-        </button>
+      <!-- Settings Launcher -->
+      <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition cursor-pointer" title="Workstation Settings">
+        <i class="fa-solid fa-gear text-sm text-teal-400"></i>
+      </button>
+    </div>
+  </header>
 
-        <!-- Theme Toggle Quick Button -->
-        <button type="button" onclick="toggleTheme()" class="p-1.5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--border-hover)] text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title="Toggle Dark / Light Mode">
-          <i id="header-theme-icon" class="fa-solid fa-sun text-xs text-amber-400"></i>
-        </button>
+  <!-- WORKFLOW STEPPER NAVIGATION CONTROLLER (INLINE SAFEGUARD) -->
+  <script>
+    window.switchMainTab = function(tabKey) {
+      document.querySelectorAll('.page-view-panel').forEach(function(panel) {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      });
+      document.querySelectorAll('.step-nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      var targetPanel = document.getElementById('page-view-' + tabKey);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+        targetPanel.style.display = 'block';
+      }
+      var targetBtn = document.getElementById('nav-btn-' + tabKey);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.setAttribute('aria-selected', 'true');
+      }
+      if (tabKey === 'analytics' && typeof window.loadClinicalAnalytics === 'function') {
+        window.loadClinicalAnalytics();
+      }
+    };
+  </script>
 
-        <!-- Settings Launcher -->
-        <button id="btn-settings-toggle" type="button" onclick="toggleSettingsSidebar(true)" class="p-1.5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--border-hover)] text-teal-400 transition cursor-pointer" title="Workstation Settings">
-          <i class="fa-solid fa-gear text-xs"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- WORKSTATION MAIN CONTENT PADDING -->
-    <div class="p-4 space-y-3 max-w-7xl mx-auto w-full">
+  <!-- WORKFLOW STEPPER NAVIGATION -->
+  <nav class="clinical-card p-1.5 flex items-center space-x-1.5 overflow-x-auto border-slate-800">
+    <button id="nav-btn-review" type="button" onclick="switchMainTab('review')" class="step-nav-btn active" title="Clinical CDSS & Contraindication Review (Ctrl+1 / Alt+1)">
+      <i class="fa-solid fa-stethoscope text-teal-400"></i>
+      <span>1. CDSS Review</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+1</kbd>
+    </button>
+    <button id="nav-btn-copilot" type="button" onclick="switchMainTab('copilot')" class="step-nav-btn text-teal-300 border-teal-500/30 hover:border-teal-500/60" title="Sovereign AI Clinical Copilot & Local Vector RAG (Ctrl+2 / Alt+2)">
+      <i class="fa-solid fa-robot text-teal-400"></i>
+      <span>2. Sovereign AI Copilot</span>
+      <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold ml-1">SLM RAG</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+2</kbd>
+    </button>
+    <button id="nav-btn-intake" type="button" onclick="switchMainTab('intake')" class="step-nav-btn" title="Patient Intake & Safe Harbor Redaction (Ctrl+3 / Alt+3)">
+      <i class="fa-solid fa-hospital-user text-cyan-400"></i>
+      <span>3. Patient Intake &amp; PHI</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+3</kbd>
+    </button>
+    <button id="nav-btn-fhir" type="button" onclick="switchMainTab('fhir')" class="step-nav-btn" title="Hospital EHR & FHIR R4 Interoperability (Ctrl+4 / Alt+4)">
+      <i class="fa-solid fa-network-wired text-amber-400"></i>
+      <span>4. Hospital EHR &amp; FHIR</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+4</kbd>
+    </button>
+    <button id="nav-btn-audit" type="button" onclick="switchMainTab('audit')" class="step-nav-btn" title="Sovereign Immutable Cryptographic Audit Ledger (Ctrl+5 / Alt+5)">
+      <i class="fa-solid fa-database text-emerald-400"></i>
+      <span>5. Sovereign Audit</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+5</kbd>
+    </button>
+    <button id="nav-btn-analytics" type="button" onclick="switchMainTab('analytics')" class="step-nav-btn" title="Clinical Analytics & Population Health Insights (Ctrl+6 / Alt+6)">
+      <i class="fa-solid fa-chart-line text-emerald-400"></i>
+      <span>6. Clinical Analytics</span>
+      <kbd class="text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 py-0.5 rounded ml-1 hidden lg:inline border border-slate-700/60">Ctrl+6</kbd>
+    </button>
+    <button id="nav-btn-demo" type="button" onclick="openJudgeDemoModal()" class="step-nav-btn text-amber-300 border-amber-500/30 hover:border-amber-500/60" title="Interactive Judge Demo Simulator (Ctrl+D / Alt+7)">
+      <i class="fa-solid fa-bolt text-amber-400"></i>
+      <span>7. Judge Demo</span>
+      <span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold ml-0.5">Live</span>
+    </button>
+  </nav>
 
   <!-- ═══════════════════════════════════════════
        VIEW 1: CLINICAL CDSS & CONTRAINDICATION REVIEW (Fold-Optimized)
@@ -1915,6 +1964,92 @@
               </div>
             </div>
 
+            <!-- Clinical Safe Alternatives Formulary (1-Click Swap) -->
+            <div id="alternatives-container" class="space-y-2"></div>
+
+            <!-- 🤖 SOVEREIGN CLINICAL COPILOT & SECOND-OPINION ASSISTANT -->
+            <div id="clinical-copilot-card" class="clinical-card p-3.5 border-teal-500/40 bg-slate-900/90 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                  <span class="card-title text-xs text-teal-300 font-heading">
+                    <i class="fa-solid fa-user-doctor text-teal-400"></i>
+                    <span>Sovereign Clinical Copilot (Doctor Second Opinion)</span>
+                  </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span id="copilot-model-badge" class="text-[9px] font-mono bg-teal-950 text-teal-300 border border-teal-500/30 px-2 py-0.5 rounded">
+                    Offline Local AI
+                  </span>
+                  <button type="button" onclick="clearCopilotChat()" class="text-[10px] text-slate-500 hover:text-slate-300 transition" title="Clear chat history">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Clinical Prompt Chips -->
+              <div class="flex flex-wrap gap-1.5 text-[10px]">
+                <button type="button" onclick="askCopilotQuick('Why is this prescription flagged for this patient?')" class="test-chip bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border-teal-500/30">
+                  <i class="fa-solid fa-circle-question text-teal-400"></i> Why flagged?
+                </button>
+                <button type="button" onclick="askCopilotQuick('What safe alternatives can I prescribe instead?')" class="test-chip bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border-teal-500/30">
+                  <i class="fa-solid fa-arrows-rotate text-teal-400"></i> Safe alternatives?
+                </button>
+                <button type="button" onclick="askCopilotQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border-teal-500/30">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Triple Whammy risk
+                </button>
+                <button type="button" onclick="askCopilotQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border-teal-500/30">
+                  <i class="fa-solid fa-book-medical text-sky-400"></i> Renal guidelines
+                </button>
+              </div>
+
+              <!-- Copilot Chat Stream -->
+              <div id="copilot-chat-stream" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 text-xs">
+                <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300 leading-relaxed">
+                  <div class="flex items-center justify-between text-[10px] text-teal-400 mb-1 font-semibold">
+                    <span><i class="fa-solid fa-shield-halved mr-1"></i> Clinical Copilot</span>
+                    <span class="text-slate-500 font-mono">Ready · 0-Cloud</span>
+                  </div>
+                  Grounded in active patient labs, medications, and deterministic CDSS rules. Ask any clinical pharmacology or dosing question.
+                </div>
+              </div>
+
+              <!-- Copilot Input Form -->
+              <div class="flex items-center space-x-2 pt-1">
+                <input type="text" id="copilot-user-input" class="clinical-input text-xs py-1.5 flex-1" placeholder="Ask copilot about pharmacology, interactions, or renal titration..." onkeydown="if(event.key==='Enter') sendCopilotMessage()" />
+                <button type="button" id="btn-copilot-send" onclick="sendCopilotMessage()" class="btn-clinical-primary text-xs py-1.5 px-3">
+                  <i class="fa-solid fa-paper-plane mr-1"></i> Ask
+                </button>
+              </div>
+            </div>
+
+            <!-- 📚 LOCAL CLINICAL VECTOR RAG KNOWLEDGE BASE -->
+            <div id="clinical-rag-card" class="clinical-card p-3.5 border-slate-800 bg-slate-900/70 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div class="card-title text-xs text-slate-300">
+                  <i class="fa-solid fa-book-medical text-sky-400"></i>
+                  <span>Local Clinical Vector RAG (Semantic Knowledge Base)</span>
+                </div>
+                <span class="text-[9px] font-mono text-sky-400 bg-sky-950/60 border border-sky-500/30 px-2 py-0.5 rounded">
+                  Pure Offline NumPy Cosine Retrieval
+                </span>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <div class="relative flex-1">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                  <input type="text" id="rag-search-input" class="clinical-input text-xs py-1.5 pl-8" placeholder="Search monographs: e.g. 'kidney failure pain', 'anticoagulant bleeding', 'serotonin syndrome'..." onkeydown="if(event.key==='Enter') searchKnowledgeBase()" />
+                </div>
+                <button type="button" onclick="searchKnowledgeBase()" class="btn-clinical-secondary text-xs py-1.5 px-3">
+                  <span>Search</span>
+                </button>
+              </div>
+
+              <!-- Results List -->
+              <div id="rag-results-container" class="space-y-2 text-xs" style="display:none"></div>
+            </div>
+
+
             <!-- Cryptographic Proof Bar -->
             <div class="border-t border-[var(--border-main)] pt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div class="flex items-center space-x-2 font-mono text-[var(--text-muted)]">
@@ -1951,7 +2086,180 @@
   </div>
 
   <!-- ═══════════════════════════════════════════
-       VIEW 2: PATIENT INTAKE & SAFE HARBOR PHI REDACTION
+       VIEW 2: SOVEREIGN AI COPILOT & VECTOR RAG KNOWLEDGE BASE
+  ═══════════════════════════════════════════ -->
+  <div id="page-view-copilot" class="page-view-panel space-y-3" style="display:none">
+    
+    <!-- Top Sovereign AI Status Strip -->
+    <div class="clinical-card px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-teal-500/40 bg-gradient-to-r from-slate-900 via-teal-950/40 to-slate-900">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 text-lg shadow-sm">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h2 class="text-sm font-bold text-white font-heading">Sovereign Clinical AI Suite</h2>
+            <span class="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40">Air-Gapped SLM + Vector RAG</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">100% On-Device Reasoning · Zero Cloud Calls · Absolute Deterministic Safety Override</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-xs font-mono bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-full flex items-center">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span>
+          0 Bytes Egress Verified
+        </span>
+      </div>
+    </div>
+
+    <!-- Dual-Column Workspace: Copilot Chat (Left) + Vector RAG Monograph Search (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+      
+      <!-- Left Column: Doctor Second-Opinion Assistant (7 cols) -->
+      <div class="lg:col-span-7 space-y-3">
+        <div class="clinical-card p-4 space-y-3.5 border-teal-500/40 bg-slate-900/90 shadow-lg">
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+            <div class="flex items-center space-x-2">
+              <span class="card-title text-sm text-teal-300 font-heading">
+                <i class="fa-solid fa-user-doctor text-teal-400"></i>
+                <span>Doctor Second-Opinion Assistant</span>
+              </span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="tab-copilot-model-badge" class="text-[10px] font-mono bg-teal-950 text-teal-300 border border-teal-500/40 px-2 py-0.5 rounded">
+                Local SLM / CDSS
+              </span>
+              <button type="button" onclick="clearCopilotChat()" class="text-xs text-slate-400 hover:text-slate-200 transition" title="Clear Chat">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Patient Context Pill -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between text-xs gap-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-teal-400 font-semibold">Active Chart:</span>
+              <span id="copilot-chart-patient" class="text-white font-bold">PT-101 (John Doe, 64yo, eGFR 38)</span>
+            </div>
+            <div class="flex items-center space-x-1.5 text-[11px] text-slate-400">
+              <span>Meds:</span>
+              <span class="text-slate-300 font-mono">Lisinopril, Furosemide</span>
+            </div>
+          </div>
+
+          <!-- Quick Clinical Question Chips -->
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Quick Clinical Inquiries:</span>
+            <div class="flex flex-wrap gap-1.5 text-xs">
+              <button type="button" onclick="askCopilotQuick('Why is Ketorolac contraindicated in this patient?')" class="test-chip test-chip-danger">
+                <i class="fa-solid fa-circle-question"></i> Why is Ketorolac flagged?
+              </button>
+              <button type="button" onclick="askCopilotQuick('What safe alternatives can I prescribe for acute pain?')" class="test-chip test-chip-purple">
+                <i class="fa-solid fa-arrows-rotate"></i> Safe painkiller alternatives?
+              </button>
+              <button type="button" onclick="askCopilotQuick('Explain the Triple Whammy hemodynamic risk')" class="test-chip test-chip-warning">
+                <i class="fa-solid fa-triangle-exclamation"></i> Triple Whammy risk
+              </button>
+              <button type="button" onclick="askCopilotQuick('What are the KDIGO renal dosing guidelines here?')" class="test-chip bg-teal-500/10 text-teal-300 border-teal-500/30">
+                <i class="fa-solid fa-book-medical"></i> Renal dosing guidelines
+              </button>
+            </div>
+          </div>
+
+          <!-- Chat Stream Container -->
+          <div id="tab-copilot-chat-stream" class="space-y-3 max-h-96 overflow-y-auto pr-1 text-xs">
+            <div class="p-3 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-300 leading-relaxed space-y-1">
+              <div class="flex items-center justify-between text-[10px] text-teal-400 font-semibold">
+                <span><i class="fa-solid fa-shield-halved mr-1"></i> Sovereign Clinical Copilot</span>
+                <span class="text-slate-500 font-mono">Ready · 0-Cloud</span>
+              </div>
+              <p class="m-0">
+                Welcome, Doctor. I am your sovereign bedside decision assistant, grounded in active patient lab values (eGFR, Cr, K+), active outpatient medications, Rowland &amp; Tozer PK clearance curves, and deterministic CDSS rules.
+              </p>
+            </div>
+          </div>
+
+          <!-- Input Bar -->
+          <div class="flex items-center space-x-2 pt-1">
+            <input type="text" id="tab-copilot-input" class="clinical-input text-xs py-2 flex-1" placeholder="Ask about mechanism of action, drug interactions, renal dosing, or clinical alternatives..." onkeydown="if(event.key==='Enter') sendTabCopilotMessage()" />
+            <button type="button" id="tab-btn-copilot-send" onclick="sendTabCopilotMessage()" class="btn-clinical-primary text-xs py-2 px-4 flex items-center">
+              <i class="fa-solid fa-paper-plane mr-1.5"></i> Ask
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Local Clinical Vector RAG (5 cols) -->
+      <div class="lg:col-span-5 space-y-3">
+        <div class="clinical-card p-4 space-y-3.5 border-slate-800 bg-slate-900/80 shadow-lg">
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+            <div class="card-title text-sm text-sky-300">
+              <i class="fa-solid fa-book-medical text-sky-400"></i>
+              <span>Semantic Pharmacology RAG</span>
+            </div>
+            <span class="text-[9px] font-mono text-sky-400 bg-sky-950/80 border border-sky-500/40 px-2 py-0.5 rounded">
+              32 Embedded Monographs
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Local dense vector cosine retrieval over FDA boxed warnings, KDIGO renal adjustments, Beers criteria, and CYP450 metabolism.
+          </p>
+
+          <!-- Search Box -->
+          <div class="space-y-2">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-xs text-slate-500"></i>
+              <input type="text" id="tab-rag-search-input" class="clinical-input text-xs py-2 pl-8" placeholder="Search: e.g. 'renal failure pain', 'anticoagulant bleeding', 'serotonin syndrome'..." onkeydown="if(event.key==='Enter') searchTabKnowledgeBase()" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex flex-wrap gap-1 text-[10px]">
+                <button type="button" onclick="quickRAGSearch('kidney failure pain')" class="text-slate-400 hover:text-sky-300 underline">kidney pain</button> · 
+                <button type="button" onclick="quickRAGSearch('anticoagulant bleeding')" class="text-slate-400 hover:text-sky-300 underline">bleeding risk</button> · 
+                <button type="button" onclick="quickRAGSearch('Beers criteria elderly')" class="text-slate-400 hover:text-sky-300 underline">Beers criteria</button>
+              </div>
+              <button type="button" onclick="searchTabKnowledgeBase()" class="btn-clinical-secondary text-xs py-1 px-3">
+                Search
+              </button>
+            </div>
+          </div>
+
+          <!-- RAG Results List -->
+          <div id="tab-rag-results-container" class="space-y-2 text-xs max-h-96 overflow-y-auto">
+            <!-- Default Monograph Previews -->
+            <div class="p-2.5 rounded bg-slate-950/90 border border-slate-800 space-y-1 text-slate-300">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sky-300 text-xs">Ketorolac (Toradol)</span>
+                <span class="text-[9px] font-mono text-rose-400 bg-rose-950 border border-rose-900/60 px-1.5 rounded">NSAID · High Risk</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Strictly contraindicated in eGFR &lt; 50 mL/min. High risk of GI bleed and acute renal collapse.</p>
+            </div>
+
+            <div class="p-2.5 rounded bg-slate-950/90 border border-slate-800 space-y-1 text-slate-300">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sky-300 text-xs">Metformin (Glucophage)</span>
+                <span class="text-[9px] font-mono text-amber-400 bg-amber-950 border border-amber-900/60 px-1.5 rounded">Antidiabetic</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Boxed warning for Lactic Acidosis. Absolute contraindication if eGFR &lt; 30 mL/min.</p>
+            </div>
+
+            <div class="p-2.5 rounded bg-slate-950/90 border border-slate-800 space-y-1 text-slate-300">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sky-300 text-xs">Warfarin (Coumadin)</span>
+                <span class="text-[9px] font-mono text-purple-400 bg-purple-950 border border-purple-900/60 px-1.5 rounded">Anticoagulant</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Major bleeding risk. Severe interactions with Bactrim, Fluconazole, and Amiodarone via CYP2C9.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 3: PATIENT INTAKE & SAFE HARBOR PHI REDACTION
        Stitch Ref: Screen 35de836a78a94b9d9ba811291f3596ba
   ═══════════════════════════════════════════ -->
   <div id="page-view-intake" class="page-view-panel space-y-3" style="display:none">
@@ -2009,9 +2317,40 @@
           </div>
           <textarea id="raw-note-input" rows="7" class="clinical-input font-mono text-xs leading-relaxed" placeholder="Paste unstructured hospital discharge summary note with patient identifiers..."></textarea>
           
-          <button onclick="triggerRedaction()" class="btn-clinical-primary w-full py-2.5">
-            <i class="fa-solid fa-user-secret mr-2"></i> Run Safe Harbor PHI Redaction
-          </button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button onclick="triggerRedaction()" class="btn-clinical-primary w-full py-2.5">
+              <i class="fa-solid fa-user-secret mr-1.5"></i> 1. Run Safe Harbor PHI Redaction
+            </button>
+            <button onclick="triggerAiNoteSynthesis()" class="btn-clinical-secondary w-full py-2.5 text-xs font-bold border-teal-500/50 bg-teal-950/40 hover:bg-teal-900/60">
+              <i class="fa-solid fa-brain mr-1.5 text-teal-400"></i> 2. Autonomous AI Note Synthesis
+            </button>
+          </div>
+
+          <!-- AI Clinical Note Intelligence Card (Structured Entities & Discrepancies) -->
+          <div id="ai-note-intelligence-card" class="p-3 bg-slate-950/90 rounded-lg border border-teal-500/30 text-xs space-y-2.5" style="display:none">
+            <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-teal-400"></i>
+                <span class="font-bold text-teal-300">Autonomous Clinical Note Intelligence</span>
+              </div>
+              <span id="ai-note-model-badge" class="text-[9px] font-mono text-teal-400 bg-teal-950 px-1.5 py-0.5 rounded border border-teal-500/30">Offline Local AI</span>
+            </div>
+
+            <!-- Discrepancy Alert Banner (if any) -->
+            <div id="ai-discrepancy-container" class="space-y-1.5"></div>
+
+            <!-- Extracted Entities Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div class="p-2 rounded bg-slate-900/90 border border-slate-800">
+                <span class="text-teal-400 font-semibold block text-[10px] uppercase mb-1"><i class="fa-solid fa-notes-medical mr-1"></i> Conditions &amp; ICD-10:</span>
+                <div id="ai-extracted-conditions" class="space-y-1"></div>
+              </div>
+              <div class="p-2 rounded bg-slate-900/90 border border-slate-800">
+                <span class="text-cyan-400 font-semibold block text-[10px] uppercase mb-1"><i class="fa-solid fa-pills mr-1"></i> Extracted Medications:</span>
+                <div id="ai-extracted-medications" class="space-y-1"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right: Redacted Output & Extracted Structured Entities -->
@@ -2714,6 +3053,6 @@
 </div>
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=2.7"></script>
+<script src="/static/app.js?v=3.5-sovereign-ai-copilot"></script>
 </body>
 </html>
