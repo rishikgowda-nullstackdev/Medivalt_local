@@ -109,6 +109,73 @@
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; }
         }
 
+        /* ─── 3D MEDICAL VISUAL EXPERIENCE (GLASS HEART & WELLNESS PINS) ─── */
+        @keyframes floatHeartPhysics {
+            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+            50% { transform: translateY(-7px) rotate(1deg) scale(1.015); }
+        }
+        @keyframes cardiacPulseAura {
+            0%, 100% { box-shadow: 0 0 25px rgba(20, 184, 166, 0.2), inset 0 0 15px rgba(20, 184, 166, 0.1); border-color: rgba(20, 184, 166, 0.3); }
+            50% { box-shadow: 0 0 45px rgba(20, 184, 166, 0.4), inset 0 0 25px rgba(20, 184, 166, 0.25); border-color: rgba(20, 184, 166, 0.6); }
+        }
+        @keyframes floatPillDrift {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(-8deg); }
+        }
+        @keyframes pinPing {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .portal-glass-heart-container {
+            position: relative;
+            animation: floatHeartPhysics 6s ease-in-out infinite;
+        }
+        .portal-glass-heart-aura {
+            animation: cardiacPulseAura 4s ease-in-out infinite;
+        }
+        .portal-pill-drift {
+            animation: floatPillDrift 7s ease-in-out infinite;
+        }
+        .portal-callout-pin .pin-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 9999px;
+            background: #2dd4bf;
+            position: relative;
+            box-shadow: 0 0 8px #2dd4bf;
+        }
+        .portal-callout-pin .pin-dot::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 9999px;
+            border: 1.5px solid #2dd4bf;
+            animation: pinPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .portal-callout-tag {
+            background: rgba(13, 20, 36, 0.9);
+            border: 1px solid rgba(45, 212, 191, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 6px 15px -3px rgba(0, 0, 0, 0.4);
+            border-radius: 9999px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #99f6e4;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        html.light .portal-callout-tag {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(13, 148, 136, 0.3);
+            color: #0f766e;
+            box-shadow: 0 6px 15px -3px rgba(13, 148, 136, 0.15);
+        }
+
         /* Dark Theme Parity (Linear Obsidian & Apple Health Light) */
         html:not(.light) body {
             background-color: #090a0f !important;
@@ -392,6 +459,21 @@
                             <span id="patient-id-badge" class="bg-teal-500/30 border border-teal-400/40 text-teal-200 text-xs font-mono px-2.5 py-0.5 rounded-full font-bold">PT-101</span>
                         </div>
                         <p class="text-teal-100 text-xs sm:text-sm mt-1">Your encrypted sovereign health records are stored securely on this offline device.</p>
+                    </div>
+                </div>
+
+                <!-- Center: 3D Crystal Heart Wellness Visual Badge -->
+                <div class="hidden lg:flex items-center space-x-3 bg-white/10 border border-white/20 rounded-2xl p-2 backdrop-blur-md shadow-inner">
+                    <div class="portal-glass-heart-container relative w-14 h-14 flex items-center justify-center">
+                        <div class="portal-glass-heart-aura absolute inset-1 rounded-full border border-teal-300/40 pointer-events-none"></div>
+                        <img src="/static/assets/glass_heart_3d.jpg" alt="3D Crystal Heart" class="w-full h-full object-contain rounded-xl drop-shadow-md">
+                    </div>
+                    <div class="pr-2">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-[11px] font-bold text-white uppercase tracking-wider font-heading">Sovereign Vault</span>
+                        </div>
+                        <div class="text-[10.5px] text-teal-100 font-mono mt-0.5">Air-Gapped Health Sanctuary</div>
                     </div>
                 </div>
 

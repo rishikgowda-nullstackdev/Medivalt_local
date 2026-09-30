@@ -183,6 +183,35 @@ function toggleHologramAccordion() {
 window.toggleHologramAccordion = toggleHologramAccordion;
 
 // ═══════════════════════════════════════════
+//  3D ANATOMICAL FOCUS TARGET CONTROLLER
+// ═══════════════════════════════════════════
+function setOrganFocus(target) {
+  const chips = ['renal', 'cardiac', 'hepatic'];
+  chips.forEach(c => {
+    const el = document.getElementById(`target-chip-${c}`);
+    if (el) {
+      if (c === target) {
+        el.className = 'px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-400/50 text-teal-200 font-semibold transition hover:bg-teal-500/30 shadow-sm flex items-center space-x-1';
+      } else {
+        el.className = 'px-2.5 py-1 rounded-lg bg-[var(--bg-input-well)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-teal-300 font-semibold transition hover:border-teal-500/40 flex items-center space-x-1';
+      }
+    }
+  });
+
+  const pinLabel = document.getElementById('pin-organ-label');
+  if (pinLabel) {
+    if (target === 'renal') {
+      pinLabel.textContent = 'Renal Glomerular (eGFR 38)';
+    } else if (target === 'cardiac') {
+      pinLabel.textContent = 'Cardiopulmonary (QTc & Rhythm)';
+    } else if (target === 'hepatic') {
+      pinLabel.textContent = 'Hepatic Clearance (CYP450)';
+    }
+  }
+}
+window.setOrganFocus = setOrganFocus;
+
+// ═══════════════════════════════════════════
 //  RESULTS SUB-TABS CONTROLLER
 // ═══════════════════════════════════════════
 function switchResultsSubTab(tabName) {
