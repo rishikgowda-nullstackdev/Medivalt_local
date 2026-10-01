@@ -703,7 +703,7 @@ function resetInactivityTimer() {
   if (minutes > 0) {
     inactivityLockTimer = setTimeout(() => {
       const authGate = document.getElementById('auth-gate');
-      if (authGate && authGate.classList.contains('dismissed')) {
+      if (authGate && authGate.classList && typeof authGate.classList.contains === 'function' && authGate.classList.contains('dismissed')) {
         handleLogout();
         showToast('Workstation Locked', `Session locked after ${minutes} minutes of inactivity (HIPAA § 164.312).`, 'warning', 6000);
       }
