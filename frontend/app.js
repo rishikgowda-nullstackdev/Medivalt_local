@@ -216,6 +216,20 @@ const MEDICAL_CAROUSEL_DATA = {
     chip2: 'Triple Whammy Prevention',
     chip3: 'Beers Criteria 2023'
   },
+  'glass-heart': {
+    img: '/static/assets/glass_heart_3d.jpg',
+    headline: 'Cardiovascular integrity <span class="italic font-serif text-teal-400 font-normal">in pure crystal precision</span> on device.',
+    desc: 'Visualizes microvascular hemodynamics and cardio-renal cross-reactions. Real-time contraindication safeguards prevent cardiac ischemia, arrhythmias, and acute failure triggered by high-risk drug pairs.',
+    pin1: 'Cardiovascular Barrier',
+    desc1: 'Monitors coronary perfusion and contraindications with QT-prolonging agents.',
+    pin2: 'Microvascular Safety',
+    desc2: 'Prevents acute renal-cardiac overload during NSAID and ACEi co-administration.',
+    pin3: 'Beers Criteria Clearance',
+    desc3: 'Real-time geriatric cardiac contraindication screening executes in <12ms.',
+    chip1: 'Cardiovascular Safety',
+    chip2: 'QTc Prolongation Guard',
+    chip3: 'eGFR 38 Titration'
+  },
   dna: {
     img: '/static/assets/dna_helix_plexus.jpg',
     headline: 'Pharmacogenomic molecular intelligence <span class="italic font-serif text-cyan-400 font-normal">encoded on local silicon</span>.',
@@ -246,7 +260,7 @@ const MEDICAL_CAROUSEL_DATA = {
   }
 };
 
-let medicalCycleList = ['heart', 'dna', 'stethoscope'];
+let medicalCycleList = ['heart', 'glass-heart', 'dna', 'stethoscope'];
 let currentMedicalIndex = 0;
 let isMedicalAutoPlaying = true;
 let isMedicalFrozen = false;
