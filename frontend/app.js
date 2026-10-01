@@ -10,10 +10,25 @@
 // ═══════════════════════════════════════════
 let currentIntakeMode = 'demo';
 let currentPatientId = 'PT-101';
+let activePatientRecord = null;
 let currentUploadedRecord = null;
 let currentReviewEventId = null;
 let lastFocusedElement = null;
 let currentAuthToken = sessionStorage.getItem('medivault_practitioner_token') || null;
+
+function getActivePatientDisplayName(ptId) {
+  const map = {
+    'PT-101': 'John Doe',
+    'PT-102': 'Maria Garcia',
+    'PT-103': 'Robert Chen'
+  };
+  const nameEl = document.getElementById('display-patient-name') || document.getElementById('top-patient-name');
+  if (nameEl && nameEl.textContent) {
+    const raw = nameEl.textContent.split('(')[0].trim();
+    if (raw) return raw;
+  }
+  return (activePatientRecord && activePatientRecord.name) || map[ptId] || 'John Doe';
+}
 
 function getAuthHeaders(extraHeaders = {}) {
   const h = { ...extraHeaders };
@@ -234,41 +249,14 @@ const MEDICAL_CAROUSEL_DATA = {
 let medicalCycleList = ['heart', 'dna', 'stethoscope'];
 let currentMedicalIndex = 0;
 let isMedicalAutoPlaying = true;
+let isMedicalFrozen = false;
 let medicalCycleInterval = null;
 
-function resetCycleProgressBar() {
-  const bar = document.getElementById('medical-cycle-progress');
-  if (!bar) return;
-  bar.style.transition = 'none';
-  bar.style.width = '0%';
-  if (isMedicalAutoPlaying) {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        bar.style.transition = 'width 6.5s linear';
-        bar.style.width = '100%';
-      }, 40);
-    });
-  }
-}
-
-function setMedicalVisualMode(mode, manual = false) {
-  if (manual) {
-    stopMedicalAutoCycle();
-  }
+function setMedicalVisualMode(mode) {
   currentMedicalIndex = medicalCycleList.indexOf(mode);
   
-  // 1. Update Tabs with smooth transition
+  // 1. Cross-fade slide layers with hardware-accelerated transforms
   medicalCycleList.forEach(m => {
-    const tab = document.getElementById(`tab-medical-${m}`);
-    if (tab) {
-      if (m === mode) {
-        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg bg-teal-500/25 border border-teal-400/60 text-teal-200 font-bold transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-sm';
-      } else {
-        tab.className = 'flex-1 py-1.5 px-2.5 rounded-lg border border-transparent text-[var(--text-muted)] hover:text-teal-300 transition-all duration-300 flex items-center justify-center space-x-1.5';
-      }
-    }
-
-    // 2. Cross-fade slide layers with hardware-accelerated transforms
     const slide = document.getElementById(`slide-${m}`);
     if (slide) {
       if (m === mode) {
@@ -294,7 +282,7 @@ function setMedicalVisualMode(mode, manual = false) {
   const legacyImg = document.getElementById('medical-stage-img');
   if (legacyImg) legacyImg.src = data.img;
 
-  // 3. Smooth Text Transitions
+  // 2. Smooth Text Transitions
   const h = document.getElementById('medical-headline');
   if (h) {
     h.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
@@ -319,7 +307,7 @@ function setMedicalVisualMode(mode, manual = false) {
     }, 140);
   }
 
-  // 4. Update dynamic callout pins
+  // 3. Update dynamic callout pins
   const p1Tag = document.getElementById('pin-1-tag');
   if (p1Tag) p1Tag.textContent = data.pin1;
   const p1Desc = document.getElementById('pin-1-desc');
@@ -341,59 +329,76 @@ function setMedicalVisualMode(mode, manual = false) {
   if (d2) d2.textContent = data.chip2;
   const d3 = document.getElementById('medical-domain-3');
   if (d3) d3.textContent = data.chip3;
-
-  // 5. Restart smooth progress bar
-  resetCycleProgressBar();
 }
 window.setMedicalVisualMode = setMedicalVisualMode;
 
+function cycleToNextMedicalVisual() {
+  currentMedicalIndex = (currentMedicalIndex + 1) % medicalCycleList.length;
+  setMedicalVisualMode(medicalCycleList[currentMedicalIndex]);
+}
+window.cycleToNextMedicalVisual = cycleToNextMedicalVisual;
+
 function startMedicalAutoCycle() {
   if (medicalCycleInterval) clearInterval(medicalCycleInterval);
-  resetCycleProgressBar();
   medicalCycleInterval = setInterval(() => {
-    if (!isMedicalAutoPlaying) return;
-    currentMedicalIndex = (currentMedicalIndex + 1) % medicalCycleList.length;
-    setMedicalVisualMode(medicalCycleList[currentMedicalIndex], false);
+    if (!isMedicalAutoPlaying || isMedicalFrozen) return;
+    cycleToNextMedicalVisual();
   }, 6500);
 }
 
 function stopMedicalAutoCycle() {
   isMedicalAutoPlaying = false;
-  const ind = document.getElementById('medical-cycle-indicator');
-  const txt = document.getElementById('medical-cycle-text');
-  const bar = document.getElementById('medical-cycle-progress');
-  if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
-  if (txt) txt.textContent = '⏸️ Paused (Click to Play)';
-  if (bar) bar.style.transition = 'none';
-}
-
-function toggleMedicalAutoCycle() {
-  isMedicalAutoPlaying = !isMedicalAutoPlaying;
-  const ind = document.getElementById('medical-cycle-indicator');
-  const txt = document.getElementById('medical-cycle-text');
-  if (isMedicalAutoPlaying) {
-    if (ind) ind.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping';
-    if (txt) txt.textContent = '▶️ Auto-Cycling (6.5s)';
-    startMedicalAutoCycle();
-  } else {
-    stopMedicalAutoCycle();
+  if (medicalCycleInterval) {
+    clearInterval(medicalCycleInterval);
+    medicalCycleInterval = null;
   }
 }
-window.toggleMedicalAutoCycle = toggleMedicalAutoCycle;
 
-// Attach hover pause and interactive 3D parallax tilt on window load
+function toggleMedicalFreeze(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.clinical-callout-pin')) {
+    return; // Don't freeze if user clicked on a pin
+  }
+  isMedicalFrozen = !isMedicalFrozen;
+  const badgeDot = document.getElementById('medical-stage-badge-dot');
+  const badgeText = document.getElementById('medical-stage-badge-text');
+
+  if (isMedicalFrozen) {
+    stopMedicalAutoCycle();
+    if (badgeDot) badgeDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+    if (badgeText) badgeText.textContent = '⏸️ Frozen (Click to resume)';
+    showToast('Visual Frozen', 'Image cycle stopped. Click image again to resume.', 'info', 2200);
+  } else {
+    isMedicalAutoPlaying = true;
+    startMedicalAutoCycle();
+    if (badgeDot) badgeDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse';
+    if (badgeText) badgeText.textContent = 'Hover to switch · Click to freeze';
+    showToast('Visual Resumed', 'Automated rotation active.', 'info', 2200);
+  }
+}
+window.toggleMedicalFreeze = toggleMedicalFreeze;
+
+// Attach hover-to-switch, click-to-freeze, and 3D parallax tilt on window load
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
-    const container = document.querySelector('#clinical-3d-showcase .glass-heart-container');
-    if (container) {
-      container.addEventListener('mouseenter', () => { 
-        isMedicalAutoPlaying = false; 
-        const bar = document.getElementById('medical-cycle-progress');
-        if (bar) bar.style.transition = 'none';
+    const stage = document.getElementById('medical-visual-stage') || document.querySelector('#clinical-3d-showcase .glass-heart-container');
+    if (stage) {
+      // Hover over picture: changes picture!
+      stage.addEventListener('mouseenter', () => {
+        if (!isMedicalFrozen) {
+          cycleToNextMedicalVisual();
+        }
       });
-      container.addEventListener('mouseleave', () => { 
-        isMedicalAutoPlaying = true; 
-        startMedicalAutoCycle(); 
+
+      // 3D Parallax Tilt
+      stage.addEventListener('mousemove', (e) => {
+        const rect = stage.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        stage.style.transform = `perspective(1000px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) translateY(-4px)`;
+      });
+
+      stage.addEventListener('mouseleave', () => {
+        stage.style.transform = '';
       });
     }
     startMedicalAutoCycle();
@@ -1384,7 +1389,7 @@ function renderPatientCard(patient, conditions, medications, allergies, labs) {
   if (metaEl) metaEl.textContent = `ID: ${patId} · Age: ${patient.age || '64'}y · ${patient.gender || 'Patient'}`;
   if (tokenEl) tokenEl.textContent = patient.patient_id ? `ANON_${patient.patient_id}` : "ANON_UNVERIFIED";
 
-  if (topNameEl) topNameEl.textContent = `${patName} (${patId})`;
+  if (topNameEl) topNameEl.textContent = patName;
   if (topMetaEl) {
     const firstCond = (conditions && conditions[0]) ? (conditions[0].condition_name || conditions[0]) : "Profile Active";
     topMetaEl.textContent = `${patId} · ${firstCond}`;
@@ -5139,15 +5144,17 @@ function openBedsideQrModal() {
   const patientLabel = document.getElementById('bedside-qr-patient-name');
   const directInput = document.getElementById('bedside-direct-url');
   
+  const ptId = currentPatientId || 'PT-101';
+  const ptName = getActivePatientDisplayName(ptId);
+
   if (patientLabel) {
-    const ptId = currentPatientId || 'PT-101';
-    patientLabel.textContent = `${activePatientRecord?.name || 'John Doe'} (${ptId})`;
+    patientLabel.textContent = `${ptName} (${ptId})`;
   }
 
   if (directInput) {
     const host = window.location.host || '127.0.0.1:8000';
     const protocol = window.location.protocol || 'http:';
-    directInput.value = `${protocol}//${host}/portal`;
+    directInput.value = `${protocol}//${host}/portal?pid=${encodeURIComponent(ptId)}`;
   }
 
   if (modal) {
@@ -5191,9 +5198,10 @@ function toggleDoctorAdviceDrawer(open) {
   if (!drawer || !backdrop) return;
 
   if (open) {
+    const ptId = currentPatientId || 'PT-101';
+    const ptName = getActivePatientDisplayName(ptId);
     if (ptNameEl) {
-      const ptId = currentPatientId || 'PT-101';
-      ptNameEl.textContent = `${activePatientRecord?.name || 'John Doe'} (${ptId})`;
+      ptNameEl.textContent = `${ptName} (${ptId})`;
     }
     backdrop.style.display = 'block';
     drawer.style.display = 'flex';
@@ -5209,7 +5217,7 @@ function toggleDoctorAdviceDrawer(open) {
   }
 }
 
-function selectAdviceCategory(cat) {
+function selectAdviceCategory(cat, ev) {
   selectedAdviceCategory = cat;
   const container = document.getElementById('advice-category-selector');
   if (!container) return;
@@ -5218,7 +5226,8 @@ function selectAdviceCategory(cat) {
     btn.classList.add('border-slate-800', 'bg-slate-950', 'text-slate-400');
   });
 
-  const activeBtn = event.currentTarget || container.querySelector(`button[onclick*="'${cat}'"]`);
+  const evt = ev || (typeof event !== 'undefined' ? event : null);
+  const activeBtn = (evt && evt.currentTarget) || container.querySelector(`button[onclick*="'${cat}'"]`);
   if (activeBtn) {
     activeBtn.classList.add('active', 'border-teal-500/50', 'bg-teal-950/40', 'text-teal-300');
     activeBtn.classList.remove('border-slate-800', 'bg-slate-950', 'text-slate-400');
