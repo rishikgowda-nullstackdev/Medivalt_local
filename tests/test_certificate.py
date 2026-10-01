@@ -54,6 +54,33 @@ class TestClinicalCertificate(unittest.TestCase):
         res = self.client.get("/api/report/clearance?event_id=EVT_NONEXISTENT_9999999")
         self.assertEqual(res.status_code, 404)
 
+    def test_03_download_pdf_certificate(self):
+        """Verify GET /api/report/clearance/pdf downloads authentic signed PDF document."""
+        # 1. Run review
+        res_review = self.client.post("/api/review", json={
+            "patient_id": "PT-101",
+            "proposed_medication": "Ibuprofen 400mg",
+            "enable_slm": False
+        })
+        self.assertEqual(res_review.status_code, 200)
+        event_id = res_review.json().get("event_id")
+        self.assertIsNotNone(event_id)
+
+        # 2. Download PDF
+        res_pdf = self.client.get(f"/api/report/clearance/pdf?event_id={event_id}")
+        self.assertEqual(res_pdf.status_code, 200)
+        self.assertEqual(res_pdf.headers["content-type"], "application/pdf")
+        self.assertIn("attachment; filename=", res_pdf.headers.get("content-disposition", ""))
+        pdf_bytes = res_pdf.content
+        # PDF documents start with %PDF
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 1000)
+
+    def test_04_pdf_nonexistent_event_returns_404(self):
+        """Requesting PDF for non-existent event returns 404."""
+        res = self.client.get("/api/report/clearance/pdf?event_id=EVT_NONEXISTENT_9999999")
+        self.assertEqual(res.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

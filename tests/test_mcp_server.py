@@ -19,6 +19,7 @@ from backend.mcp_server import (
     search_clinical_knowledge,
     calculate_clinical_hazard,
     verify_audit_seal,
+    export_clearance_pdf,
     get_available_tools_list
 )
 
@@ -33,13 +34,14 @@ class TestFastMcpServer(unittest.TestCase):
         """Verify MCP Server metadata and tool declarations."""
         self.assertEqual(mcp_server.name, "medivault-local-cdss")
         tools = get_available_tools_list()
-        self.assertGreaterEqual(len(tools), 5)
+        self.assertGreaterEqual(len(tools), 6)
         names = [t["name"] for t in tools]
         self.assertIn("review_prescription", names)
         self.assertIn("simulate_pharmacokinetics", names)
         self.assertIn("search_clinical_knowledge", names)
         self.assertIn("calculate_clinical_hazard", names)
         self.assertIn("verify_audit_seal", names)
+        self.assertIn("export_clearance_pdf", names)
 
     def test_02_review_prescription_mcp_tool(self):
         """Verify review_prescription MCP tool returns valid structured JSON."""
@@ -105,6 +107,36 @@ class TestFastMcpServer(unittest.TestCase):
         self.assertTrue(call_data.get("success"))
         self.assertEqual(call_data.get("tool"), "review_prescription")
         self.assertEqual(call_data["result"]["status"], "CRITICAL")
+
+    def test_07_export_clearance_pdf_mcp_tool(self):
+        """Verify export_clearance_pdf MCP tool generates verifiable PDF bytes."""
+        # 1. Run a review to obtain an event_id
+        res_review = self.client.post("/api/review", json={
+            "patient_id": "PT-101",
+            "proposed_medication": "Ketorolac 30mg IV",
+            "enable_slm": False
+        })
+        self.assertEqual(res_review.status_code, 200)
+        event_id = res_review.json().get("event_id")
+        self.assertIsNotNone(event_id)
+
+        # 2. Invoke export_clearance_pdf
+        raw_res = export_clearance_pdf(event_id=event_id)
+        data = json.loads(raw_res)
+        self.assertEqual(data.get("status"), "SUCCESS")
+        self.assertEqual(data.get("event_id"), event_id)
+        self.assertGreater(data.get("pdf_byte_size", 0), 1000)
+        self.assertTrue(data.get("zero_cloud_verified"))
+
+        # 3. Invoke via HTTP MCP Gateway
+        gateway_res = self.client.post("/api/mcp/call", json={
+            "tool_name": "export_clearance_pdf",
+            "arguments": {"event_id": event_id}
+        })
+        self.assertEqual(gateway_res.status_code, 200)
+        g_data = gateway_res.json()
+        self.assertTrue(g_data.get("success"))
+        self.assertEqual(g_data["result"]["status"], "SUCCESS")
 
 
 if __name__ == "__main__":

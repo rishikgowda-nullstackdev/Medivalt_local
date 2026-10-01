@@ -2831,6 +2831,14 @@ function exportClinicalCertificate() {
   window.open(`/api/report/clearance?event_id=${encodeURIComponent(currentReviewEventId)}`, '_blank');
 }
 
+function downloadClearancePdf() {
+  if (!currentReviewEventId) {
+    showToast('Review Required', 'Please run a clinical safety review first to generate an audit event.', 'warning');
+    return;
+  }
+  window.open(`/api/report/clearance/pdf?event_id=${encodeURIComponent(currentReviewEventId)}`, '_blank');
+}
+
 async function exportFhirBundle() {
   if (!currentReviewEventId) {
     showToast('Review Required', 'Please run a clinical safety review first to generate a sealed FHIR R4 Bundle.', 'warning');
@@ -3312,6 +3320,8 @@ window.activateDoctor = activateDoctor;
 window.handleLogout = handleLogout;
 window.openClearanceQrModal = openClearanceQrModal;
 window.closeClearanceQrModal = closeClearanceQrModal;
+window.exportClinicalCertificate = exportClinicalCertificate;
+window.downloadClearancePdf = downloadClearancePdf;
 window.switchIntakeMode = switchIntakeMode;
 window.switchAuthGateTab = switchAuthGateTab;
 window.switchAuthTab = switchAuthTab;

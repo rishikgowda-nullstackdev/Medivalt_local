@@ -1318,11 +1318,48 @@ def generate_clinical_clearance_certificate(event_id: str = Query(...)):
 
         <div class="action-bar">
             <button class="btn" onclick="window.print()">🖨️ Print or Save as Official PDF</button>
+            <a class="btn" href="/api/report/clearance/pdf?event_id={event_id}" style="margin-left: 10px; text-decoration: none; display: inline-block; background: #0f766e; color: #fff;">📥 Download Certified PDF</a>
         </div>
     </div>
 </body>
 </html>"""
     return HTMLResponse(content=html_content)
+
+
+@app.get("/api/report/clearance/pdf")
+def get_clearance_pdf_endpoint(event_id: str = Query(...)):
+    """
+    Renders and streams an official, printable A4 PDF Clinical Clearance Certificate
+    generated on-device using PyMuPDF. Embedded with physician signature block,
+    hospital credentials, and cryptographic SHA-256 seal (HIPAA § 164.312(b)).
+    """
+    from backend.pdf_export import generate_clearance_pdf
+    from io import BytesIO
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM audit_logs WHERE event_id = ?", (event_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        logs = audit_logger.get_recent_logs(limit=200)
+        matched = [l for l in logs if l.get("event_id") == event_id]
+        if matched:
+            log_data = matched[0]
+        else:
+            raise HTTPException(status_code=404, detail=f"Audit event '{event_id}' not found.")
+    else:
+        log_data = dict(row)
+
+    pdf_bytes = generate_clearance_pdf(log_data)
+    filename = f"medivault_clearance_{event_id}.pdf"
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1662,7 +1699,8 @@ def call_mcp_tool(req: McpCallRequest):
         simulate_pharmacokinetics,
         search_clinical_knowledge,
         calculate_clinical_hazard,
-        verify_audit_seal
+        verify_audit_seal,
+        export_clearance_pdf
     )
     args = req.arguments or {}
     tool = req.tool_name
@@ -1694,6 +1732,11 @@ def call_mcp_tool(req: McpCallRequest):
     elif tool == "verify_audit_seal":
         raw = verify_audit_seal(
             audit_hash=args.get("audit_hash", "")
+        )
+    elif tool == "export_clearance_pdf":
+        raw = export_clearance_pdf(
+            event_id=args.get("event_id", ""),
+            output_path=args.get("output_path")
         )
     else:
         raise HTTPException(status_code=404, detail=f"MCP tool '{tool}' not found.")

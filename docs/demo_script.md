@@ -17,76 +17,75 @@
 
 ## The Demo Flow (Click-by-Click)
 
-### BEAT 1 — The Hook (30 sec) — *Rishikgowda speaks*
-> "Hospitals can't legally send patient data to ChatGPT. But doctors still miss deadly drug interactions every day. We built MediVault Local: 100% sovereign AI, runs entirely on this laptop, zero bytes to the cloud. Let us show you."
+### BEAT 1 — The Hook & Architecture (45 sec) — *Rishikgowda SM (Person A) speaks*
+> "Hospitals are legally barred by HIPAA and DPDP from uploading patient records to cloud LLMs. Yet doctors fatigue and miss fatal drug interactions every day. We engineered MediVault Local: 100% sovereign AI that runs completely on this air-gapped machine. I built our backend integration, the deterministic-override architecture, our FastMCP server, and our local cryptographic ledger. Zero bytes leave this laptop. Let us prove it to you live."
 
 ---
 
-### BEAT 2 — The Air-Gap Kill Move (45 sec) — *Sujan drives*
+### BEAT 2 — The Air-Gap Kill Move & 3D Interface (45 sec) — *Sujan MB (Person D) drives & speaks*
 
-1. **Say:** *"Before I touch anything — watch the network pill in the top-right."*
-2. Point to: `AIR-GAPPED: 0 BYTES TRANSMITTED (127.0.0.1)` — green pulse.
-3. **Disconnect Wi-Fi live in front of judges.** Say: *"Now the machine has no internet."*
-4. **Refresh the page.** The dashboard loads perfectly from localhost.
-5. **Say:** *"Still works. Zero cloud dependency. This is sovereignty."*
-
----
-
-### BEAT 3 — Upload a Real Patient Record (60 sec) — *Sujan drives*
-
-1. Click the **"Upload / Paste Note"** tab on the left panel.
-2. **Drag and drop** `samples/patient_1_ckd_discharge.pdf` onto the upload zone.
-3. Watch: *"Ingesting & Redacting..."* → then *"PHI Redacted: X elements"*
-4. The patient profile card auto-populates:
-   - Conditions: **Stage 3 Chronic Kidney Disease**, Essential Hypertension, Type 2 Diabetes
-   - Medications: Lisinopril, Metformin, Amlodipine
-5. **Say:** *"The system just stripped all 18 HIPAA Safe Harbor identifiers — name, phone, SSN — and extracted the clinical facts. Rakshith built this redaction engine."*
+1. **Say:** *"I designed and built the complete clinician dashboard, our 3D anatomical glass-heart visualization, and patient safety portal. Watch the network security indicator in our top-right header."*
+2. Point to: `AIR-GAPPED: 0 BYTES TRANSMITTED (127.0.0.1)` — pulsing emerald beacon.
+3. **Disconnect Wi-Fi live in front of judges.** Say: *"The laptop is now physically disconnected from the global internet."*
+4. **Refresh the page.** The entire dashboard, 3D anatomical organ models, and local databases render instantly.
+5. **Say:** *"Instantaneous execution. Zero cloud ping. Real sovereign software."*
 
 ---
 
-### BEAT 4 — The Killer Contraindication (90 sec) — *Sujan drives, Kushal explains*
+### BEAT 3 — Ingestion, HIPAA Safe Harbor Redaction & Handwritten OCR (60 sec) — *Rakshith DA (Person B) speaks, Sujan drives*
 
-1. In the **Proposed Prescription** box, type: `Advil`  | Dosage: `400mg PO TID`
-2. Click **"RUN OFFLINE CONTRAINDICATION REVIEW"**
-3. Watch the result card:
-   - 🔴 **CRITICAL CONTRAINDICATION DETECTED** banner appears
-   - Alert card: *"Ibuprofen — NSAIDs inhibit renal prostaglandins (PGE2, PGI2), causing afferent arteriolar vasoconstriction and acute kidney injury in CKD patients."*
-4. **Say:** *"The doctor typed a brand name — Advil. Our system normalized it to the generic, Ibuprofen, and flagged it instantly. This catches the real-world mistake."*
-5. **Kushal speaks:** *"This is a two-layer safety check: first a deterministic SQLite rule fires — zero hallucination possible. Then Ollama generates the clinical explanation on top. The LLM can never override the rule."*
-
----
-
-### BEAT 5 — Show a Safe Prescription (30 sec) — *Sujan drives*
-
-1. Click the **"Acetaminophen (Safe)"** quick-prescribe chip (or type `Acetaminophen`, `500mg PO QID`)
-2. Click **"RUN OFFLINE CONTRAINDICATION REVIEW"**
-3. Result: 🟢 **PRESCRIPTION CLEARED (SAFE)**
-4. **Say:** *"And here's what a safe prescription looks like. The system isn't just blocking — it's triaging."*
+1. Sujan clicks the **"Upload / Paste Note"** tab or drops `samples/patient_1_ckd_discharge.pdf`.
+2. **Rakshith speaks:**
+> "I built our ingestion pipeline and privacy engine. When a paper record or digital note enters the node, our system executes two operations:
+> 1. **Zero-Cloud OCR:** For scanned prescription slips or handwritten doctor notes, our offline ONNX RapidOCR extracts raw text without third-party vision APIs.
+> 2. **HIPAA Safe Harbor § 164.514(b) Redaction:** All 18 direct identifiers — patient names, phone numbers, MRNs, dates — are sanitized into irreversible SHA-256 tokens (`ANON_...`) in volatile RAM. Only pure clinical facts reach our decision engine."
+3. Watch the patient profile card auto-populate with extracted Stage 3 CKD, Hypertension, and baseline labs (eGFR: 38 mL/min).
 
 ---
 
-### BEAT 6 — Try a Warning-Level Scenario (30 sec) — *Sujan drives*
+### BEAT 4 — The Deterministic-Override Safety Engine & Vector RAG (90 sec) — *Kushal M (Person C) speaks, Sujan drives*
 
-1. Switch to patient `PT-102: Sarah Connor (Moderate Asthma)` from the Demo Patients dropdown
-2. Click **"Propranolol (Asthma Risk)"** quick-prescribe chip
-3. Result: 🟡 **CLINICAL CAUTION / RELATIVE CONTRAINDICATION**
-4. **Say:** *"Non-selective beta-blockers in asthma can cause bronchospasm. Flagged as a warning, not a block. Doctors get context, not just a stop sign."*
-
----
-
-### BEAT 7 — The Cryptographic Audit Drawer (60 sec) — *Rishikgowda speaks, Sujan drives*
-
-1. Scroll to the bottom. Click **"Local Cryptographic Audit Trail"** to expand it.
-2. Show the log table — timestamp, reviewer, hospital, prescription, status, SHA-256 hash.
-3. Click **"Verify Chain Integrity"** button.
-4. Watch: `✅ CRYPTOGRAPHIC PROOF: All N audit blocks verified intact (Zero Tampering Detected). HIPAA § 164.312(b) Certified`
-5. **Rishikgowda speaks:** *"Every review is sealed with a SHA-256 hash chained to the previous entry — like a medical blockchain, but local. You can mathematically prove no record was altered. This is HIPAA audit compliance, built in."*
+1. Sujan selects **PT-101**, types `Advil` (or `Ketorolac 30mg IV`), and clicks **"RUN OFFLINE CONTRAINDICATION REVIEW"**.
+2. A prominent 🔴 **CRITICAL CONTRAINDICATION DETECTED** banner appears with hemodynamic alert and Rowland & Tozer PK clearance simulation curve showing a 2.2x excretion delay.
+3. **Kushal speaks:**
+> "I designed our clinical AI engine and pharmacology knowledge graph. A critical flaw with cloud LLMs in healthcare is hallucination. MediVault Local solves this with our **Deterministic Override Design**:
+> 1. Our local SQLite pharmacology matrix first evaluates absolute contraindications (e.g. NSAID prostaglandin inhibition in CKD). If a hard contraindication is flagged, it is mathematically locked.
+> 2. Our offline **Vector RAG engine** retrieves semantic embeddings across 32 curated FDA monographs and KDIGO clinical guidelines.
+> 3. Local Ollama (llama3.2) only generates explanatory pathophysiology context. The SLM can **never** unflag or hallucinate a green clearance over our deterministic safety rules."
 
 ---
 
-### BEAT 8 — Wrap & Hand to Judges (30 sec) — *All team*
+### BEAT 5 — Safe Regimen Triage & Formulary Alternatives (30 sec) — *Sujan drives, Kushal speaks*
 
-> *"MediVault Local: no cloud, no hallucinations, no data leaks. A doctor can use this in a hospital with no internet and still get instant, provably accurate contraindication checks. We built this in a week. Questions?"*
+1. Sujan clicks the quick-prescribe chip **"Acetaminophen (Safe)"**.
+2. Review returns 🟢 **PRESCRIPTION CLEARED (SAFE FOR REGIMEN)**.
+3. **Kushal speaks:** *"Notice the engine also recommends safe alternative analgesics, titrating doses to the patient's exact eGFR of 38 mL/min."*
+
+---
+
+### BEAT 6 — 1-Click Institutional Doctor Switcher & Verification (45 sec) — *Sujan drives*
+
+1. Sujan clicks the **Doctor Profile Pill** in the top header (`🩺 Dr. Gregory House, MD | Princeton Plainsboro [Verified Staff]`).
+2. Shows the 3-tab modal: 1-Click Demo Staff Switcher, Institutional Sign In, and Institutional Register.
+3. **Sujan speaks:** *"We enforce hospital email domain whitelisting (e.g. `@metrogeneral.org`, `@ppth.org`) and 6-digit cryptographic OTP email verification, complete with a sovereign simulated intranet mail outbox for zero-cloud testing."*
+4. Clicks **"Switch to Dr. Meredith Grey, MD (Metro General Hospital)"**. The session updates with cryptographic non-repudiation.
+
+---
+
+### BEAT 7 — SHA-256 Merkle Ledger, PDF Export & FastMCP Server (60 sec) — *Rishikgowda SM (Person A) speaks, Sujan drives*
+
+1. Sujan clicks **"PDF Export"** on the review result. An authentic, cryptographically signed A4 Clinical Clearance Certificate downloads immediately.
+2. Sujan expands the **"Local Cryptographic Audit Trail"** drawer and clicks **"Verify Chain Integrity"**.
+3. Green confirmation appears: `✅ CRYPTOGRAPHIC PROOF: All audit blocks verified intact (Zero Tampering Detected). HIPAA § 164.312(b) Certified`.
+4. **Rishikgowda speaks:**
+> "Every review is hashed with the doctor's verified NPI, timestamp, and previous block hash into an immutable local SHA-256 chain.
+> Furthermore, we have built a fully compliant **FastMCP Server** (`medivault-local-cdss`). External sovereign AI agents in Claude Desktop or Cursor can invoke our review, PK simulation, vector knowledge search, and certified PDF export directly over stdio or REST loopback without a single packet leaving this machine."
+
+---
+
+### BEAT 8 — The Closing Pitch & Q&A (30 sec) — *All Team*
+
+> **Rishikgowda:** *"MediVault Local delivers zero-cloud privacy, zero-hallucination safety, and mathematical audit integrity. It's ready for any clinic, field hospital, or ICU workstation today. Thank you, and we welcome your questions."*
 
 **Expect questions on:**
 - *"How does it work offline?"* → Ollama runs locally on port 11434. SQLite is a local file.

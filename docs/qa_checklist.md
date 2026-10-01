@@ -113,6 +113,16 @@
 | 8.3 | No JavaScript errors in browser console | Console is clean (no errors, acceptable warnings only) | |
 | 8.4 | Rapid-click "Run Review" button multiple times | Button disables during loading; no duplicate requests crash the app | |
 
+## Section 9 — FastMCP Server & Certified PDF Clearance Export
+
+| # | Test | Expected Result | Status |
+|---|---|---|---|
+| 9.1 | Click "PDF Export" on clinical review card | Downloads authentic A4 PDF with doctor signature block, hospital header, and SHA-256 seal | |
+| 9.2 | Click "Certificate" on review card | Opens print-ready HTML Clinical Clearance Certificate with SHA-256 seal | |
+| 9.3 | Click "Beam QR" on review card | Modal displays vector SVG QR code with embedded cryptographic clearance seal | |
+| 9.4 | Query `GET /api/mcp/tools` | Returns 6 clinical MCP tools adhering to MCP specification 2024-11-05 | |
+| 9.5 | Invoke `POST /api/mcp/call` with `export_clearance_pdf` | Returns structured JSON with byte size, event ID, and SHA-256 seal | |
+
 ---
 
 ## Bug Reporting Template

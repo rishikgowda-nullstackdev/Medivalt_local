@@ -2200,17 +2200,6 @@
 
       <!-- Right: Telemetry & Practitioner Actions -->
       <div class="flex items-center space-x-2 flex-wrap">
-        <!-- Doctor Care Advice Drawer Launcher Button -->
-        <button id="btn-doctor-advice-header" type="button" onclick="toggleDoctorAdviceDrawer(true)" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-teal-500/15 to-emerald-500/15 hover:from-teal-500/25 hover:to-emerald-500/25 border border-teal-500/40 text-teal-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Draft & Send Clinical Advice to Patient">
-          <i class="fa-solid fa-pen-to-square text-xs text-teal-400"></i>
-          <span>Advice</span>
-        </button>
-
-        <!-- Bedside QR & Direct Link Launcher Button -->
-        <button id="btn-bedside-qr-header" type="button" onclick="openBedsideQrModal()" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-sky-500/15 to-indigo-500/15 hover:from-sky-500/25 hover:to-indigo-500/25 border border-sky-500/40 text-sky-300 text-xs font-semibold transition cursor-pointer shadow-sm" title="Open Bedside Tablet/Phone QR Code & Direct Link">
-          <i class="fa-solid fa-qrcode text-xs text-sky-400"></i>
-          <span>Bedside QR</span>
-        </button>
         <!-- Air-Gap Status Badge -->
         <div id="airgap-status-pill" class="flex items-center space-x-1.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs px-2.5 py-1 rounded-full shadow-inner font-mono">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -3231,6 +3220,10 @@
                 <button id="btn-print-cert" onclick="exportClinicalCertificate()" class="btn-clinical-secondary py-1 px-2 text-xs">
                   <i class="fa-solid fa-file-shield"></i>
                   <span>Certificate</span>
+                </button>
+                <button id="btn-download-pdf" onclick="downloadClearancePdf()" class="btn-clinical-secondary py-1 px-2 text-xs" title="Download Tamper-Evident Signed PDF Certificate">
+                  <i class="fa-solid fa-file-pdf text-rose-400"></i>
+                  <span>PDF Export</span>
                 </button>
                 <button id="btn-export-fhir" onclick="exportFhirBundle()" class="btn-clinical-secondary py-1 px-2 text-xs" title="Export FHIR R4 Bundle JSON">
                   <i class="fa-solid fa-fire text-amber-400"></i>
