@@ -161,31 +161,49 @@ function showToast(title, message, type = 'info', duration = null) {
 // ═══════════════════════════════════════════
 //  THEME CONTROLLER (Dark ↔ Light)
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  THEME CONTROLLER (Dark ↔ Light ↔ ICU High-Contrast)
+// ═══════════════════════════════════════════
 function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  updateThemeUI(isLight);
-  showToast('Theme Updated', `Switched to ${isLight ? 'Light' : 'Dark'} Mode.`, 'info', 2000);
+  const current = localStorage.getItem('theme') || (document.documentElement.classList.contains('light') ? 'light' : 'dark');
+  const next = current === 'dark' ? 'light' : current === 'light' ? 'high-contrast' : 'dark';
+  setThemeMode(next);
 }
 
-function updateThemeUI(isLight) {
-  const title = document.getElementById('sidebar-theme-title');
-  const btn = document.getElementById('sidebar-theme-btn');
-  const icon = document.getElementById('sidebar-theme-icon');
-  const headerIcon = document.getElementById('header-theme-icon');
-  if (title && btn && icon) {
-    if (isLight) {
-      title.textContent = 'Light Mode Active';
-      btn.textContent = 'Switch to Dark';
-      icon.className = 'fa-solid fa-moon text-slate-600 mr-1';
-    } else {
-      title.textContent = 'Dark Mode Active';
-      btn.textContent = 'Switch to Light';
-      icon.className = 'fa-solid fa-sun text-amber-400 mr-1';
-    }
+function setThemeMode(mode) {
+  document.documentElement.classList.remove('light', 'high-contrast');
+  if (mode === 'light') {
+    document.documentElement.classList.add('light');
+  } else if (mode === 'high-contrast') {
+    document.documentElement.classList.add('high-contrast');
   }
+  localStorage.setItem('theme', mode);
+  updateThemeSelectorUI(mode);
+}
+
+function updateThemeSelectorUI(mode) {
+  const darkBtn = document.getElementById('theme-btn-dark');
+  const lightBtn = document.getElementById('theme-btn-light');
+  const hcBtn = document.getElementById('theme-btn-hc');
+  const headerIcon = document.getElementById('header-theme-icon');
+
+  [
+    { el: darkBtn, id: 'dark' },
+    { el: lightBtn, id: 'light' },
+    { el: hcBtn, id: 'high-contrast' }
+  ].forEach(b => {
+    if (!b.el) return;
+    if (b.id === mode) {
+      b.el.className = 'py-1 px-2 rounded text-[11px] font-bold text-center bg-teal-600 text-white shadow cursor-pointer';
+    } else {
+      b.el.className = 'py-1 px-2 rounded text-[11px] font-medium text-center text-slate-400 hover:text-white cursor-pointer';
+    }
+  });
+
   if (headerIcon) {
-    headerIcon.className = isLight ? 'fa-solid fa-moon text-xs text-slate-600' : 'fa-solid fa-sun text-xs text-amber-400';
+    if (mode === 'light') headerIcon.className = 'fa-solid fa-moon text-xs text-slate-600';
+    else if (mode === 'high-contrast') headerIcon.className = 'fa-solid fa-circle-half-stroke text-xs text-teal-300';
+    else headerIcon.className = 'fa-solid fa-sun text-xs text-amber-400';
   }
 }
 
@@ -593,14 +611,243 @@ function toggleSettingsSidebar(open) {
   }
 }
 
-function updateSpeedLabel(val) {
-  const speed = parseInt(val);
-  const label = document.getElementById('speed-label');
-  if (label) {
-    if (speed <= 5) label.textContent = `Fast (${speed}ms)`;
-    else if (speed <= 15) label.textContent = `Normal (${speed}ms)`;
-    else label.textContent = `Deliberate (${speed}ms)`;
+// ═══════════════════════════════════════════
+//  WORKSTATION ERGONOMICS & SETTINGS CONTROLLERS
+// ═══════════════════════════════════════════
+function setLayoutDensity(density) {
+  if (density === 'compact') {
+    document.documentElement.classList.add('compact-density');
+  } else {
+    document.documentElement.classList.remove('compact-density');
   }
+  localStorage.setItem('medivault_density', density);
+  updateDensityUI(density);
+  showToast('Density Updated', `Layout density set to ${density === 'compact' ? 'Compact (ICU)' : 'Comfortable'}.`, 'info', 1500);
+}
+
+function updateDensityUI(density) {
+  const comBtn = document.getElementById('density-btn-comfortable');
+  const comPact = document.getElementById('density-btn-compact');
+  if (comBtn && comPact) {
+    if (density === 'compact') {
+      comPact.className = 'py-1 px-2 rounded text-[11px] font-bold text-center bg-teal-600 text-white shadow cursor-pointer';
+      comBtn.className = 'py-1 px-2 rounded text-[11px] font-medium text-center text-slate-400 hover:text-white cursor-pointer';
+    } else {
+      comBtn.className = 'py-1 px-2 rounded text-[11px] font-bold text-center bg-teal-600 text-white shadow cursor-pointer';
+      comPact.className = 'py-1 px-2 rounded text-[11px] font-medium text-center text-slate-400 hover:text-white cursor-pointer';
+    }
+  }
+}
+
+function setFontScale(scale) {
+  const numScale = parseInt(scale) || 100;
+  const basePx = (numScale / 100) * 13;
+  document.documentElement.style.fontSize = `${basePx}px`;
+  localStorage.setItem('medivault_font_scale', numScale.toString());
+  updateFontScaleUI(numScale);
+  showToast('Font Scale Updated', `Workstation scaling set to ${numScale}%.`, 'info', 1500);
+}
+
+function updateFontScaleUI(scale) {
+  const label = document.getElementById('font-scale-label');
+  if (label) {
+    label.textContent = `${scale}% (${scale === 100 ? 'Standard' : scale === 110 ? 'Large' : 'Bedside'})`;
+  }
+  [100, 110, 125].forEach(s => {
+    const btn = document.getElementById(`font-btn-${s}`);
+    if (btn) {
+      if (s === scale) {
+        btn.className = 'py-1 rounded bg-teal-600 text-white font-bold text-[10px] text-center shadow cursor-pointer';
+      } else {
+        btn.className = 'py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-medium text-slate-400 hover:text-slate-200 text-center cursor-pointer';
+      }
+    }
+  });
+}
+
+function setDefaultReviewEngine(val) {
+  localStorage.setItem('medivault_review_engine', val);
+  const detRadio = document.getElementById('ai-mode-deterministic');
+  const hybridRadio = document.getElementById('ai-mode-hybrid');
+  if (val === 'deterministic') {
+    if (detRadio) detRadio.checked = true;
+  } else {
+    if (hybridRadio) hybridRadio.checked = true;
+  }
+  showToast('Review Engine Set', `Default review engine: ${val === 'deterministic' ? 'Deterministic Only' : 'Hybrid SLM Reasoning'}`, 'info', 2000);
+}
+
+function setAlertSensitivity(val) {
+  localStorage.setItem('medivault_alert_sensitivity', val);
+  showToast('Sensitivity Configured', `CDSS Alert threshold: ${val.replace('_', ' ').toUpperCase()}`, 'info', 2000);
+}
+
+function toggleAudioAlerts(enabled) {
+  localStorage.setItem('medivault_audio_alerts', enabled ? 'true' : 'false');
+  if (enabled) {
+    playHospitalAlertChime('SAFE');
+  }
+  showToast('Audio Alerts', enabled ? 'Harmonic hospital chimes enabled.' : 'Audio chimes muted.', 'info', 2000);
+}
+
+function toggleAutoPk(enabled) {
+  localStorage.setItem('medivault_auto_pk', enabled ? 'true' : 'false');
+  showToast('Pharmacokinetics', enabled ? 'Rowland & Tozer PK auto-simulation active.' : 'Auto-simulation disabled.', 'info', 2000);
+}
+
+let inactivityLockTimer = null;
+function resetInactivityTimer() {
+  if (inactivityLockTimer) clearTimeout(inactivityLockTimer);
+  const rawMin = localStorage.getItem('medivault_autolock_minutes');
+  const minutes = parseInt(rawMin !== null ? rawMin : '15');
+  if (minutes > 0) {
+    inactivityLockTimer = setTimeout(() => {
+      const authGate = document.getElementById('auth-gate');
+      if (authGate && authGate.classList.contains('dismissed')) {
+        handleLogout();
+        showToast('Workstation Locked', `Session locked after ${minutes} minutes of inactivity (HIPAA § 164.312).`, 'warning', 6000);
+      }
+    }, minutes * 60 * 1000);
+  }
+}
+
+function setAutoLockMinutes(val) {
+  localStorage.setItem('medivault_autolock_minutes', val);
+  resetInactivityTimer();
+  const min = parseInt(val);
+  showToast('Inactivity Lockout', min === 0 ? 'Workstation auto-lock disabled.' : `Workstation will lock after ${min}m idle.`, 'info', 2500);
+}
+
+if (typeof window !== 'undefined') {
+  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+}
+
+function playHospitalAlertChime(tier = 'CRITICAL') {
+  if (localStorage.getItem('medivault_audio_alerts') === 'false') return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (tier === 'CRITICAL') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1175, now + 0.12);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      osc.start(now);
+      osc.stop(now + 0.38);
+    } else if (tier === 'WARNING') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.09);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    }
+  } catch (e) {
+    // Non-fatal if audio context restricted
+  }
+}
+
+async function exportAuditLedgerJson() {
+  try {
+    const res = await fetch('/api/audit-logs?limit=500');
+    if (!res.ok) throw new Error('Failed to retrieve audit ledger');
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `medivault_audit_ledger_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Ledger Exported', `Exported ${data.logs?.length || 0} audit records as JSON.`, 'success', 3000);
+  } catch (err) {
+    showToast('Export Failed', err.message, 'error', 3000);
+  }
+}
+
+function resetWorkstationSettings() {
+  const keys = [
+    'theme', 'medivault_density', 'medivault_font_scale',
+    'medivault_review_engine', 'medivault_alert_sensitivity',
+    'medivault_audio_alerts', 'medivault_auto_pk', 'medivault_autolock_minutes'
+  ];
+  keys.forEach(k => localStorage.removeItem(k));
+  showToast('Preferences Reset', 'Restored workstation settings to default values.', 'info', 2000);
+  setTimeout(() => location.reload(), 750);
+}
+
+function initWorkstationSettings() {
+  // Theme
+  const theme = localStorage.getItem('theme') || 'dark';
+  setThemeMode(theme);
+
+  // Density
+  const density = localStorage.getItem('medivault_density') || 'comfortable';
+  if (density === 'compact') {
+    document.documentElement.classList.add('compact-density');
+  }
+  updateDensityUI(density);
+
+  // Font scale
+  const fontScale = parseInt(localStorage.getItem('medivault_font_scale') || '100');
+  if (fontScale !== 100) {
+    document.documentElement.style.fontSize = `${(fontScale / 100) * 13}px`;
+  }
+  updateFontScaleUI(fontScale);
+
+  // Review Engine
+  const reviewEngine = localStorage.getItem('medivault_review_engine') || 'hybrid';
+  const engineSelect = document.getElementById('setting-default-engine');
+  if (engineSelect) engineSelect.value = reviewEngine;
+  const detRadio = document.getElementById('ai-mode-deterministic');
+  const hybridRadio = document.getElementById('ai-mode-hybrid');
+  if (reviewEngine === 'deterministic') {
+    if (detRadio) detRadio.checked = true;
+  } else {
+    if (hybridRadio) hybridRadio.checked = true;
+  }
+
+  // Alert Sensitivity
+  const sensitivity = localStorage.getItem('medivault_alert_sensitivity') || 'standard';
+  const sensSelect = document.getElementById('setting-alert-sensitivity');
+  if (sensSelect) sensSelect.value = sensitivity;
+
+  // Audio Alerts
+  const audioAlerts = localStorage.getItem('medivault_audio_alerts') !== 'false';
+  const audioCheckbox = document.getElementById('setting-audio-chime');
+  if (audioCheckbox) audioCheckbox.checked = audioAlerts;
+
+  // Auto PK
+  const autoPk = localStorage.getItem('medivault_auto_pk') !== 'false';
+  const autoPkCheckbox = document.getElementById('setting-auto-pk');
+  if (autoPkCheckbox) autoPkCheckbox.checked = autoPk;
+
+  // Auto Lock
+  const rawMin = localStorage.getItem('medivault_autolock_minutes');
+  const autoLock = rawMin !== null ? rawMin : '15';
+  const autoLockSelect = document.getElementById('setting-autolock');
+  if (autoLockSelect) autoLockSelect.value = autoLock;
+  resetInactivityTimer();
 }
 
 function dismissSplash() {
@@ -1947,6 +2194,10 @@ async function runSafetyCheck() {
     renderReviewResults(data);
     refreshAuditTrail();
 
+    if (typeof playHospitalAlertChime === 'function') {
+      playHospitalAlertChime(data.overall_status);
+    }
+
     if (data.overall_status === "CRITICAL") {
       showToast('CRITICAL CONTRAINDICATION', `Prescription flagged: ${data.total_alerts} severe risks detected!`, 'error', 8000);
     } else if (data.overall_status === "WARNING") {
@@ -3235,16 +3486,8 @@ document.addEventListener('keydown', (e) => {
 //  INITIALIZATION LIFECYCLE
 // ═══════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
-  // Restore saved theme (Default to Option A: Modern Light Clinical Theme for demos)
-  const saved = localStorage.getItem('theme');
-  const isLight = saved !== 'dark';
-  if (isLight) {
-    document.documentElement.classList.add('light');
-    updateThemeUI(true);
-  } else {
-    document.documentElement.classList.remove('light');
-    updateThemeUI(false);
-  }
+  // Restore workstation settings (theme, density, font scale, CDSS engine, audio alerts, inactivity timer)
+  initWorkstationSettings();
 
   initPatientSelector();
   loadPatientProfile(currentPatientId);
@@ -3310,7 +3553,18 @@ window.toggleSidebarCollapse = toggleSidebarCollapse;
 window.switchMainTab = switchMainTab;
 window.toggleSettingsSidebar = toggleSettingsSidebar;
 window.toggleTheme = toggleTheme;
-window.updateSpeedLabel = updateSpeedLabel;
+window.setThemeMode = setThemeMode;
+window.setLayoutDensity = setLayoutDensity;
+window.setFontScale = setFontScale;
+window.setDefaultReviewEngine = setDefaultReviewEngine;
+window.setAlertSensitivity = setAlertSensitivity;
+window.toggleAudioAlerts = toggleAudioAlerts;
+window.playHospitalAlertChime = playHospitalAlertChime;
+window.toggleAutoPk = toggleAutoPk;
+window.setAutoLockMinutes = setAutoLockMinutes;
+window.exportAuditLedgerJson = exportAuditLedgerJson;
+window.resetWorkstationSettings = resetWorkstationSettings;
+window.initWorkstationSettings = initWorkstationSettings;
 window.dismissSplash = dismissSplash;
 window.openPatientModal = openPatientModal;
 window.closePatientModal = closePatientModal;

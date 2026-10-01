@@ -1231,6 +1231,41 @@
     }
     #settings-sidebar.open { transform: translateX(0); display: flex; }
 
+    /* High Contrast Clinical ICU Theme */
+    html.high-contrast {
+      --bg-canvas: #020617;
+      --bg-page: #020617;
+      --bg-card: #090d16;
+      --bg-card-subtle: #0f172a;
+      --bg-input-well: #000000;
+      --border-main: #38bdf8;
+      --border-card: #0284c7;
+      --border-hover: #38bdf8;
+      --text-heading: #ffffff;
+      --text-primary: #ffffff;
+      --text-body: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+    }
+    html.high-contrast .clinical-card {
+      border: 1.5px solid #0284c7 !important;
+      box-shadow: 0 0 15px rgba(2, 132, 199, 0.25) !important;
+    }
+
+    /* Compact Layout Density (Clinical ICU) */
+    html.compact-density .clinical-card {
+      padding: 8px !important;
+    }
+    html.compact-density .card-header-strip {
+      padding: 8px 12px !important;
+    }
+    html.compact-density .sidebar-nav-item {
+      padding: 6px 10px !important;
+    }
+    html.compact-density .step-nav-btn {
+      padding: 6px 12px !important;
+    }
+
     /* Doctor Profile Avatars */
     .doc-avatar {
       width: 36px; height: 36px; border-radius: var(--radius-sm);
@@ -3905,12 +3940,17 @@
 <div id="settings-backdrop" onclick="toggleSettingsSidebar(false)"></div>
 <aside id="settings-sidebar">
   <!-- Header -->
-  <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-    <div class="flex items-center space-x-2 text-teal-400 font-bold text-sm">
-      <i class="fa-solid fa-gear"></i>
-      <span class="font-heading">Workstation Settings</span>
+  <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+    <div class="flex items-center space-x-2.5 text-teal-400 font-bold text-sm">
+      <div class="w-7 h-7 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400 text-xs">
+        <i class="fa-solid fa-sliders"></i>
+      </div>
+      <div>
+        <span class="font-heading block leading-tight text-white">Workstation Settings</span>
+        <span class="text-[10px] text-slate-400 font-mono">Clinical Ergonomics &amp; Safety Controls</span>
+      </div>
     </div>
-    <button onclick="toggleSettingsSidebar(false)" class="text-slate-400 hover:text-white text-lg bg-transparent border-0 cursor-pointer">
+    <button onclick="toggleSettingsSidebar(false)" class="text-slate-400 hover:text-white text-base bg-transparent border-0 cursor-pointer p-1 rounded hover:bg-slate-800 transition">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
@@ -3920,92 +3960,199 @@
     
     <!-- Section 1: Active Doctor Profile -->
     <div>
-      <span class="clinical-label text-teal-400">Authenticated Physician Profile</span>
-      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2.5">
+      <span class="clinical-label text-teal-400 flex items-center justify-between">
+        <span>Practitioner Session</span>
+        <span class="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30">NPI VERIFIED</span>
+      </span>
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2.5">
         <div class="flex items-center space-x-3">
           <div id="profile-avatar" class="doc-avatar">GH</div>
-          <div class="overflow-hidden">
+          <div class="overflow-hidden flex-1">
             <div id="profile-name" class="font-bold text-white text-xs truncate">Dr. Gregory House, MD</div>
             <div id="profile-hospital" class="text-[10px] text-slate-400 truncate">Princeton Plainsboro Hospital</div>
             <div id="profile-license" class="text-[10px] text-teal-400 font-mono mt-0.5 truncate">NPI-1999887766</div>
           </div>
         </div>
-        <button onclick="showChangeDocModal()" class="btn-clinical-secondary w-full py-1.5 text-xs">
-          <i class="fa-solid fa-arrows-rotate mr-1"></i> Switch Physician
-        </button>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="showChangeDocModal()" class="btn-clinical-secondary py-1 px-2 text-xs flex items-center justify-center space-x-1">
+            <i class="fa-solid fa-user-doctor text-teal-400 mr-1"></i> Switch Doctor
+          </button>
+          <button onclick="handleLogout()" class="py-1 px-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1 cursor-pointer transition">
+            <i class="fa-solid fa-lock text-red-400 mr-1"></i> Lock Session
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Section 2: Display Theme -->
+    <!-- Section 2: Display & Ergonomics -->
     <div>
-      <span class="clinical-label text-teal-400">Display Theme</span>
-      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+      <span class="clinical-label text-teal-400">Display &amp; Ergonomics</span>
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-3">
+        <!-- Visual Theme (Dark, Light, ICU High-Contrast) -->
         <div>
-          <div id="sidebar-theme-title" class="font-medium text-slate-200">Dark Mode Active</div>
-          <div class="text-[10px] text-slate-500">Clinical high-contrast dark/light theme</div>
+          <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">Visual Theme:</label>
+          <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800" id="theme-selector-group">
+            <button type="button" onclick="setThemeMode('dark')" id="theme-btn-dark" class="py-1 px-2 rounded text-[11px] font-medium text-center transition cursor-pointer">
+              <i class="fa-solid fa-moon mr-1"></i> Dark
+            </button>
+            <button type="button" onclick="setThemeMode('light')" id="theme-btn-light" class="py-1 px-2 rounded text-[11px] font-medium text-center transition cursor-pointer">
+              <i class="fa-solid fa-sun mr-1"></i> Light
+            </button>
+            <button type="button" onclick="setThemeMode('high-contrast')" id="theme-btn-hc" class="py-1 px-2 rounded text-[11px] font-medium text-center transition cursor-pointer">
+              <i class="fa-solid fa-circle-half-stroke mr-1"></i> ICU Mode
+            </button>
+          </div>
         </div>
-        <button onclick="toggleTheme()" class="btn-clinical-secondary py-1 px-2.5 text-xs">
-          <i id="sidebar-theme-icon" class="fa-solid fa-sun text-amber-400 mr-1"></i>
-          <span id="sidebar-theme-btn">Switch to Light</span>
+
+        <!-- Density Selector -->
+        <div>
+          <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">Layout Density:</label>
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+            <button type="button" onclick="setLayoutDensity('comfortable')" id="density-btn-comfortable" class="py-1 px-2 rounded text-[11px] font-medium text-center transition cursor-pointer">
+              <i class="fa-solid fa-grip mr-1"></i> Comfortable
+            </button>
+            <button type="button" onclick="setLayoutDensity('compact')" id="density-btn-compact" class="py-1 px-2 rounded text-[11px] font-medium text-center transition cursor-pointer">
+              <i class="fa-solid fa-table-cells mr-1"></i> Compact (ICU)
+            </button>
+          </div>
+        </div>
+
+        <!-- Font Scale -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-[11px] font-semibold text-slate-300">Workstation Font Scale:</span>
+            <span id="font-scale-label" class="font-mono text-[10px] text-teal-400">100% (Standard)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="setFontScale(100)" id="font-btn-100" class="py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-teal-500/40">100% Std</button>
+            <button type="button" onclick="setFontScale(110)" id="font-btn-110" class="py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-teal-500/40">110% Large</button>
+            <button type="button" onclick="setFontScale(125)" id="font-btn-125" class="py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-teal-500/40">125% Bedside</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Clinical AI & Decision Support -->
+    <div>
+      <span class="clinical-label text-teal-400">Clinical AI &amp; Safety Matrix</span>
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-3">
+        
+        <!-- Default AI Review Mode -->
+        <div>
+          <label class="text-[11px] font-semibold text-slate-300 block mb-1">Default Review Engine:</label>
+          <select id="setting-default-engine" onchange="setDefaultReviewEngine(this.value)" class="clinical-input text-xs py-1.5 px-2 bg-slate-950 border-slate-800 cursor-pointer">
+            <option value="hybrid">Deterministic Rule Lock + Local SLM (Recommended)</option>
+            <option value="deterministic">Deterministic Safety Matrix Only (&lt;5ms Instant)</option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1 leading-normal">
+            Deterministic layer is mathematically hardcoded and can never hallucinate or be bypassed.
+          </p>
+        </div>
+
+        <!-- Contraindication Alert Sensitivity -->
+        <div>
+          <label class="text-[11px] font-semibold text-slate-300 block mb-1">CDSS Alert Sensitivity:</label>
+          <select id="setting-alert-sensitivity" onchange="setAlertSensitivity(this.value)" class="clinical-input text-xs py-1.5 px-2 bg-slate-950 border-slate-800 cursor-pointer">
+            <option value="standard">Standard (Absolute Contraindications + Relative Cautions)</option>
+            <option value="all">High Sensitivity (All Alerts + Minor Dietary Warnings)</option>
+            <option value="critical_only">Strict (Hard Fatal Contraindications Only)</option>
+          </select>
+        </div>
+
+        <!-- Auditory Chimes Toggle & Preview -->
+        <div class="pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between mb-1.5">
+            <div>
+              <div class="font-medium text-slate-200">Critical Alert Chime</div>
+              <div class="text-[10px] text-slate-400">Harmonic synth alert on lethal drug interactions</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="playHospitalAlertChime('CRITICAL')" class="btn-clinical-secondary py-0.5 px-2 text-[10px]" title="Test alert audio">
+                <i class="fa-solid fa-volume-high text-teal-400 mr-1"></i> Test
+              </button>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="setting-audio-chime" onchange="toggleAudioAlerts(this.checked)" checked class="sr-only peer">
+                <div class="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-teal-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- PK Auto-Simulation Toggle -->
+        <div class="pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-slate-200">Auto Rowland &amp; Tozer PK</div>
+              <div class="text-[10px] text-slate-400">Compute clearance half-life curves on review</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-auto-pk" onchange="toggleAutoPk(this.checked)" checked class="sr-only peer">
+              <div class="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-teal-600"></div>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 4: Security, Inactivity & Privacy -->
+    <div>
+      <span class="clinical-label text-teal-400">Security &amp; Workstation Inactivity</span>
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-3">
+        <!-- Inactivity Lock Timer -->
+        <div>
+          <label class="text-[11px] font-semibold text-slate-300 block mb-1">HIPAA Inactivity Lockout:</label>
+          <select id="setting-autolock" onchange="setAutoLockMinutes(this.value)" class="clinical-input text-xs py-1.5 px-2 bg-slate-950 border-slate-800 cursor-pointer">
+            <option value="0">Disabled (Demo / Presentation Mode)</option>
+            <option value="5">5 Minutes</option>
+            <option value="15" selected>15 Minutes (Hospital Standard)</option>
+            <option value="30">30 Minutes</option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1">
+            Locks workstation screen if no mouse or keyboard activity is detected.
+          </p>
+        </div>
+
+        <!-- Merkle Ledger Verification Action -->
+        <div class="pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-slate-200">Cryptographic Ledger</div>
+              <div class="text-[10px] text-slate-400">Tamper-evident SHA-256 Merkle chain</div>
+            </div>
+            <button type="button" onclick="verifyAuditTrailIntegrity()" class="btn-clinical-secondary py-1 px-2.5 text-xs text-teal-300 border-teal-500/30">
+              <i class="fa-solid fa-shield-check mr-1 text-teal-400"></i> Verify Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Data Management & Offline Diagnostics -->
+    <div>
+      <span class="clinical-label text-teal-400">Data Management &amp; Diagnostics</span>
+      <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2">
+        <button type="button" onclick="exportAuditLedgerJson()" class="btn-clinical-secondary w-full py-1.5 text-xs font-semibold flex items-center justify-center space-x-1.5">
+          <i class="fa-solid fa-file-arrow-down text-sky-400"></i>
+          <span>Export Full Audit Ledger (.JSON)</span>
+        </button>
+        <button type="button" onclick="sessionStorage.removeItem('medivault_booted'); location.reload();" class="btn-clinical-secondary w-full py-1.5 text-xs font-semibold flex items-center justify-center space-x-1.5">
+          <i class="fa-solid fa-arrows-rotate text-teal-400"></i>
+          <span>Replay Sovereign Boot Diagnostics</span>
+        </button>
+        <button type="button" onclick="resetWorkstationSettings()" class="w-full py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 rounded-lg text-[11px] font-mono flex items-center justify-center space-x-1.5 cursor-pointer transition">
+          <i class="fa-solid fa-trash-can text-slate-500"></i>
+          <span>Reset Workstation Preferences</span>
         </button>
       </div>
-    </div>
-
-    <!-- Section 3: AI Inference & Typist -->
-    <div>
-      <span class="clinical-label text-teal-400">Local SLM Stream Speed</span>
-      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2">
-        <div class="flex justify-between text-slate-300">
-          <span>Typing Simulation Speed:</span>
-          <span id="speed-label" class="font-mono text-teal-400">Normal (12ms)</span>
-        </div>
-        <input type="range" id="setting-speed" min="2" max="30" value="12" oninput="updateSpeedLabel(this.value)" class="w-full accent-teal-500 cursor-pointer" />
-      </div>
-    </div>
-
-    <!-- Section 4: Local LAN & Sovereignty Status -->
-    <div>
-      <span class="clinical-label text-teal-400">Sovereign Network Isolation</span>
-      <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5 font-mono text-[11px]">
-        <div class="flex justify-between">
-          <span class="text-slate-400">Binding Host:</span>
-          <span class="text-emerald-400">127.0.0.1 (Loopback)</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-slate-400">Egress Packets:</span>
-          <span class="text-emerald-400">0 Bytes Transmitted</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-slate-400">Compliance Standard:</span>
-          <span class="text-teal-300">HIPAA Safe Harbor § 164.514</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 5: Replay Diagnostics -->
-    <div>
-      <span class="clinical-label text-teal-400">System Telemetry &amp; Diagnostics</span>
-      <button type="button" onclick="sessionStorage.removeItem('medivault_booted'); location.reload();" class="btn-clinical-secondary w-full py-1.5 text-xs font-semibold flex items-center justify-center space-x-1.5">
-        <i class="fa-solid fa-arrows-rotate text-teal-400"></i>
-        <span>Replay Sovereign Boot Diagnostics</span>
-      </button>
-    </div>
-
-    <!-- Section 6: Session Lock / Logout -->
-    <div>
-      <span class="clinical-label text-red-400">Session Security</span>
-      <button onclick="handleLogout()" class="w-full py-2 bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-red-200 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer transition">
-        <i class="fa-solid fa-lock mr-1"></i>
-        <span>Lock Session &amp; Sign Out</span>
-      </button>
     </div>
 
   </div>
 
   <!-- Footer -->
-  <div class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono">
-    <span>MediVault v1.4-OFFLINE</span>
-    <span>0 Bytes Egress</span>
+  <div class="p-3 bg-slate-900/90 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+    <span>MediVault Local v1.4</span>
+    <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Air-Gapped (0 Bytes Egress)</span>
   </div>
 </aside>
 
@@ -4445,6 +4592,6 @@
 </div>
 
 <!-- Application Controller Script (Single Source of Truth) -->
-<script src="/static/app.js?v=4.2-bedside-qr-advice-fix"></script>
+<script src="/static/app.js?v=4.3-workstation-settings"></script>
 </body>
 </html>
