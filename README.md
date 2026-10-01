@@ -1,7 +1,7 @@
 # MediVault Local — Sovereign AI Clinical Contraindication Reviewer
 > **ASYNC'26 — Track 1: Sovereign AI**  
 > **Team:** void_coders  
-> **Members:** Kushal M (Person C), Rishikgowda SM (Person A), Rakshith D A (Person B), Sujan M B (Person D)  
+> **Members:** Kushal M , Rishikgowda SM , Rakshith D A , Sujan M B   
 > **Offline Compliance:** 100% On-Device Execution (`127.0.0.1` loopback strictly enforced · 0 bytes cloud egress)  
 > **Regulatory Alignment:** HIPAA Safe Harbor § 164.514(b) & Security Rule § 164.312(b) | DPDP Act 2023  
 > **Test Coverage:** 156/157 Automated Tests Passing across 24 Clinical Verification Suites  
@@ -80,10 +80,10 @@ Adhering strictly to the frozen contracts in [`CONTRACTS.md`](CONTRACTS.md) and 
 
 | Role | Team Member | Folder | Primary Engineering Scope |
 |---|---|---|---|
-| **Person A (Repo Lead)** | **Rishikgowda SM** | `/backend`, `database/` | FastAPI gateway, loopback network guard, thread-safe SQLite WAL audit logger, FastMCP server, release orchestration |
-| **Person B (Ingestion & Privacy)** | **Rakshith D A** | `/ingestion` | In-memory text extraction, RapidOCR on-device parser, 18 HIPAA Safe Harbor PHI regex redactions, note intelligence |
-| **Person C (AI & Pharmacology)** | **Kushal M** | `/ai_engine` | SQLite contraindication rules, polypharmacy cascades, Rowland & Tozer PK simulator, Vector RAG, Ollama SLM bridge |
-| **Person D (Frontend UI & QA)** | **Sujan M B** | `/frontend`, `/docs` | Responsive workstation UI, judge demo crisis suite (`Ctrl+6`), patient portal, end-to-end verification, demo scripting |
+| ** (Repo Lead)** | **Rishikgowda SM** | `/backend`, `database/` | FastAPI gateway, loopback network guard, thread-safe SQLite WAL audit logger, FastMCP server, release orchestration |
+| ** (Ingestion & Privacy)** | **Rakshith D A** | `/ingestion` | In-memory text extraction, RapidOCR on-device parser, 18 HIPAA Safe Harbor PHI regex redactions, note intelligence |
+| ** (AI & Pharmacology)** | **Kushal M** | `/ai_engine` | SQLite contraindication rules, polypharmacy cascades, Rowland & Tozer PK simulator, Vector RAG, Ollama SLM bridge |
+| ** (Frontend UI & QA)** | **Sujan M B** | `/frontend`, `/docs` | Responsive workstation UI, judge demo crisis suite (`Ctrl+6`), patient portal, end-to-end verification, demo scripting |
 
 ---
 
