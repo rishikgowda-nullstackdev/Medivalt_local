@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -67,14 +68,58 @@
         }
     </script>
     <style>
+        :root, html.light {
+            --bg-canvas: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-subtle: #f1f5f9;
+            --bg-input: #ffffff;
+            --border-main: #e2e8f0;
+            --border-card: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --text-heading: #0f172a;
+            --text-body: #334155;
+            --text-muted: #475569;
+            --text-faint: #64748b;
+            --accent-teal: #0d9488;
+            --accent-teal-dark: #0f766e;
+            --accent-blue: #0284c7;
+            --accent-safe: #059669;
+            --accent-warning: #d97706;
+            --accent-danger: #dc2626;
+            --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(13, 148, 136, 0.04);
+        }
+
+        html:not(.light), html.dark {
+            --bg-canvas: #090a0f;
+            --bg-card: #0d1117;
+            --bg-card-subtle: #161b22;
+            --bg-input: #161b22;
+            --border-main: #21262d;
+            --border-card: #30363d;
+            --border-hover: #484f58;
+            --text-heading: #f0f6fc;
+            --text-body: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-faint: #6e7681;
+            --accent-teal: #2dd4bf;
+            --accent-teal-dark: #14b8a6;
+            --accent-blue: #38bdf8;
+            --accent-safe: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #f43f5e;
+            --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(13, 148, 136, 0.08);
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: var(--bg-canvas);
+            color: var(--text-body);
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
         h1, h2, h3, h4, .font-heading {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-heading);
         }
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
@@ -91,7 +136,7 @@
         
         /* 3D Perspective & Sheen */
         .card-sanctuary-3d {
-            transition: transform 0.2s cubic-bezier(0.2, 0, 0.3, 1), box-shadow 0.25s ease;
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease;
             position: relative;
         }
         .card-sanctuary-3d:hover {
@@ -100,9 +145,9 @@
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-track { background: var(--bg-card-subtle); }
+        ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         @media print {
             .no-print { display: none !important; }
             body { background: white; color: black; }
@@ -143,165 +188,191 @@
         .portal-pill-drift {
             animation: floatPillDrift 7s ease-in-out infinite;
         }
-        .portal-callout-pin .pin-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 9999px;
-            background: #2dd4bf;
-            position: relative;
-            box-shadow: 0 0 8px #2dd4bf;
+
+        /* ─── LIGHT THEME HIGH-CONTRAST ENHANCEMENTS ─── */
+        html.light .bg-white {
+            background-color: #ffffff !important;
         }
-        .portal-callout-pin .pin-dot::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 9999px;
-            border: 1.5px solid #2dd4bf;
-            animation: pinPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+        html.light .text-slate-900,
+        html.light .text-slate-800 {
+            color: #0f172a !important;
         }
-        .portal-callout-tag {
-            background: rgba(13, 20, 36, 0.9);
-            border: 1px solid rgba(45, 212, 191, 0.4);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 6px 15px -3px rgba(0, 0, 0, 0.4);
-            border-radius: 9999px;
-            padding: 3px 8px;
-            font-size: 10px;
-            font-weight: 700;
-            color: #99f6e4;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            white-space: nowrap;
+        html.light .text-slate-700,
+        html.light .text-slate-600 {
+            color: #334155 !important;
         }
-        html.light .portal-callout-tag {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(13, 148, 136, 0.3);
-            color: #0f766e;
-            box-shadow: 0 6px 15px -3px rgba(13, 148, 136, 0.15);
+        html.light .text-slate-500 {
+            color: #475569 !important;
+        }
+        html.light .text-slate-400 {
+            color: #64748b !important;
+        }
+        html.light .border-slate-200,
+        html.light .border-slate-200\/90,
+        html.light .border-slate-200\/80,
+        html.light .border-slate-100 {
+            border-color: #e2e8f0 !important;
+        }
+        html.light .border-slate-300 {
+            border-color: #cbd5e1 !important;
+        }
+        html.light input,
+        html.light select,
+        html.light textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light input:focus,
+        html.light select:focus,
+        html.light textarea:focus {
+            border-color: #0d9488 !important;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
         }
 
-        /* Dark Theme Parity (Linear Obsidian & Apple Health Light) */
-        html:not(.light) body {
+        /* ─── DARK THEME HIGH-CONTRAST ENHANCEMENTS (Linear / Slate Dark) ─── */
+        html:not(.light) body, html.dark body {
             background-color: #090a0f !important;
-            color: #f0f6fc !important;
+            color: #c9d1d9 !important;
         }
-        html:not(.light) header {
+        html:not(.light) header, html.dark header {
             background-color: rgba(13, 17, 23, 0.95) !important;
             border-color: #21262d !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
         }
-        html:not(.light) .bg-white {
+        html:not(.light) .bg-white, html.dark .bg-white {
             background-color: #0d1117 !important;
+            border-color: #21262d !important;
         }
         html:not(.light) .bg-slate-50, 
         html:not(.light) .bg-slate-50\/50, 
         html:not(.light) .bg-slate-50\/80, 
-        html:not(.light) .bg-slate-50\/90 {
+        html:not(.light) .bg-slate-50\/90,
+        html.dark .bg-slate-50,
+        html.dark .bg-slate-50\/50,
+        html.dark .bg-slate-50\/80,
+        html.dark .bg-slate-50\/90 {
             background-color: #161b22 !important;
+            border-color: #21262d !important;
         }
         html:not(.light) .border-slate-200, 
         html:not(.light) .border-slate-200\/80, 
         html:not(.light) .border-slate-200\/90, 
-        html:not(.light) .border-slate-100 {
+        html:not(.light) .border-slate-100,
+        html.dark .border-slate-200,
+        html.dark .border-slate-200\/80,
+        html.dark .border-slate-200\/90,
+        html.dark .border-slate-100 {
             border-color: #21262d !important;
         }
-        html:not(.light) .border-slate-300 {
+        html:not(.light) .border-slate-300, html.dark .border-slate-300 {
             border-color: #30363d !important;
         }
         html:not(.light) .text-slate-900, 
-        html:not(.light) .text-slate-800 {
+        html:not(.light) .text-slate-800,
+        html.dark .text-slate-900,
+        html.dark .text-slate-800 {
             color: #f0f6fc !important;
         }
         html:not(.light) .text-slate-700, 
-        html:not(.light) .text-slate-600 {
+        html:not(.light) .text-slate-600,
+        html.dark .text-slate-700,
+        html.dark .text-slate-600 {
             color: #c9d1d9 !important;
         }
-        html:not(.light) .text-slate-500 {
+        html:not(.light) .text-slate-500, html.dark .text-slate-500 {
             color: #8b949e !important;
+        }
+        html:not(.light) .text-slate-400, html.dark .text-slate-400 {
+            color: #6e7681 !important;
         }
         html:not(.light) input, 
         html:not(.light) select, 
-        html:not(.light) textarea {
+        html:not(.light) textarea,
+        html.dark input,
+        html.dark select,
+        html.dark textarea {
             background-color: #161b22 !important;
             color: #f0f6fc !important;
             border-color: #30363d !important;
         }
-        html:not(.light) .bg-slate-100 {
+        html:not(.light) input:focus,
+        html:not(.light) select:focus,
+        html:not(.light) textarea:focus,
+        html.dark input:focus,
+        html.dark select:focus,
+        html.dark textarea:focus {
+            border-color: #2dd4bf !important;
+            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2) !important;
+        }
+        html:not(.light) .bg-slate-100, html.dark .bg-slate-100 {
             background-color: #21262d !important;
             color: #c9d1d9 !important;
         }
-        html:not(.light) .hover\:bg-slate-200:hover {
+        html:not(.light) .hover\:bg-slate-200:hover, html.dark .hover\:bg-slate-200:hover {
             background-color: #30363d !important;
         }
-        html:not(.light) .bg-slate-200 {
+        html:not(.light) .bg-slate-200, html.dark .bg-slate-200 {
             background-color: #21262d !important;
         }
-        html:not(.light) #auth-gate {
+        html:not(.light) #auth-gate, html.dark #auth-gate {
             background-color: #0d1117 !important;
             border-color: #21262d !important;
         }
-        html:not(.light) #footer {
+        html:not(.light) #footer, html.dark #footer {
             border-color: #21262d !important;
         }
-        html:not(.light) .card-sanctuary-3d {
+        html:not(.light) .card-sanctuary-3d, html.dark .card-sanctuary-3d {
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(13, 148, 136, 0.08) !important;
         }
-        html:not(.light) #diet-narrative-container {
-            background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(13, 17, 23, 0.95)) !important;
+        html:not(.light) #diet-narrative-container, html.dark #diet-narrative-container {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 17, 23, 0.95)) !important;
             border-color: rgba(20, 184, 166, 0.3) !important;
         }
-        html:not(.light) .bg-emerald-50\/50 {
-            background-color: rgba(16, 185, 129, 0.08) !important;
-            border-color: rgba(16, 185, 129, 0.25) !important;
+        html:not(.light) .bg-emerald-50\/50, html:not(.light) .bg-emerald-50, html.dark .bg-emerald-50\/50, html.dark .bg-emerald-50 {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
         }
-        html:not(.light) .bg-rose-50\/50 {
-            background-color: rgba(244, 63, 94, 0.08) !important;
-            border-color: rgba(244, 63, 94, 0.25) !important;
+        html:not(.light) .bg-rose-50\/50, html:not(.light) .bg-rose-50, html.dark .bg-rose-50\/50, html.dark .bg-rose-50 {
+            background-color: rgba(244, 63, 94, 0.12) !important;
+            border-color: rgba(244, 63, 94, 0.3) !important;
         }
-        html:not(.light) .bg-teal-50\/50 {
-            background-color: rgba(20, 184, 166, 0.08) !important;
-            border-color: rgba(20, 184, 166, 0.25) !important;
-        }
-        html:not(.light) .text-emerald-900 {
-            color: #6ee7b7 !important;
-        }
-        html:not(.light) .text-rose-900 {
-            color: #fda4af !important;
-        }
-        html:not(.light) .text-teal-900, 
-        html:not(.light) .text-teal-950 {
-            color: #5eead4 !important;
-        }
-        html:not(.light) .bg-teal-50,
-        html:not(.light) .bg-teal-50\/80 {
+        html:not(.light) .bg-teal-50\/50, html:not(.light) .bg-teal-50, html.dark .bg-teal-50\/50, html.dark .bg-teal-50 {
             background-color: rgba(20, 184, 166, 0.12) !important;
             border-color: rgba(20, 184, 166, 0.3) !important;
         }
-        html:not(.light) .bg-amber-50 {
-            background-color: rgba(245, 158, 11, 0.1) !important;
+        html:not(.light) .text-emerald-900, html:not(.light) .text-emerald-800, html:not(.light) .text-emerald-700,
+        html.dark .text-emerald-900, html.dark .text-emerald-800, html.dark .text-emerald-700 {
+            color: #6ee7b7 !important;
+        }
+        html:not(.light) .text-rose-900, html:not(.light) .text-rose-800, html:not(.light) .text-rose-700,
+        html.dark .text-rose-900, html.dark .text-rose-800, html.dark .text-rose-700 {
+            color: #fda4af !important;
+        }
+        html:not(.light) .text-teal-900, html:not(.light) .text-teal-950, html:not(.light) .text-teal-700,
+        html.dark .text-teal-900, html.dark .text-teal-950, html.dark .text-teal-700 {
+            color: #5eead4 !important;
+        }
+        html:not(.light) .bg-amber-50, html.dark .bg-amber-50 {
+            background-color: rgba(245, 158, 11, 0.12) !important;
             border-color: rgba(245, 158, 11, 0.3) !important;
         }
-        html:not(.light) .text-amber-900,
-        html:not(.light) .text-amber-950 {
+        html:not(.light) .text-amber-900, html:not(.light) .text-amber-950, html:not(.light) .text-amber-800, html:not(.light) .text-amber-700,
+        html.dark .text-amber-900, html.dark .text-amber-950, html.dark .text-amber-800, html.dark .text-amber-700 {
             color: #fcd34d !important;
         }
-        html:not(.light) .text-amber-800 {
-            color: #fde68a !important;
-        }
-        html:not(.light) .bg-blue-50 {
-            background-color: rgba(59, 130, 246, 0.1) !important;
+        html:not(.light) .bg-blue-50, html.dark .bg-blue-50 {
+            background-color: rgba(59, 130, 246, 0.12) !important;
             border-color: rgba(59, 130, 246, 0.3) !important;
         }
-        html:not(.light) .bg-purple-50 {
-            background-color: rgba(168, 85, 247, 0.1) !important;
+        html:not(.light) .bg-purple-50, html.dark .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.12) !important;
             border-color: rgba(168, 85, 247, 0.3) !important;
         }
-        html:not(.light) .text-purple-700 {
+        html:not(.light) .text-purple-700, html.dark .text-purple-700 {
             color: #d8b4fe !important;
         }
-        html:not(.light) .text-blue-700 {
+        html:not(.light) .text-blue-700, html.dark .text-blue-700 {
             color: #93c5fd !important;
         }
     </style>
@@ -309,7 +380,7 @@
 <body class="min-h-screen flex flex-col items-center p-3 sm:p-6 lg:p-8 selection:bg-teal-500 selection:text-white">
 
     <!-- Top Sovereign Navigation Header -->
-    <header class="w-full max-w-6xl flex flex-wrap justify-between items-center mb-6 bg-white/95 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-slate-200/90 shadow-sanctuary">
+    <header class="w-full max-w-6xl flex flex-wrap justify-between items-center mb-6 bg-white/95 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-slate-200/90 shadow-sanctuary transition-colors duration-200">
         <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/30 flex items-center justify-center text-teal-700 text-lg shadow-sm">
                 <i class="fa-solid fa-shield-heart"></i>
@@ -339,7 +410,7 @@
             </a>
 
             <!-- Theme Toggle Button -->
-            <button id="portal-theme-toggle" onclick="togglePortalTheme()" class="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200 shadow-sm cursor-pointer" title="Toggle Dark/Light Mode">
+            <button id="portal-theme-toggle" type="button" onclick="togglePortalTheme()" class="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200 shadow-sm cursor-pointer" title="Toggle Dark/Light Mode">
                 <i id="portal-theme-icon" class="fa-solid fa-moon text-teal-500"></i>
                 <span id="portal-theme-text" class="hidden sm:inline">Theme</span>
             </button>
@@ -354,12 +425,24 @@
     <!-- ========================================================================= -->
     <!-- AUTH GATE: Registration & Sign In                                         -->
     <!-- ========================================================================= -->
-    <div id="auth-gate" class="w-full max-w-md bg-white rounded-3xl shadow-sanctuary border border-slate-200/90 overflow-hidden fade-in my-auto">
-        <div class="bg-gradient-to-br from-teal-600 via-teal-700 to-slate-900 text-white p-7 text-center relative overflow-hidden">
+    <div id="auth-gate" class="w-full max-w-lg bg-white rounded-3xl shadow-sanctuary border border-slate-200/90 overflow-hidden fade-in my-auto">
+        <div class="bg-gradient-to-br from-teal-600 via-teal-700 to-slate-900 text-white p-6 sm:p-7 text-center relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-teal-400/20 rounded-full blur-2xl pointer-events-none"></div>
-            <div class="w-13 h-13 mx-auto rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white text-2xl mb-3 shadow-inner">
-                <i class="fa-solid fa-heart-pulse"></i>
+            
+            <!-- Interactive 3D Split Pharmaceutical Capsule (Reference Images 1 & 2) -->
+            <div class="relative w-full h-44 sm:h-52 bg-gradient-to-b from-teal-950/40 via-slate-900/60 to-slate-950/80 rounded-2xl border border-teal-400/30 overflow-hidden mb-4 flex flex-col items-center justify-center shadow-inner group">
+                <canvas id="auth-capsule-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                <div class="absolute top-2.5 left-2.5 flex items-center space-x-1.5 pointer-events-none">
+                    <span class="text-[9.5px] font-mono uppercase px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold backdrop-blur-md">
+                        💊 3D Molecular Dispersal
+                    </span>
+                </div>
+                <div class="absolute bottom-2 inset-x-2.5 flex items-center justify-between text-[10px] text-teal-200/80 font-mono pointer-events-none">
+                    <span><i class="fa-solid fa-hand-pointer mr-1"></i> Drag to Rotate</span>
+                    <span><i class="fa-solid fa-atom mr-1"></i> Click to Disperse</span>
+                </div>
             </div>
+
             <h1 class="text-2xl font-bold font-heading mb-1 text-white">Your Personal Health Sanctuary</h1>
             <p class="text-teal-100 text-xs max-w-xs mx-auto leading-relaxed">Access your medical history, plain-language labs, and local AI dietary advice safely on this device.</p>
         </div>
@@ -509,6 +592,62 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===================================================================== -->
+        <!-- 3D PHARMACEUTICAL MOLECULAR MEDICINE SHOWCASE                         -->
+        <!-- (Interactive Real-Time 3D Engine - Images 1 & 2 Parity)               -->
+        <!-- ===================================================================== -->
+        <section class="bg-white p-5 sm:p-6 rounded-3xl shadow-sanctuary border border-teal-500/30 mb-6 card-sanctuary-3d overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200/80 flex items-center justify-center text-lg shadow-sm">
+                        <i class="fa-solid fa-capsules"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900 font-heading">3D Molecular Medicine &amp; Bio-Safety Sanctuary</h3>
+                            <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                                100% OFFLINE 3D PHYSICS
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Real-time pharmaceutical capsule kinematics &amp; active prescription molecular dispersal.</p>
+                    </div>
+                </div>
+                
+                <!-- 3D Mode & Action Controls -->
+                <div class="flex items-center space-x-2 flex-wrap">
+                    <button type="button" onclick="setDashboard3DMode('dispersal')" id="btn-3d-dispersal" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-teal-600 text-white shadow-sm cursor-pointer" title="Biological Molecular Dispersal (Image 1)">
+                        <i class="fa-solid fa-pills"></i>
+                        <span>Molecular Dispersal</span>
+                    </button>
+                    <button type="button" onclick="setDashboard3DMode('holographic')" id="btn-3d-holographic" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 cursor-pointer" title="Holographic Constellation Lattice (Image 2)">
+                        <i class="fa-solid fa-network-wired text-sky-500"></i>
+                        <span>Holographic Lattice</span>
+                    </button>
+                    <button type="button" onclick="triggerDashboard3DBurst()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition flex items-center space-x-1.5 cursor-pointer" title="Kinetic Molecular Wave Burst">
+                        <i class="fa-solid fa-bolt text-amber-500"></i>
+                        <span>Disperse Pellets</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="relative w-full h-64 sm:h-72 rounded-2xl bg-gradient-to-b from-teal-950/20 via-slate-900/40 to-slate-950/80 border border-teal-500/20 overflow-hidden flex items-center justify-center">
+                <canvas id="dashboard-capsule-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                
+                <!-- Floating HUD Badges -->
+                <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900/80 text-teal-300 border border-teal-500/40 backdrop-blur-md">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Contraindication Isolated
+                    </span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900/80 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                        <i class="fa-solid fa-lock mr-1"></i> Sovereign De-Identified
+                    </span>
+                </div>
+                <div class="absolute bottom-3 right-3 text-[10px] text-slate-400 font-mono pointer-events-none bg-slate-950/70 px-2.5 py-1 rounded-lg border border-slate-800 backdrop-blur-md">
+                    Rotate: Click &amp; Drag · Kinetic Burst: Click Canvas
+                </div>
+            </div>
+        </section>
 
         <!-- ===================================================================== -->
         <!-- GLANCEABLE VITALS & HEALTH GAUGES RIBBON                              -->
@@ -1288,6 +1427,10 @@
             hide('dashboard');
             hide('header-logout-btn');
             show('auth-gate');
+            setTimeout(() => {
+                init3DVisualizers();
+                if (authVisualizer) authVisualizer.resize();
+            }, 60);
             document.getElementById('login-form').reset();
             document.getElementById('register-form').reset();
         }
@@ -1297,6 +1440,11 @@
             hide('auth-gate');
             show('dashboard');
             show('header-logout-btn');
+            
+            setTimeout(() => {
+                init3DVisualizers();
+                if (dashboardVisualizer) dashboardVisualizer.resize();
+            }, 60);
             
             try {
                 const profile = await apiCall('/api/patient/profile', { method: 'GET' });
@@ -2104,9 +2252,624 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        // ═════════════════════════════════════════════════════════════════════
+        // THEME ENGINE (Modern Light Clinical & High-Contrast Slate Dark)
+        // ═════════════════════════════════════════════════════════════════════
+        function initPortalTheme() {
+            const saved = localStorage.getItem('medivault_theme');
+            // Default to 'light' for clinical readability unless explicitly set to 'dark'
+            const isDark = saved === 'dark';
+            if (isDark) {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
+            updatePortalThemeUI(isDark);
+        }
+
+        function togglePortalTheme() {
+            const isCurrentlyLight = document.documentElement.classList.contains('light');
+            const willBeDark = isCurrentlyLight;
+            if (willBeDark) {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('medivault_theme', 'dark');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('medivault_theme', 'light');
+            }
+            updatePortalThemeUI(willBeDark);
+            if (window.active3DVisualizers) {
+                window.active3DVisualizers.forEach(v => {
+                    if (v && typeof v.setTheme === 'function') v.setTheme(willBeDark ? 'dark' : 'light');
+                });
+            }
+        }
+
+        function updatePortalThemeUI(isDark) {
+            const icon = document.getElementById('portal-theme-icon');
+            const text = document.getElementById('portal-theme-text');
+            const btn = document.getElementById('portal-theme-toggle');
+            if (icon) {
+                icon.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-teal-600';
+            }
+            if (text) {
+                text.textContent = isDark ? 'Light' : 'Dark';
+            }
+            if (btn) {
+                btn.title = isDark ? 'Switch to Modern Light Clinical Theme' : 'Switch to High-Contrast Dark Theme';
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // 3D PHARMACEUTICAL CAPSULE & MOLECULAR VISUALIZER ENGINE
+        // Reference Image 1: Split Glossy Capsule with Dispersing Medicine Pellets
+        // Reference Image 2: High-Tech Holographic Constellation Wireframe & Lattice
+        // 100% Offline, Zero-Dependency HTML5 Canvas 3D Physics
+        // ═════════════════════════════════════════════════════════════════════
+        class Capsule3DVisualizer {
+            constructor(canvasId, options = {}) {
+                this.canvas = document.getElementById(canvasId);
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.mode = options.initialMode || 'dispersal';
+                this.theme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+                
+                this.rotX = options.initialRotX !== undefined ? options.initialRotX : 0.32;
+                this.rotY = options.initialRotY !== undefined ? options.initialRotY : -0.55;
+                this.rotZ = options.initialRotZ !== undefined ? options.initialRotZ : 0.18;
+                this.targetRotX = this.rotX;
+                this.targetRotY = this.rotY;
+                
+                this.isDragging = false;
+                this.lastMouseX = 0;
+                this.lastMouseY = 0;
+                this.time = 0;
+                this.burstForce = 0;
+                this.burstVelocity = 0;
+                
+                this.pellets = [];
+                this.initPellets(options.pelletCount || 48);
+                
+                this.wireNodes = [];
+                this.initWireNodes(38);
+                
+                this.bgSpheres = [];
+                this.initBgSpheres(16);
+                
+                this.setupEvents();
+                this.resize();
+                
+                this.animate = this.animate.bind(this);
+                requestAnimationFrame(this.animate);
+            }
+            
+            setMode(newMode) {
+                this.mode = newMode;
+                this.triggerBurst(1.2);
+            }
+            
+            setTheme(newTheme) {
+                this.theme = newTheme;
+            }
+            
+            triggerBurst(force = 1.0) {
+                this.burstVelocity = force * 1.5;
+                this.pellets.forEach(p => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const elevation = (Math.random() - 0.5) * Math.PI;
+                    const speed = 2.5 + Math.random() * 4.5 * force;
+                    p.vx += Math.cos(angle) * Math.cos(elevation) * speed;
+                    p.vy += Math.sin(elevation) * speed;
+                    p.vz += Math.sin(angle) * Math.cos(elevation) * speed;
+                });
+            }
+            
+            initPellets(count) {
+                this.pellets = [];
+                const colors = [
+                    { light: '#ffffff', mid: '#e2e8f0', dark: '#94a3b8' },
+                    { light: '#bae6fd', mid: '#38bdf8', dark: '#0284c7' },
+                    { light: '#99f6e4', mid: '#14b8a6', dark: '#0f766e' },
+                    { light: '#e0f2fe', mid: '#7dd3fc', dark: '#0369a1' },
+                    { light: '#93c5fd', mid: '#3b82f6', dark: '#1d4ed8' }
+                ];
+                
+                for (let i = 0; i < count; i++) {
+                    const colorSet = colors[i % colors.length];
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 8 + Math.random() * 55;
+                    const yOffset = (Math.random() - 0.5) * 45;
+                    
+                    this.pellets.push({
+                        x: Math.cos(angle) * dist,
+                        y: yOffset,
+                        z: Math.sin(angle) * dist,
+                        originX: Math.cos(angle) * dist,
+                        originY: yOffset,
+                        originZ: Math.sin(angle) * dist,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        vz: (Math.random() - 0.5) * 0.4,
+                        r: 3.5 + Math.random() * 6.5,
+                        color: colorSet,
+                        pulseOffset: Math.random() * Math.PI * 2,
+                        orbitSpeed: 0.008 + Math.random() * 0.015
+                    });
+                }
+            }
+            
+            initWireNodes(count) {
+                this.wireNodes = [];
+                for (let i = 0; i < count; i++) {
+                    const t = (i / count) * Math.PI * 2;
+                    const layer = Math.floor(i / 12);
+                    const radius = 26 + (layer % 2 === 0 ? 4 : 0);
+                    const y = (layer - 1.5) * 32;
+                    this.wireNodes.push({
+                        x: Math.cos(t) * radius,
+                        y: y,
+                        z: Math.sin(t) * radius,
+                        origX: Math.cos(t) * radius,
+                        origY: y,
+                        origZ: Math.sin(t) * radius,
+                        glowPhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            initBgSpheres(count) {
+                this.bgSpheres = [];
+                for (let i = 0; i < count; i++) {
+                    this.bgSpheres.push({
+                        x: (Math.random() - 0.5) * 420,
+                        y: (Math.random() - 0.5) * 280,
+                        z: -120 - Math.random() * 160,
+                        r: 12 + Math.random() * 28,
+                        alpha: 0.15 + Math.random() * 0.25,
+                        vy: -0.2 - Math.random() * 0.3
+                    });
+                }
+            }
+            
+            setupEvents() {
+                if (!this.canvas) return;
+                
+                const onDown = (e) => {
+                    this.isDragging = true;
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    this.lastMouseX = clientX;
+                    this.lastMouseY = clientY;
+                    this.triggerBurst(0.8);
+                };
+                
+                const onMove = (e) => {
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    
+                    if (this.isDragging) {
+                        const dx = clientX - this.lastMouseX;
+                        const dy = clientY - this.lastMouseY;
+                        this.targetRotY += dx * 0.012;
+                        this.targetRotX += dy * 0.012;
+                        this.lastMouseX = clientX;
+                        this.lastMouseY = clientY;
+                    }
+                };
+                
+                const onUp = () => {
+                    this.isDragging = false;
+                };
+                
+                this.canvas.addEventListener('mousedown', onDown);
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+                
+                this.canvas.addEventListener('touchstart', onDown, { passive: true });
+                window.addEventListener('touchmove', onMove, { passive: true });
+                window.addEventListener('touchend', onUp, { passive: true });
+                
+                window.addEventListener('resize', () => this.resize());
+            }
+            
+            resize() {
+                if (!this.canvas) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                this.width = rect.width || 360;
+                this.height = rect.height || 220;
+                this.canvas.width = this.width * dpr;
+                this.canvas.height = this.height * dpr;
+                this.ctx.scale(dpr, dpr);
+            }
+            
+            project(p) {
+                const radX = this.rotX;
+                const radY = this.rotY;
+                const radZ = this.rotZ;
+                
+                let x1 = p.x * Math.cos(radY) + p.z * Math.sin(radY);
+                let z1 = -p.x * Math.sin(radY) + p.z * Math.cos(radY);
+                
+                let y2 = p.y * Math.cos(radX) - z1 * Math.sin(radX);
+                let z2 = p.y * Math.sin(radX) + z1 * Math.cos(radX);
+                
+                let x3 = x1 * Math.cos(radZ) - y2 * Math.sin(radZ);
+                let y3 = x1 * Math.sin(radZ) + y2 * Math.cos(radZ);
+                let z3 = z2;
+                
+                const cameraDist = 320;
+                const focalLength = 340;
+                const scale = focalLength / (focalLength + z3 + cameraDist);
+                
+                return {
+                    x: (this.width / 2) + x3 * scale,
+                    y: (this.height / 2) + y3 * scale,
+                    z: z3,
+                    scale: scale
+                };
+            }
+            
+            animate() {
+                if (!this.canvas || !this.ctx) return;
+                this.time += 0.02;
+                
+                this.rotX += (this.targetRotX - this.rotX) * 0.08;
+                this.rotY += (this.targetRotY - this.rotY) * 0.08;
+                
+                if (!this.isDragging) {
+                    this.targetRotY += 0.003;
+                    this.targetRotX = 0.32 + Math.sin(this.time * 0.6) * 0.08;
+                }
+                
+                this.burstForce += this.burstVelocity;
+                this.burstVelocity *= 0.88;
+                this.burstForce *= 0.94;
+                
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+                const isLight = document.documentElement.classList.contains('light');
+                
+                ctx.clearRect(0, 0, w, h);
+                
+                // 1. AMBIENT ATMOSPHERIC BACKGROUND
+                if (isLight) {
+                    const bgGrad = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, w * 0.7);
+                    bgGrad.addColorStop(0, 'rgba(240, 249, 255, 0.95)');
+                    bgGrad.addColorStop(0.5, 'rgba(224, 242, 254, 0.7)');
+                    bgGrad.addColorStop(1, 'rgba(248, 250, 252, 0)');
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(0, 0, w, h);
+                } else {
+                    const bgGrad = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, w * 0.7);
+                    bgGrad.addColorStop(0, 'rgba(15, 32, 53, 0.85)');
+                    bgGrad.addColorStop(0.5, 'rgba(10, 21, 37, 0.6)');
+                    bgGrad.addColorStop(1, 'rgba(9, 10, 15, 0)');
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(0, 0, w, h);
+                }
+                
+                // 2. BACKGROUND DEPTH-OF-FIELD SPHERES (Reference Image 1)
+                this.bgSpheres.forEach(s => {
+                    s.y += s.vy;
+                    if (s.y < -h/2 - 60) s.y = h/2 + 60;
+                    const p = this.project(s);
+                    if (p.scale > 0) {
+                        const sr = s.r * p.scale;
+                        const grad = ctx.createRadialGradient(p.x, p.y, sr * 0.1, p.x, p.y, sr);
+                        if (isLight) {
+                            grad.addColorStop(0, `rgba(255, 255, 255, ${s.alpha * 0.9})`);
+                            grad.addColorStop(0.6, `rgba(186, 230, 253, ${s.alpha * 0.5})`);
+                            grad.addColorStop(1, `rgba(186, 230, 253, 0)`);
+                        } else {
+                            grad.addColorStop(0, `rgba(56, 189, 248, ${s.alpha * 0.6})`);
+                            grad.addColorStop(0.6, `rgba(13, 148, 136, ${s.alpha * 0.3})`);
+                            grad.addColorStop(1, `rgba(13, 148, 136, 0)`);
+                        }
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, sr, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+                
+                // 3. RENDER 3D CAPSULE SHELLS & DISPERSING PARTICLES (DEPTH-SORTED)
+                const renderList = [];
+                const baseGap = 42;
+                const currentGap = baseGap + Math.sin(this.time * 1.5) * 5 + this.burstForce * 35;
+                
+                renderList.push({
+                    type: 'shell',
+                    side: 'left',
+                    color: 'white',
+                    offset: -currentGap / 2,
+                    zOrder: -currentGap / 2
+                });
+                
+                renderList.push({
+                    type: 'shell',
+                    side: 'right',
+                    color: 'cyan',
+                    offset: currentGap / 2,
+                    zOrder: currentGap / 2
+                });
+                
+                this.pellets.forEach((p) => {
+                    p.pulseOffset += p.orbitSpeed;
+                    const spring = 0.04;
+                    const damp = 0.92;
+                    
+                    p.vx += (p.originX - p.x) * spring;
+                    p.vy += (p.originY - p.y) * spring;
+                    p.vz += (p.originZ - p.z) * spring;
+                    
+                    p.vx *= damp;
+                    p.vy *= damp;
+                    p.vz *= damp;
+                    
+                    p.x += p.vx + Math.cos(p.pulseOffset) * 0.3;
+                    p.y += p.vy + Math.sin(p.pulseOffset * 1.2) * 0.35;
+                    p.z += p.vz;
+                    
+                    const projected = this.project(p);
+                    renderList.push({
+                        type: 'pellet',
+                        projected: projected,
+                        radius: p.r,
+                        color: p.color,
+                        zOrder: projected.z
+                    });
+                });
+                
+                renderList.sort((a, b) => a.zOrder - b.zOrder);
+                
+                renderList.forEach(item => {
+                    if (item.type === 'shell') {
+                        this.drawCapsuleShell(item.side, item.color, item.offset, isLight);
+                    } else if (item.type === 'pellet') {
+                        this.drawPellet(item.projected, item.radius, item.color, isLight);
+                    }
+                });
+                
+                // 4. HOLOGRAPHIC CONSTELLATION OVERLAY (Reference Image 2)
+                if (this.mode === 'holographic' || !isLight) {
+                    this.drawHolographicMesh(currentGap, isLight);
+                }
+                
+                requestAnimationFrame(this.animate);
+            }
+            
+            drawCapsuleShell(side, colorType, offset, isLight) {
+                const ctx = this.ctx;
+                const length = 55;
+                const radius = 24;
+                const segments = 16;
+                
+                const rings = [];
+                const numRings = 7;
+                const dir = side === 'left' ? -1 : 1;
+                
+                for (let i = 0; i <= numRings; i++) {
+                    const frac = i / numRings;
+                    const localX = offset + (dir * frac * length);
+                    const capFrac = Math.max(0, (frac - 0.45) / 0.55);
+                    const curRadius = radius * Math.sqrt(Math.max(0.01, 1 - capFrac * capFrac));
+                    
+                    const ringPoints = [];
+                    for (let j = 0; j < segments; j++) {
+                        const angle = (j / segments) * Math.PI * 2;
+                        const pt = {
+                            x: localX,
+                            y: Math.cos(angle) * curRadius,
+                            z: Math.sin(angle) * curRadius
+                        };
+                        ringPoints.push(this.project(pt));
+                    }
+                    rings.push(ringPoints);
+                }
+                
+                for (let i = 0; i < rings.length - 1; i++) {
+                    const r1 = rings[i];
+                    const r2 = rings[i + 1];
+                    
+                    for (let j = 0; j < segments; j++) {
+                        const jNext = (j + 1) % segments;
+                        const p1 = r1[j];
+                        const p2 = r1[jNext];
+                        const p3 = r2[jNext];
+                        const p4 = r2[j];
+                        
+                        const normAngle = (j / segments) * Math.PI * 2 + this.rotX;
+                        const lightFactor = Math.max(0.15, Math.min(1.0, (Math.cos(normAngle - 0.6) + 1) / 2));
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.lineTo(p3.x, p3.y);
+                        ctx.lineTo(p4.x, p4.y);
+                        ctx.closePath();
+                        
+                        if (colorType === 'white') {
+                            if (isLight) {
+                                const lum = Math.floor(215 + lightFactor * 40);
+                                ctx.fillStyle = `rgb(${lum}, ${lum + 2}, ${lum + 5})`;
+                                ctx.strokeStyle = `rgba(203, 213, 225, 0.4)`;
+                            } else {
+                                const lum = Math.floor(180 + lightFactor * 65);
+                                ctx.fillStyle = `rgb(${Math.floor(lum*0.9)}, ${lum}, ${Math.floor(lum*1.05)})`;
+                                ctx.strokeStyle = `rgba(56, 189, 248, 0.3)`;
+                            }
+                        } else {
+                            if (isLight) {
+                                const r = Math.floor(14 + lightFactor * 55);
+                                const g = Math.floor(148 + lightFactor * 55);
+                                const b = Math.floor(215 + lightFactor * 35);
+                                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                                ctx.strokeStyle = `rgba(2, 132, 199, 0.4)`;
+                            } else {
+                                const r = Math.floor(6 + lightFactor * 45);
+                                const g = Math.floor(182 + lightFactor * 60);
+                                const b = Math.floor(212 + lightFactor * 40);
+                                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                                ctx.strokeStyle = `rgba(45, 212, 191, 0.5)`;
+                            }
+                        }
+                        ctx.lineWidth = 0.5;
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                }
+                
+                const lip = rings[0];
+                ctx.beginPath();
+                lip.forEach((p, i) => {
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.closePath();
+                ctx.fillStyle = colorType === 'white' ? (isLight ? '#cbd5e1' : '#1e293b') : (isLight ? '#0284c7' : '#0e7490');
+                ctx.fill();
+                ctx.strokeStyle = isLight ? '#94a3b8' : '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+            
+            drawPellet(p, radius, colorSet, isLight) {
+                if (p.scale <= 0) return;
+                const ctx = this.ctx;
+                const sr = Math.max(1.5, radius * p.scale);
+                
+                const lightX = p.x - sr * 0.35;
+                const lightY = p.y - sr * 0.35;
+                
+                const grad = ctx.createRadialGradient(lightX, lightY, sr * 0.05, p.x, p.y, sr);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.35, colorSet.light);
+                grad.addColorStop(0.75, colorSet.mid);
+                grad.addColorStop(1, colorSet.dark);
+                
+                if (!isLight) {
+                    ctx.shadowColor = colorSet.mid;
+                    ctx.shadowBlur = 8;
+                } else {
+                    ctx.shadowColor = 'rgba(15, 23, 42, 0.12)';
+                    ctx.shadowBlur = 4;
+                }
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, sr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.beginPath();
+                ctx.arc(p.x - sr * 0.3, p.y - sr * 0.3, sr * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            drawHolographicMesh(gap, isLight) {
+                const ctx = this.ctx;
+                const alphaPulse = 0.5 + Math.sin(this.time * 2.5) * 0.25;
+                
+                ctx.save();
+                ctx.strokeStyle = isLight ? `rgba(2, 132, 199, ${alphaPulse * 0.4})` : `rgba(56, 189, 248, ${alphaPulse * 0.65})`;
+                ctx.lineWidth = 1.0;
+                ctx.shadowColor = isLight ? '#0284c7' : '#38bdf8';
+                ctx.shadowBlur = isLight ? 4 : 10;
+                
+                const projectedNodes = this.wireNodes.map(n => {
+                    const shift = n.origX < 0 ? -gap/2 : gap/2;
+                    const p = {
+                        x: n.origX + shift,
+                        y: n.origY + Math.sin(this.time + n.glowPhase) * 2,
+                        z: n.origZ
+                    };
+                    return this.project(p);
+                });
+                
+                for (let i = 0; i < projectedNodes.length; i++) {
+                    for (let j = i + 1; j < projectedNodes.length; j++) {
+                        const p1 = projectedNodes[i];
+                        const p2 = projectedNodes[j];
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 42) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                projectedNodes.forEach(p => {
+                    if (p.scale > 0) {
+                        const nr = 2.2 * p.scale;
+                        ctx.fillStyle = isLight ? '#0284c7' : '#67e8f9';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, nr, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+                
+                ctx.restore();
+            }
+        }
+
+        // Global 3D Visualizer registry & helpers
+        window.active3DVisualizers = [];
+        let dashboardVisualizer = null;
+        let authVisualizer = null;
+
+        function setDashboard3DMode(mode) {
+            if (dashboardVisualizer) {
+                dashboardVisualizer.setMode(mode);
+            }
+            const btnDisp = document.getElementById('btn-3d-dispersal');
+            const btnHolo = document.getElementById('btn-3d-holographic');
+            if (btnDisp && btnHolo) {
+                if (mode === 'dispersal') {
+                    btnDisp.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-teal-600 text-white shadow-sm cursor-pointer';
+                    btnHolo.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 cursor-pointer';
+                } else {
+                    btnHolo.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-sky-600 text-white shadow-sm cursor-pointer';
+                    btnDisp.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 cursor-pointer';
+                }
+            }
+        }
+
+        function triggerDashboard3DBurst() {
+            if (dashboardVisualizer) {
+                dashboardVisualizer.triggerBurst(1.8);
+            }
+        }
+
+        function init3DVisualizers() {
+            window.active3DVisualizers = [];
+            const authCanvas = document.getElementById('auth-capsule-canvas');
+            if (authCanvas && !authVisualizer) {
+                authVisualizer = new Capsule3DVisualizer('auth-capsule-canvas', { initialMode: 'dispersal' });
+                window.active3DVisualizers.push(authVisualizer);
+            }
+            const dashCanvas = document.getElementById('dashboard-capsule-canvas');
+            if (dashCanvas && !dashboardVisualizer) {
+                dashboardVisualizer = new Capsule3DVisualizer('dashboard-capsule-canvas', { initialMode: 'dispersal' });
+                window.active3DVisualizers.push(dashboardVisualizer);
+            }
+        }
+
         // Initialize on Load
         document.addEventListener('DOMContentLoaded', () => {
             initPortalTheme();
+            init3DVisualizers();
 
             // Pre-fill patient id or login if query param present (e.g. /portal?pid=PT-101)
             const urlParams = new URLSearchParams(window.location.search);
@@ -2125,6 +2888,9 @@
                 show('auth-gate');
                 hide('dashboard');
                 hide('header-logout-btn');
+                setTimeout(() => {
+                    if (authVisualizer) authVisualizer.resize();
+                }, 50);
             }
         });
     </script>
